@@ -3,9 +3,9 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Seven maps, up to 8 players per game, hosted lobbies with share codes,
-unlockable skins, and bots that keep every server busy even when nobody else
-is around.
+Seven maps, up to 8 players per game, hosted lobbies with share codes, coins
+and unlockable skins, and bots that keep every server busy even when nobody
+else is around.
 
 ## Running it
 
@@ -82,11 +82,58 @@ Three **official servers** run permanently and are always populated with bots,
 so the server browser is never empty and a lone player always lands in a game
 that is already in progress.
 
-## Skins
+## Skins & coins
 
-Twelve characters, eight unlocked from the start. The rest unlock through play:
-25 tags, 10 rounds, 3 rounds on Moon Base, and 5 round wins. Progress lives in
-`localStorage`.
+23 characters, 8 unlocked from the start, purely cosmetic -- no skin is faster
+or bigger than another. The rest unlock two ways:
+
+- **Play stats** (4 skins): 25 tags, 10 rounds, 3 rounds on Moon Base, 5 wins.
+- **Coin shop** (11 skins, 120-600 coins): earned by playing rounds. Every
+  player gets a payout at the end of a round -- a base amount, more for each
+  tag made, more for time spent evading, and a placement bonus for finishing
+  top 3 -- so even a rough round earns something. The flagship is **Prism** at
+  600 coins, a shimmering rainbow finish.
+
+Progress (stats, coins, owned skins) lives in `localStorage`, matching
+everything else client-side in this app -- nobody's coin balance is a real
+account, just like nobody's win count was before this.
+
+## Passwords & admin
+
+Optionally set a password in **Settings** to claim your display name on shared
+servers, so nobody else can play as "you". It's lightweight by design: claims
+live in the server's memory only and reset if the server restarts (same as
+every room and bot in the game right now) -- this is not a real account
+system, just enough to stop casual name-squatting between friends. Leave it
+blank and your name works exactly as it always has, first-come first-served
+each time.
+
+Admin access is separate from name passwords and is **not** built into the
+code -- there is no password baked into the repository that grants it, because
+this repo is public and anyone could read it. Instead, admin is gated behind
+an `ADMIN_PASSWORD` environment variable that only the person running the
+server sets:
+
+```bash
+ADMIN_PASSWORD=your-own-secret npm start
+```
+
+On Render: **Dashboard &rarr; your service &rarr; Environment &rarr; Add
+Environment Variable**, key `ADMIN_PASSWORD`. If it's unset, admin login is
+disabled entirely -- nobody can log in as admin at all, including you.
+
+Log in from **Settings &rarr; Admin** with that password. It's a per-session
+grant (like everything else, not persisted) -- you re-enter it each time you
+open the game. Admin lets you:
+
+- Wear any skin for the session, as a preview -- it doesn't purchase or
+  permanently unlock anything, so it goes away if you lose admin.
+- Grant yourself coins on demand, applied the same way any coin payout is.
+- Kick a player from a room you're in, and start or force-start a round even
+  if you're not the host.
+
+Skins have no gameplay effect, so none of this is a competitive advantage --
+it's convenience for the person running the server, not a cheat.
 
 ## How it works
 
@@ -105,7 +152,7 @@ sides from the same files**, which is what makes client prediction exact:
 
 ```
 shared/     constants, maps, physics, skins   (server + browser)
-server/     websocket server, rooms, bot AI
+server/     websocket server, rooms, bot AI, name-claim + admin passwords
 public/     the client: menus, renderer, prediction, input, audio
 ```
 

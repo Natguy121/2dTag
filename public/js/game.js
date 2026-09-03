@@ -32,6 +32,7 @@ export class Game {
     this.roster = new Map(); // id -> { name, skin, isBot }
     this.state = 'lobby';
     this.timer = 0;
+    this.resultsShown = false;
 
     this.body = createBody();
     this.seq = 0;
@@ -139,7 +140,11 @@ export class Game {
 
     this.handleEvents(msg.ev || []);
 
-    if (msg.state === 'results' && msg.standings) {
+    // The server keeps sending the same standings on every snapshot for the
+    // whole results window, but the round only ended once -- show it, award
+    // stats/coins for it, exactly one time.
+    if (msg.state === 'results' && msg.standings && !this.resultsShown) {
+      this.resultsShown = true;
       this.hooks.onResults?.(msg.standings, this.youId);
     }
     this.hooks.onHud?.(this.hudData());
@@ -263,6 +268,7 @@ export class Game {
   }
 
   onStateChange(from, to) {
+    if (to !== 'results') this.resultsShown = false;
     if (to === 'countdown') {
       this.lastCountdownSecond = null;
       this.hooks.onResults?.(null);

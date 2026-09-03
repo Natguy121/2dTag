@@ -79,7 +79,14 @@ export function drawCharacter(ctx, x, y, opts = {}) {
 
   // Body.
   const bodyH = bh * 0.86;
-  ctx.fillStyle = skin.body;
+  if (skin.pattern === 'rainbow') {
+    const grad = ctx.createLinearGradient(bx, by, bx, by + bodyH);
+    const hueBase = (time * 90) % 360;
+    for (let i = 0; i <= 5; i++) grad.addColorStop(i / 5, `hsl(${(hueBase + i * 55) % 360}, 90%, 62%)`);
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = skin.body;
+  }
   roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
   ctx.fill();
 
@@ -119,6 +126,15 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     ctx.beginPath();
     ctx.arc(bx + bw * 0.5, by + bodyH * 0.8, bw * 0.34, 0, Math.PI * 2);
     ctx.fill();
+  } else if (skin.pattern === 'rainbow') {
+    ctx.fillStyle = '#ffffff';
+    for (const [sx, sy, ph] of [[0.28, 0.32, 0], [0.66, 0.5, 2.1], [0.42, 0.7, 4.2]]) {
+      const tw = 0.35 + Math.max(0, Math.sin(time * 4 + ph)) * 0.5;
+      ctx.globalAlpha = tw;
+      ctx.beginPath();
+      ctx.arc(bx + bw * sx, by + bodyH * sy, bw * 0.045, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.restore();
 

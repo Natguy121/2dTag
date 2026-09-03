@@ -308,9 +308,20 @@ body {
 .player-row .tag-host { color: var(--gold); font-size: 11px; font-weight: 800; text-transform: uppercase; }
 .player-row .tag-bot { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .player-row .tag-you { color: var(--accent-2); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.player-row .tag-admin { color: #ff6bd6; font-size: 11px; font-weight: 800; text-transform: uppercase; }
 .player-row.is-it { border-color: rgba(255, 77, 109, 0.6); background: rgba(255, 77, 109, 0.12); }
+.btn-kick { flex: none; padding: 5px 10px; font-size: 12px; background: rgba(255, 77, 109, 0.16); border-color: rgba(255, 77, 109, 0.4); color: #ffb3c0; }
+.btn-kick:hover { background: rgba(255, 77, 109, 0.3); }
 
 .host-controls { border-top: 1px solid var(--panel-edge); padding-top: 16px; }
+
+/* ---------------------------------------------------------------- admin */
+
+.admin-form { display: flex; gap: 8px; margin: 4px 0; }
+.admin-form .text-input { flex: 1; }
+[data-admin-status] { margin: 0 0 6px; }
+[data-admin-status].is-on { color: #ff6bd6; font-weight: 700; }
+.profile-coins { color: var(--gold); font-size: 13px; font-weight: 700; margin: 2px 0 8px; }
 
 /* --------------------------------------------------------------- skins */
 
@@ -335,6 +346,9 @@ body {
 .skin-card[aria-pressed="true"] { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(57, 240, 216, 0.16); }
 .skin-card.is-locked { opacity: 0.62; cursor: not-allowed; }
 .skin-card.is-locked .skin-note { color: var(--gold); }
+.skin-card.is-locked.is-affordable { opacity: 1; cursor: pointer; border-color: rgba(255, 209, 102, 0.5); }
+.skin-card.is-locked.is-affordable .skin-note { color: var(--gold); font-weight: 700; }
+.skin-card.is-locked.is-affordable:hover { border-color: var(--gold); }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .stat { padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; }

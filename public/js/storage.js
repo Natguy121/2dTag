@@ -12,6 +12,7 @@ export const DEFAULT_KEYS = {
 
 const DEFAULTS = {
   name: '',
+  namePassword: '', // optional; claims your name so nobody else can play as you
   skin: 'runner',
   volume: 0.7,
   showNames: true,
@@ -20,6 +21,8 @@ const DEFAULTS = {
   showFps: false,
   keys: { ...DEFAULT_KEYS },
   stats: { tags: 0, games: 0, wins: 0, moonRounds: 0, timesTagged: 0 },
+  coins: 0,
+  ownedSkins: [],
 };
 
 function randomName() {
@@ -45,6 +48,7 @@ export const profile = {
   ...stored,
   keys: { ...DEFAULT_KEYS, ...(stored.keys || {}) },
   stats: { ...DEFAULTS.stats, ...(stored.stats || {}) },
+  ownedSkins: Array.isArray(stored.ownedSkins) ? stored.ownedSkins : [],
 };
 
 if (!profile.name) profile.name = randomName();
@@ -65,6 +69,21 @@ export function bumpStat(key, by = 1) {
 export function resetStats() {
   profile.stats = { ...DEFAULTS.stats };
   save();
+}
+
+export function addCoins(amount) {
+  profile.coins = Math.max(0, (profile.coins || 0) + amount);
+  save();
+}
+
+/** Spend coins on a coin-shop skin. Returns false if you can't afford it. */
+export function buySkin(skinId, price) {
+  if (profile.ownedSkins.includes(skinId)) return true;
+  if ((profile.coins || 0) < price) return false;
+  profile.coins -= price;
+  profile.ownedSkins = [...profile.ownedSkins, skinId];
+  save();
+  return true;
 }
 
 export function resetKeys() {

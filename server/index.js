@@ -12,6 +12,7 @@ import { WebSocketServer } from 'ws';
 import * as C from '../shared/constants.js';
 import { MAPS } from '../shared/maps.js';
 import { Room, sanitizeName, sanitizeSkin } from './room.js';
+import { claimName, checkAdminPassword } from './accounts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -179,6 +180,7 @@ function joinRoom(ws, room) {
     fail(ws, 'That game is full.');
     return;
   }
+  player.isAdmin = s.isAdmin;
   s.room = room;
   s.playerId = player.id;
   send(ws, {
@@ -200,6 +202,7 @@ wss.on('connection', (ws, req) => {
     inputCount: 0,
     windowStart: Date.now(),
     ip: req.socket.remoteAddress,
+    isAdmin: false,
   });
   ws.isAlive = true;
   send(ws, { t: 'welcome', version: C.PROTOCOL_VERSION, maxPlayers: C.MAX_PLAYERS });
@@ -226,13 +229,55 @@ wss.on('connection', (ws, req) => {
     switch (msg.t) {
       case 'hello':
       case 'profile': {
-        s.name = sanitizeName(msg.name, s.name);
+        const wanted = sanitizeName(msg.name, s.name);
+        const password = typeof msg.password === 'string' ? msg.password.slice(0, 64) : '';
+        const claim = claimName(wanted, password);
+        if (claim.ok) {
+          s.name = wanted;
+        } else {
+          // Name is password-protected and the password didn't match -- give
+          // them a free variant instead of silently failing to connect. Tell
+          // the client what actually happened so its UI doesn't keep showing
+          // the name it asked for as if it had been granted.
+          s.name = `${wanted}${Math.floor(10 + Math.random() * 89)}`;
+          send(ws, { t: 'renamed', name: s.name, reason: `"${wanted}" needs a password to use -- you're "${s.name}" instead.` });
+        }
         s.skin = sanitizeSkin(msg.skin);
         const player = s.room?.players.get(s.playerId);
         if (player) {
           player.name = s.name;
           player.skin = s.skin;
           s.room.rosterDirty = true;
+        }
+        break;
+      }
+
+      case 'admin': {
+        const ok = checkAdminPassword(typeof msg.password === 'string' ? msg.password : '');
+        s.isAdmin = ok;
+        const player = s.room?.players.get(s.playerId);
+        if (player) {
+          player.isAdmin = ok;
+          s.room.rosterDirty = true;
+        }
+        send(ws, { t: 'adminResult', ok });
+        break;
+      }
+
+      case 'kick': {
+        const room = s.room;
+        const me = room?.players.get(s.playerId);
+        if (!room || !me) break;
+        if (!me.isAdmin && room.hostId !== s.playerId) { fail(ws, 'Only the host or an admin can remove players.'); break; }
+        const target = room.players.get(String(msg.targetId));
+        if (!target || target.id === s.playerId) break;
+        const targetWs = target.conn;
+        room.removePlayer(target.id);
+        broadcastRoster(room);
+        if (targetWs) {
+          const ts = sessions.get(targetWs);
+          if (ts) { ts.room = null; ts.playerId = null; }
+          send(targetWs, { t: 'kicked', message: 'You were removed from the game.' });
         }
         break;
       }
@@ -310,7 +355,8 @@ wss.on('connection', (ws, req) => {
       case 'start': {
         const room = s.room;
         if (!room) break;
-        if (room.hostId !== s.playerId && !room.persistent) {
+        const me = room.players.get(s.playerId);
+        if (room.hostId !== s.playerId && !me?.isAdmin && !room.persistent) {
           fail(ws, 'Only the host can start the round.');
           break;
         }

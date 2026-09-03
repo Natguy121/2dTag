@@ -6,7 +6,9 @@ import { MAPS, getMap } from '/shared/maps.js';
 import { SKINS, getSkin, isUnlocked } from '/shared/skins.js';
 import * as net from './net.js';
 import * as input from './input.js';
-import { profile, save, resetStats, resetKeys, keyLabel, bumpStat, DEFAULT_KEYS } from './storage.js';
+import {
+  profile, save, resetStats, resetKeys, keyLabel, bumpStat, addCoins, buySkin, DEFAULT_KEYS,
+} from './storage.js';
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
 import { Game } from './game.js';
@@ -21,6 +23,12 @@ let youId = null;
 let selectedHostMap = 'arena';
 let game = null;
 let toastTimer = null;
+// Admin is a per-session grant, not saved to localStorage: you re-enter the
+// password each time you open the game, same as the server does per connection.
+// The password itself is kept in memory only (never localStorage) so a brief
+// network drop can silently re-authenticate without asking you to retype it.
+let isAdminSession = false;
+let adminPasswordCache = '';
 
 // --------------------------------------------------------------- screens
 
@@ -58,7 +66,8 @@ function toast(message, ms = 2600) {
 
 net.on('open', () => {
   $('[data-net-banner]').hidden = true;
-  net.send({ t: 'hello', name: profile.name, skin: profile.skin });
+  net.send({ t: 'hello', name: profile.name, skin: profile.skin, password: profile.namePassword });
+  if (isAdminSession) net.send({ t: 'admin', password: adminPasswordCache });
   if (currentScreen === 'join-server') refreshServers();
 });
 
@@ -75,6 +84,31 @@ net.on('error', (msg) => {
 });
 
 net.on('rooms', (msg) => renderServerList(msg.rooms));
+
+net.on('kicked', (msg) => {
+  toast(msg.message || 'You were removed from the game.');
+  leaveRoomLocally();
+});
+
+net.on('renamed', (msg) => {
+  // The name we asked for is password-protected by someone else; the server
+  // assigned a free variant instead. Reflect that everywhere so the UI never
+  // shows a name we don't actually have.
+  profile.name = msg.name;
+  save();
+  toast(msg.reason);
+  if (currentScreen === 'settings') $('[data-setting-name]').value = profile.name;
+  drawProfilePreview();
+});
+
+net.on('adminResult', (msg) => {
+  isAdminSession = msg.ok;
+  if (!msg.ok) adminPasswordCache = '';
+  toast(msg.ok ? 'Admin access granted.' : 'Wrong admin password.');
+  if (currentScreen === 'settings') renderSettings();
+  if (currentScreen === 'skins') renderSkins();
+  if (room) renderLobby();
+});
 
 net.on('joined', (msg) => {
   youId = msg.youId;
@@ -166,7 +200,8 @@ function showResults(standings, meId) {
     who.textContent = row.name + (row.isBot ? ' [bot]' : '');
     const score = document.createElement('span');
     score.className = 'score';
-    score.textContent = `${row.itTime.toFixed(1)}s as it - ${row.tags} tag${row.tags === 1 ? '' : 's'}`;
+    const coinsPart = row.coinsEarned ? ` · +${row.coinsEarned}c` : '';
+    score.textContent = `${row.itTime.toFixed(1)}s as it - ${row.tags} tag${row.tags === 1 ? '' : 's'}${coinsPart}`;
     li.append(place, who, score);
     list.append(li);
   }
@@ -174,9 +209,11 @@ function showResults(standings, meId) {
   const me = standings.find((r) => r.id === meId);
   const sub = $('[data-results-sub]');
   if (me) {
-    sub.textContent = me.place === 1
+    const coinLine = typeof me.coinsEarned === 'number' ? ` +${me.coinsEarned} coins.` : '';
+    sub.textContent = (me.place === 1
       ? `You win! Only ${me.itTime.toFixed(1)}s spent as it.`
-      : `You placed ${ordinal(me.place)} of ${standings.length}.`;
+      : `You placed ${ordinal(me.place)} of ${standings.length}.`) + coinLine;
+    if (typeof me.coinsEarned === 'number') addCoins(me.coinsEarned);
     if (me.place === 1) {
       sfx.win();
       bumpStat('wins');
@@ -311,6 +348,7 @@ function renderLobby() {
   if (!room) return;
   const map = getMap(room.mapId);
   const isHost = room.hostId === youId;
+  const canModerate = isHost || isAdminSession;
 
   $('[data-lobby-title]').textContent = room.name;
   $('[data-room-code]').textContent = room.code;
@@ -339,7 +377,19 @@ function renderLobby() {
     li.append(canvas, who);
     if (p.id === youId) li.append(tagSpan('tag-you', 'You'));
     if (p.id === room.hostId) li.append(tagSpan('tag-host', 'Host'));
+    if (p.isAdmin) li.append(tagSpan('tag-admin', 'Admin'));
     if (p.isBot) li.append(tagSpan('tag-bot', 'Bot'));
+    if (canModerate && p.id !== youId) {
+      const kick = document.createElement('button');
+      kick.type = 'button';
+      kick.className = 'btn btn-small btn-kick';
+      kick.textContent = 'Kick';
+      kick.addEventListener('click', () => {
+        sfx.click();
+        net.send({ t: 'kick', targetId: p.id });
+      });
+      li.append(kick);
+    }
     list.append(li);
     requestAnimationFrame(() => drawSkinPreview(canvas, p.skin));
   }
@@ -357,16 +407,25 @@ function renderLobby() {
   if (room.persistent) {
     startBtn.hidden = true;
     hint.textContent = 'Official server - the next round starts automatically.';
-  } else if (isHost) {
+  } else if (canModerate) {
     startBtn.hidden = false;
     startBtn.disabled = room.players.length < 2;
     hint.textContent = room.players.length < 2
       ? 'Waiting for at least one more player or bot.'
-      : `Share code ${room.code} so friends can join.`;
+      : isHost ? `Share code ${room.code} so friends can join.` : 'Starting as admin.';
   } else {
     startBtn.hidden = true;
     hint.textContent = 'Waiting for the host to start the round.';
   }
+}
+
+/** Clear local room state and head back to the Play menu -- used both when we
+ * leave voluntarily and when we're kicked or the room otherwise drops us. */
+function leaveRoomLocally() {
+  room = null;
+  youId = null;
+  showResults(null);
+  showScreen('play');
 }
 
 function tagSpan(cls, text) {
@@ -378,19 +437,36 @@ function tagSpan(cls, text) {
 
 // ----------------------------------------------------------------- skins
 
+function sendProfile() {
+  net.send({ t: 'profile', name: profile.name, skin: profile.skin, password: profile.namePassword });
+}
+
+function equipSkin(skinId) {
+  profile.skin = skinId;
+  save();
+  sfx.click();
+  sendProfile();
+  renderSkins();
+  drawProfilePreview();
+}
+
 function renderSkins() {
   const grid = $('[data-skin-grid]');
   grid.innerHTML = '';
   let unlockedCount = 0;
 
   for (const skin of SKINS) {
-    const unlocked = isUnlocked(skin, profile.stats);
+    // Admins can preview and wear anything, but it's a live bypass, not a
+    // purchase -- nothing is added to ownedSkins, so it re-locks the moment
+    // admin status drops.
+    const owns = isUnlocked(skin, profile.stats, profile.ownedSkins);
+    const unlocked = owns || isAdminSession;
     if (unlocked) unlockedCount++;
+
     const card = document.createElement('button');
     card.type = 'button';
     card.className = `skin-card${unlocked ? '' : ' is-locked'}`;
     card.setAttribute('aria-pressed', String(profile.skin === skin.id));
-    card.disabled = !unlocked;
 
     const canvas = document.createElement('canvas');
     canvas.width = 124;
@@ -400,32 +476,45 @@ function renderSkins() {
     name.textContent = skin.name;
     const note = document.createElement('div');
     note.className = 'skin-note';
+
+    const isCoinSkin = skin.unlock?.type === 'coins';
+    let action = null; // what a click on this card should do
+
     if (unlocked) {
-      note.textContent = profile.skin === skin.id ? 'Equipped' : 'Tap to equip';
+      if (!owns && isAdminSession) note.textContent = profile.skin === skin.id ? 'Equipped (admin)' : 'Admin preview';
+      else note.textContent = profile.skin === skin.id ? 'Equipped' : 'Tap to equip';
+      action = () => equipSkin(skin.id);
+    } else if (isCoinSkin) {
+      const afford = (profile.coins || 0) >= skin.unlock.price;
+      note.textContent = `${skin.unlock.price} coins${afford ? ' — tap to buy' : ''}`;
+      card.classList.toggle('is-affordable', afford);
+      if (afford) {
+        action = () => {
+          if (buySkin(skin.id, skin.unlock.price)) equipSkin(skin.id);
+        };
+      }
     } else {
       const have = profile.stats[skin.unlock.stat] || 0;
       note.textContent = `${skin.unlock.label} (${Math.min(have, skin.unlock.value)}/${skin.unlock.value})`;
     }
+
+    card.disabled = !action;
     card.append(canvas, name, note);
-    card.addEventListener('click', () => {
-      if (!unlocked) return;
-      profile.skin = skin.id;
-      save();
-      sfx.click();
-      net.send({ t: 'profile', name: profile.name, skin: profile.skin });
-      renderSkins();
-    });
+    if (action) card.addEventListener('click', action);
     grid.append(card);
     requestAnimationFrame(() => drawSkinPreview(canvas, skin.id));
   }
 
-  $('[data-skin-progress]').textContent =
-    `${unlockedCount} of ${SKINS.length} unlocked. Locked skins unlock as you play.`;
+  const coinNote = ` · ${profile.coins || 0} coins`;
+  $('[data-skin-progress]').textContent = isAdminSession
+    ? `${unlockedCount} of ${SKINS.length} unlocked (admin: everything unlocked for preview)${coinNote}`
+    : `${unlockedCount} of ${SKINS.length} unlocked. Play to earn coins and stats for the rest.${coinNote}`;
 }
 
 function drawProfilePreview() {
   const canvas = $('[data-profile-preview]');
   $('[data-profile-name]').textContent = profile.name;
+  $('[data-profile-coins]').textContent = `${profile.coins || 0} coin${profile.coins === 1 ? '' : 's'}`;
   requestAnimationFrame(() => drawSkinPreview(canvas, profile.skin));
 }
 
@@ -433,6 +522,7 @@ function drawProfilePreview() {
 
 function renderSettings() {
   $('[data-setting-name]').value = profile.name;
+  $('[data-setting-namepass]').value = profile.namePassword;
   $('[data-setting-volume]').value = Math.round(profile.volume * 100);
   $('[data-volume-value]').textContent = `${Math.round(profile.volume * 100)}%`;
   $('[data-setting-names]').checked = profile.showNames;
@@ -441,6 +531,14 @@ function renderSettings() {
   $('[data-setting-fps]').checked = profile.showFps;
   renderKeybinds();
   renderStats();
+
+  const status = $('[data-admin-status]');
+  status.textContent = isAdminSession
+    ? 'Admin access active for this session.'
+    : 'Not an admin. Only works if the server owner set a private password.';
+  status.classList.toggle('is-on', isAdminSession);
+  $('[data-action="admin-grant-coins"]').hidden = !isAdminSession;
+  $('[data-admin-form]').hidden = isAdminSession;
 }
 
 const KEY_LABELS = { left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down' };
@@ -484,6 +582,7 @@ function renderKeybinds() {
 function renderStats() {
   const grid = $('[data-stats-grid]');
   const stats = [
+    ['Coins', profile.coins || 0],
     ['Tags made', profile.stats.tags],
     ['Rounds played', profile.stats.games],
     ['Rounds won', profile.stats.wins],
@@ -585,10 +684,7 @@ function wire() {
     el.addEventListener('click', () => {
       sfx.click();
       net.send({ t: 'leave' });
-      room = null;
-      youId = null;
-      showResults(null);
-      showScreen('play');
+      leaveRoomLocally();
     });
   }
 
@@ -596,7 +692,26 @@ function wire() {
   $('[data-setting-name]').addEventListener('input', (e) => {
     profile.name = e.target.value.slice(0, C.MAX_NAME_LENGTH);
     save();
-    net.send({ t: 'profile', name: profile.name, skin: profile.skin });
+    sendProfile();
+  });
+  $('[data-setting-namepass]').addEventListener('change', (e) => {
+    profile.namePassword = e.target.value.slice(0, 64);
+    save();
+    sendProfile();
+  });
+
+  $('[data-admin-form]').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('[data-admin-password]');
+    adminPasswordCache = input.value;
+    input.value = '';
+    net.send({ t: 'admin', password: adminPasswordCache });
+  });
+  $('[data-action="admin-grant-coins"]').addEventListener('click', () => {
+    if (!isAdminSession) return;
+    addCoins(1000);
+    renderSettings();
+    toast('+1000 coins');
   });
   $('[data-setting-volume]').addEventListener('input', (e) => {
     profile.volume = Number(e.target.value) / 100;

@@ -27,6 +27,7 @@
         <div>
           <div class="profile-label">Playing as</div>
           <div class="profile-name" data-profile-name>Player</div>
+          <div class="profile-coins" data-profile-coins>0 coins</div>
           <button class="btn btn-small" data-go="settings">Change</button>
         </div>
       </div>
@@ -202,6 +203,12 @@
         <input class="text-input" data-setting-name maxlength="14" placeholder="Player">
       </label>
 
+      <label class="field">
+        <span class="field-label">Name password (optional)</span>
+        <input class="text-input" type="password" data-setting-namepass maxlength="64" placeholder="Leave blank for no password">
+        <span class="hint">Claims your name on shared servers so nobody else can play as you. Set once, then use it every time you play with this name.</span>
+      </label>
+
       <div class="field">
         <span class="field-label">Controls</span>
         <div class="keybinds" data-keybinds></div>
@@ -225,6 +232,16 @@
         <span class="field-label">Progress</span>
         <div class="stats-grid" data-stats-grid></div>
         <button class="btn btn-small btn-danger" data-action="reset-stats">Reset progress</button>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Admin</span>
+        <p class="hint" data-admin-status></p>
+        <form class="admin-form" data-admin-form>
+          <input class="text-input" type="password" data-admin-password placeholder="Admin password" autocomplete="off">
+          <button class="btn btn-small" type="submit">Log in</button>
+        </form>
+        <button class="btn btn-small" data-action="admin-grant-coins" hidden>+1000 coins</button>
       </div>
     </div>
   </section>
