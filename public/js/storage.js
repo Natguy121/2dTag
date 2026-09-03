@@ -23,6 +23,7 @@ const DEFAULTS = {
   stats: { tags: 0, games: 0, wins: 0, moonRounds: 0, timesTagged: 0 },
   coins: 0,
   ownedSkins: [],
+  theme: 'classic', // 'classic' (blue & orange) or 'blossom' (pink & purple)
 };
 
 function randomName() {

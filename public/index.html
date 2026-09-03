@@ -16,6 +16,17 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="2D Tag">
+
+<!-- Applied before the stylesheet paints anything, so switching themes in
+     Settings never shows a flash of the previous theme on next load. Reads
+     the same localStorage key/shape as public/js/storage.js on purpose --
+     keep them in sync if that key ever changes. -->
+<script>
+try {
+  var p = JSON.parse(localStorage.getItem('twodtag.profile.v1') || '{}');
+  if (p.theme === 'blossom') document.documentElement.setAttribute('data-theme', 'blossom');
+} catch (e) {}
+</script>
 </head>
 <body>
 
@@ -217,6 +228,18 @@
         <input class="text-input" type="password" data-setting-namepass maxlength="64" placeholder="Leave blank for no password">
         <span class="hint">Claims your name on shared servers so nobody else can play as you. Set once, then use it every time you play with this name.</span>
       </label>
+
+      <div class="field">
+        <span class="field-label">Theme</span>
+        <div class="theme-picker" data-theme-picker>
+          <button type="button" class="theme-swatch" data-theme-option="classic">
+            <span class="swatch-dot swatch-classic" aria-hidden="true"></span> Blue &amp; Orange
+          </button>
+          <button type="button" class="theme-swatch" data-theme-option="blossom">
+            <span class="swatch-dot swatch-blossom" aria-hidden="true"></span> Pink &amp; Purple
+          </button>
+        </div>
+      </div>
 
       <div class="field">
         <span class="field-label">Controls</span>

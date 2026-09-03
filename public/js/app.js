@@ -542,9 +542,24 @@ function drawProfilePreview() {
 
 // -------------------------------------------------------------- settings
 
+function renderThemePicker() {
+  for (const btn of $$('[data-theme-option]')) {
+    btn.setAttribute('aria-pressed', String(btn.dataset.themeOption === profile.theme));
+  }
+}
+
+function applyTheme(theme) {
+  profile.theme = theme === 'blossom' ? 'blossom' : 'classic';
+  save();
+  if (profile.theme === 'blossom') document.documentElement.setAttribute('data-theme', 'blossom');
+  else document.documentElement.removeAttribute('data-theme');
+  renderThemePicker();
+}
+
 function renderSettings() {
   $('[data-setting-name]').value = profile.name;
   $('[data-setting-namepass]').value = profile.namePassword;
+  renderThemePicker();
   $('[data-setting-volume]').value = Math.round(profile.volume * 100);
   $('[data-volume-value]').textContent = `${Math.round(profile.volume * 100)}%`;
   $('[data-setting-names]').checked = profile.showNames;
@@ -721,6 +736,12 @@ function wire() {
     save();
     sendProfile();
   });
+  for (const btn of $$('[data-theme-option]')) {
+    btn.addEventListener('click', () => {
+      sfx.click();
+      applyTheme(btn.dataset.themeOption);
+    });
+  }
 
   $('[data-admin-form]').addEventListener('submit', (e) => {
     e.preventDefault();
