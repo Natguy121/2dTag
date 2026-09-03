@@ -40,13 +40,13 @@ export const SKINS = [
     unlock: { type: 'coins', price: 200, label: 'Coin shop' } },
   { id: 'arctic',   name: 'Arctic',     body: '#eafcff', dark: '#a9d8e0', trim: '#4cc9f0', eye: '#0b2630', pattern: 'visor',
     unlock: { type: 'coins', price: 220, label: 'Coin shop' } },
-  { id: 'shadow',   name: 'Shadow',     body: '#241b2f', dark: '#120c19', trim: '#7b2cbf', eye: '#a06bff', pattern: 'ghost',
+  { id: 'shadow',   name: 'Shadow',     body: '#5a2ea6', dark: '#341a66', trim: '#c9b3ff', eye: '#2e1a5c', pattern: 'ghost',
     unlock: { type: 'coins', price: 260, label: 'Coin shop' } },
-  { id: 'venom',    name: 'Venom',      body: '#3a1a4a', dark: '#1e0d27', trim: '#a6ff2e', eye: '#a6ff2e', pattern: 'visor',
+  { id: 'venom',    name: 'Venom',      body: '#7a1fb0', dark: '#4a1270', trim: '#a6ff2e', eye: '#a6ff2e', pattern: 'visor',
     unlock: { type: 'coins', price: 260, label: 'Coin shop' } },
   { id: 'gilded',   name: 'Gilded',     body: '#f2c14e', dark: '#a9791a', trim: '#fff6da', eye: '#2a1c04', pattern: 'stripe',
     unlock: { type: 'coins', price: 320, label: 'Coin shop' } },
-  { id: 'void',     name: 'Void',       body: '#0c0812', dark: '#000000', trim: '#7b2cbf', eye: '#a06bff', pattern: 'ghost',
+  { id: 'void',     name: 'Void',       body: '#c724ff', dark: '#7a0fb0', trim: '#ffb3ff', eye: '#3a0a5c', pattern: 'ghost',
     unlock: { type: 'coins', price: 400, label: 'Coin shop' } },
   { id: 'prism',    name: 'Prism',      body: '#ffffff', dark: '#c9c9c9', trim: '#ffffff', eye: '#101018', pattern: 'rainbow',
     unlock: { type: 'coins', price: 600, label: 'Coin shop' } },
@@ -75,6 +75,30 @@ export const SKINS = [
     unlock: { type: 'coins', price: 300, label: 'Coin shop' } },
   { id: 'chrome',   name: 'Chrome',     body: '#d9dde3', dark: '#8b939e', trim: '#ffffff', eye: '#101018', pattern: 'ghost',
     unlock: { type: 'coins', price: 380, label: 'Coin shop' } },
+
+  // --- batch 3: much more color, deliberately nothing dark or black --------
+  { id: 'citrus',     name: 'Citrus',      body: '#d4f74e', dark: '#8fa816', trim: '#f5ffd6', eye: '#3a4508', pattern: 'solid',  unlock: null },
+  { id: 'turquoise',  name: 'Turquoise',   body: '#1fd8c9', dark: '#0f8a80', trim: '#d0fffa', eye: '#0a4038', pattern: 'spots',  unlock: null },
+  { id: 'lavender',   name: 'Lavender',    body: '#c9a8ff', dark: '#8f6bd6', trim: '#f3ecff', eye: '#3d2a63', pattern: 'solid',  unlock: null },
+  { id: 'sky',        name: 'Sky',         body: '#7ec8ff', dark: '#3d8fd6', trim: '#eaf7ff', eye: '#164060', pattern: 'visor',  unlock: null },
+
+  { id: 'ruby',       name: 'Ruby',        body: '#ff1f54', dark: '#b30f39', trim: '#ffd6e0', eye: '#5c0e1e', pattern: 'stripe',
+    unlock: { type: 'stat', stat: 'tags', value: 60, label: 'Tag 60 players' } },
+  { id: 'amber',      name: 'Amber',       body: '#ffab1f', dark: '#b3730a', trim: '#ffe6b8', eye: '#5c3b08', pattern: 'stripe',
+    unlock: { type: 'stat', stat: 'games', value: 40, label: 'Finish 40 rounds' } },
+  { id: 'maroon',      name: 'Maroon',     body: '#c4415f', dark: '#7a2438', trim: '#ffd6de', eye: '#4a1622', pattern: 'visor',
+    unlock: { type: 'stat', stat: 'wins', value: 15, label: 'Win 15 rounds' } },
+
+  { id: 'hotpink',     name: 'Hot Pink',   body: '#ff2fb0', dark: '#b30f7a', trim: '#ffd6f0', eye: '#5c1246', pattern: 'spots',
+    unlock: { type: 'coins', price: 220, label: 'Coin shop' } },
+  { id: 'jade',        name: 'Jade',       body: '#2ed9a3', dark: '#178a67', trim: '#d0fff0', eye: '#0d4a37', pattern: 'robot',
+    unlock: { type: 'coins', price: 240, label: 'Coin shop' } },
+  { id: 'peach',       name: 'Peach',      body: '#ffb38a', dark: '#d67a4a', trim: '#ffe8d6', eye: '#5c3520', pattern: 'solid',
+    unlock: { type: 'coins', price: 160, label: 'Coin shop' } },
+  { id: 'olive',       name: 'Olive',      body: '#b0bf3a', dark: '#727c1c', trim: '#eaf5c2', eye: '#3a4110', pattern: 'spots',
+    unlock: { type: 'coins', price: 200, label: 'Coin shop' } },
+  { id: 'periwinkle',  name: 'Periwinkle', body: '#8a9cff', dark: '#4f5fd6', trim: '#e6eaff', eye: '#232e70', pattern: 'ghost',
+    unlock: { type: 'coins', price: 280, label: 'Coin shop' } },
 ];
 
 export const SKIN_BY_ID = Object.fromEntries(SKINS.map((s) => [s.id, s]));

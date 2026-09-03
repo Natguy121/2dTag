@@ -26,10 +26,21 @@ export const TRAILS = [
     unlock: { type: 'coins', price: 150, label: 'Coin shop' } },
   { id: 'gold',    name: 'Gold Dust',  colors: ['#f2c14e', '#fff6da'],
     unlock: { type: 'coins', price: 220, label: 'Coin shop' } },
-  { id: 'shadow',  name: 'Shadow',     colors: ['#7b2cbf', '#241b2f'],
+  { id: 'shadow',  name: 'Shadow',     colors: ['#7b2cbf', '#c9b3ff'],
     unlock: { type: 'coins', price: 260, label: 'Coin shop' } },
   { id: 'rainbow', name: 'Prism Dust', colors: ['#ff4d6d', '#ffd166', '#4ff0c1', '#4cc9f0', '#a06bff'],
     unlock: { type: 'coins', price: 400, label: 'Coin shop' } },
+
+  // --- much more color, deliberately nothing dark or black -----------------
+  { id: 'turquoise',  name: 'Turquoise Wake',   colors: ['#1fd8c9', '#d0fffa'], unlock: null },
+  { id: 'ruby',       name: 'Ruby Sparks',      colors: ['#ff1f54'],
+    unlock: { type: 'stat', stat: 'tags', value: 25, label: 'Tag 25 players' } },
+  { id: 'amber',      name: 'Amber Trail',      colors: ['#ffab1f', '#ffe6b8'],
+    unlock: { type: 'coins', price: 140, label: 'Coin shop' } },
+  { id: 'periwinkle', name: 'Periwinkle Drift', colors: ['#8a9cff', '#c9a8ff'],
+    unlock: { type: 'coins', price: 180, label: 'Coin shop' } },
+  { id: 'sunburst',   name: 'Sunburst',         colors: ['#ff2fb0', '#ffab1f', '#1fd8c9'],
+    unlock: { type: 'coins', price: 320, label: 'Coin shop' } },
 ];
 
 export const TRAIL_BY_ID = Object.fromEntries(TRAILS.map((t) => [t.id, t]));
