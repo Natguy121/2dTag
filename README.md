@@ -19,6 +19,19 @@ Then open <http://localhost:3000>. Set `PORT` to use a different port.
 To play with friends on your network, they open `http://<your-ip>:3000` and use
 **Play &rarr; Join Code** with the code shown in your lobby.
 
+### On a phone
+
+Open the site in your phone's browser, then add it to your home screen --
+**Safari:** Share &rarr; Add to Home Screen. **Chrome on Android:** &vellip;
+menu &rarr; Add to Home screen (or it may offer to install automatically). It
+launches full-screen with its own icon, no browser bar, like a real app.
+
+The game is a side-scroller and genuinely needs landscape to see enough of
+the map -- if you're in portrait, it shows a "rotate your device" screen
+instead of a broken, half-visible view. On-screen touch controls (movement +
+jump, bottom corners) appear automatically once you're playing; keyboard
+controls still work if a keyboard's attached.
+
 ## The game
 
 **Home** has three doors: **Play**, **Skins** and **Settings**.

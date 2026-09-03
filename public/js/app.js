@@ -32,6 +32,26 @@ let adminPasswordCache = '';
 
 // --------------------------------------------------------------- screens
 
+// Best-effort landscape lock while actually playing. Support is inconsistent
+// (mainly Android Chrome, and often only once installed to the home screen
+// or in fullscreen) -- the CSS rotate-prompt is the reliable fallback
+// everywhere else, so a failure here is expected and silently ignored.
+function lockLandscape() {
+  try {
+    screen.orientation?.lock?.('landscape')?.catch(() => {});
+  } catch {
+    /* unsupported */
+  }
+}
+
+function unlockOrientation() {
+  try {
+    screen.orientation?.unlock?.();
+  } catch {
+    /* unsupported */
+  }
+}
+
 function showScreen(name) {
   if (currentScreen === name) return;
   const prev = screens.get(currentScreen);
@@ -44,8 +64,10 @@ function showScreen(name) {
     if (!game) game = createGame();
     game.start(youId);
     $('[data-touch]').hidden = !input.isTouchDevice();
+    lockLandscape();
   } else if (game) {
     game.stop();
+    unlockOrientation();
   }
 
   if (name === 'join-server') refreshServers();
@@ -755,6 +777,15 @@ wire();
 drawProfilePreview();
 setVolume(profile.volume);
 net.connect();
+
+// Cache the shell so it loads instantly on a repeat visit or a shaky
+// connection. Purely an optimization -- actual play still needs the live
+// websocket, so a failure here is harmless and silently ignored.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 
 // Debug handle: handy from the browser console while tweaking the game.
 window.__tag = {

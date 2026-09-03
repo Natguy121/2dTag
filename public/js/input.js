@@ -69,6 +69,9 @@ export function init({ onEscape } = {}) {
       e.preventDefault();
       touch[action] = on;
       btn.classList.toggle('is-down', on);
+      // A light tick on press only, not release -- Android supports this,
+      // iOS Safari silently ignores it (no Vibration API), which is fine.
+      if (on) navigator.vibrate?.(10);
     };
     btn.addEventListener('pointerdown', set(true));
     btn.addEventListener('pointerup', set(false));

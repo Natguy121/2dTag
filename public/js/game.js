@@ -208,6 +208,7 @@ export class Game {
           if (profile.shake) this.shake = Math.max(this.shake, mine ? 14 : 7);
           if (ev.to === this.youId) {
             sfx.tagged();
+            navigator.vibrate?.([30, 40, 60]);
             this.showCenter("YOU'RE IT!", 1.1);
           } else if (ev.by === this.youId) {
             sfx.tag();

@@ -7,6 +7,15 @@
 <title>2D Tag</title>
 <link rel="stylesheet" href="/css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127939;</text></svg>">
+
+<!-- Installable as a home-screen app: manifest + icons for Android/desktop
+     Chrome, plus the separate Apple tags iOS Safari still requires. -->
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="2D Tag">
 </head>
 <body>
 
@@ -284,6 +293,12 @@
         <button class="touch-btn" data-touch-key="down">&#9660;</button>
         <button class="touch-btn touch-jump" data-touch-key="jump">JUMP</button>
       </div>
+    </div>
+
+    <div class="rotate-prompt">
+      <div class="rotate-icon" aria-hidden="true">&#128241;</div>
+      <p>Rotate your device to play</p>
+      <p class="rotate-sub">2D Tag needs landscape to see enough of the map.</p>
     </div>
   </section>
 
