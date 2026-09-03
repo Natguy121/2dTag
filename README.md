@@ -3,9 +3,9 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Ten maps, 1 to 10 players per game, hosted lobbies with share codes, coins
-and unlockable skins, and bots that keep every server busy even when nobody
-else is around.
+Eleven maps, 1 to 10 players per game, hosted lobbies with share codes, coins
+earned by playing or from quests, unlockable skins and trails, and bots that
+keep every server busy even when nobody else is around.
 
 ## Running it
 
@@ -73,6 +73,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Crossfire Yard** | The tagger carries a gun. Break their sightline, or get shot from clear across the map. |
 | **Blackout** | The tagger flickers invisible for a few seconds at a time. |
 | **Hush House** | Hide-and-seek: the seeker is frozen for a few seconds at the start. |
+| **Turbo Circuit** | **5x speed.** A 3600px straightaway that's over in seconds. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -87,9 +88,9 @@ pair for crossing the house, and a pink basement/attic pair for a vertical
 shortcut. A brief cooldown after arriving stops you from immediately
 bouncing straight back through.
 
-### Guns, invisibility & hide-and-seek
+### Rule-bending maps
 
-Three maps bend the base rules further, each in a different direction:
+Four maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -105,6 +106,13 @@ Three maps bend the base rules further, each in a different direction:
 - **Hush House** is hide-and-seek: whoever's it is frozen in place for the
   first 4 seconds of every round, giving everyone else a genuine head start
   to scatter into the nooks and side rooms before the chase begins.
+- **Turbo Circuit** moves everyone at 5x normal speed. The map itself is
+  scaled up to match (3600px, four and a half times the width of most maps)
+  so there's still room to actually run -- with no interior walls at all,
+  since a body moving that fast can cross a thin one within a single physics
+  tick without ever registering the collision. Only the floor and the two
+  boundary walls (thickened well past that margin) are solid; every platform
+  is one-way and safe at any speed.
 
 ## Bots
 
@@ -118,21 +126,37 @@ Three **official servers** run permanently and are always populated with bots,
 so the server browser is never empty and a lone player always lands in a game
 that is already in progress.
 
-## Skins & coins
+## Skins, trails & coins
 
-23 characters, 8 unlocked from the start, purely cosmetic -- no skin is faster
+34 characters, 9 unlocked from the start, purely cosmetic -- no skin is faster
 or bigger than another. The rest unlock two ways:
 
-- **Play stats** (4 skins): 25 tags, 10 rounds, 3 rounds on Moon Base, 5 wins.
-- **Coin shop** (11 skins, 120-600 coins): earned by playing rounds. Every
+- **Play stats** (9 skins): from a quick one like 10 rounds played up to a
+  grind like 50 tags.
+- **Coin shop** (16 skins, 120-600 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. The flagship is **Prism** at
   600 coins, a shimmering rainbow finish.
 
-Progress (stats, coins, owned skins) lives in `localStorage`, matching
+**Trails** work the same way as a second, independent cosmetic slot: a
+colored particle trickle behind you while moving fast, equipped separately
+from your skin so the two mix and match. 12 options (including "None"): a
+few free, a few unlocked by stats, the rest bought with coins (120-400).
+
+Progress (stats, coins, owned skins/trails) lives in `localStorage`, matching
 everything else client-side in this app -- nobody's coin balance is a real
 account, just like nobody's win count was before this.
+
+## Quests
+
+The **Quests** tab (next to Skins and Trails on the Skins screen) is a
+second way to earn coins beyond just playing rounds: 12 one-time milestones
+-- win your first round, tag 50 players, land 10 shots on Crossfire Yard,
+play on 5 different maps, and so on -- each paying a coin bounty once you
+hit its goal. Progress ticks up automatically from the same stats that gate
+skin and trail unlocks; claiming is a separate tap so finishing one is its
+own moment instead of a number quietly changing in the background.
 
 ## Passwords & admin
 
@@ -162,8 +186,8 @@ Log in from **Settings &rarr; Admin** with that password. It's a per-session
 grant (like everything else, not persisted) -- you re-enter it each time you
 open the game. Admin lets you:
 
-- Wear any skin for the session, as a preview -- it doesn't purchase or
-  permanently unlock anything, so it goes away if you lose admin.
+- Wear any skin or trail for the session, as a preview -- it doesn't purchase
+  or permanently unlock anything, so it goes away if you lose admin.
 - Grant yourself coins on demand, applied the same way any coin payout is.
 - Kick a player from a room you're in, and start or force-start a round even
   if you're not the host.
@@ -187,7 +211,7 @@ sides from the same files**, which is what makes client prediction exact:
   snapshots, which hides jitter and packet timing.
 
 ```
-shared/     constants, maps, physics, skins   (server + browser)
+shared/     constants, maps, physics, skins, trails, quests   (server + browser)
 server/     websocket server, rooms, bot AI, name-claim + admin passwords
 public/     the client: menus, renderer, prediction, input, audio
 ```

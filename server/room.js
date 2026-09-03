@@ -4,6 +4,7 @@
 import * as C from '../shared/constants.js';
 import { getMap, MAPS } from '../shared/maps.js';
 import { BOT_NAMES, BOT_SKINS, DEFAULT_SKIN, SKIN_BY_ID } from '../shared/skins.js';
+import { BOT_TRAILS, DEFAULT_TRAIL, TRAIL_BY_ID } from '../shared/trails.js';
 import { createBody, placeAtSpawn, stepBody, bodiesTouch, decodeInput, resolveShot } from '../shared/physics.js';
 import { createBrain, think } from './bots.js';
 
@@ -25,6 +26,10 @@ export function sanitizeName(raw, fallback = 'Player') {
 
 export function sanitizeSkin(raw) {
   return SKIN_BY_ID[raw] ? raw : DEFAULT_SKIN;
+}
+
+export function sanitizeTrail(raw) {
+  return TRAIL_BY_ID[raw] ? raw : DEFAULT_TRAIL;
 }
 
 export class Room {
@@ -77,12 +82,13 @@ export class Room {
 
   // ---------------------------------------------------------------- players
 
-  makePlayer({ name, skin, isBot, conn }) {
+  makePlayer({ name, skin, trail, isBot, conn }) {
     const id = String(nextPlayerId++);
     const player = {
       id,
       name,
       skin,
+      trail: trail || DEFAULT_TRAIL,
       isBot: !!isBot,
       isAdmin: false,
       conn: conn || null,
@@ -107,11 +113,12 @@ export class Room {
     return player;
   }
 
-  addHuman(conn, name, skin) {
+  addHuman(conn, name, skin, trail) {
     if (this.isFull()) return null;
     const player = this.makePlayer({
       name: sanitizeName(name),
       skin: sanitizeSkin(skin),
+      trail: sanitizeTrail(trail),
       isBot: false,
       conn,
     });
@@ -128,7 +135,7 @@ export class Room {
     const used = new Set([...this.players.values()].map((p) => p.name));
     const available = BOT_NAMES.filter((n) => !used.has(n));
     const name = available.length ? pick(available) : `Bot ${this.players.size + 1}`;
-    const bot = this.makePlayer({ name, skin: pick(BOT_SKINS), isBot: true });
+    const bot = this.makePlayer({ name, skin: pick(BOT_SKINS), trail: pick(BOT_TRAILS), isBot: true });
     if (this.state === 'playing') bot.immunity = 1.2;
     this.players.set(bot.id, bot);
     this.rosterDirty = true;
@@ -528,6 +535,7 @@ export class Room {
         id: p.id,
         name: p.name,
         skin: p.skin,
+        trail: p.trail,
         isBot: p.isBot,
         isAdmin: p.isAdmin,
         it: p.it,

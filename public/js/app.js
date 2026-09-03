@@ -4,10 +4,13 @@
 import * as C from '/shared/constants.js';
 import { MAPS, getMap } from '/shared/maps.js';
 import { SKINS, getSkin, isUnlocked } from '/shared/skins.js';
+import { TRAILS, isTrailUnlocked } from '/shared/trails.js';
+import { QUESTS } from '/shared/quests.js';
 import * as net from './net.js';
 import * as input from './input.js';
 import {
-  profile, save, resetStats, resetKeys, keyLabel, bumpStat, addCoins, buySkin, DEFAULT_KEYS,
+  profile, save, resetStats, resetKeys, keyLabel, bumpStat, addCoins, buySkin, buyTrail,
+  claimQuest, DEFAULT_KEYS,
 } from './storage.js';
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
@@ -72,7 +75,7 @@ function showScreen(name) {
   }
 
   if (name === 'join-server') refreshServers();
-  if (name === 'skins') renderSkins();
+  if (name === 'skins') renderShop();
   if (name === 'settings') renderSettings();
   if (name === 'home') drawProfilePreview();
 }
@@ -89,7 +92,7 @@ function toast(message, ms = 2600) {
 
 net.on('open', () => {
   $('[data-net-banner]').hidden = true;
-  net.send({ t: 'hello', name: profile.name, skin: profile.skin, password: profile.namePassword });
+  net.send({ t: 'hello', name: profile.name, skin: profile.skin, trail: profile.trail, password: profile.namePassword });
   if (isAdminSession) net.send({ t: 'admin', password: adminPasswordCache });
   if (currentScreen === 'join-server') refreshServers();
 });
@@ -134,7 +137,7 @@ net.on('adminResult', (msg) => {
       : 'Wrong admin password.';
   toast(message, msg.ok ? 2600 : 4200);
   if (currentScreen === 'settings') renderSettings();
-  if (currentScreen === 'skins') renderSkins();
+  if (currentScreen === 'skins') renderShop();
   if (room) renderLobby();
 });
 
@@ -241,7 +244,10 @@ function showResults(standings, meId) {
     sub.textContent = (me.place === 1
       ? `You win! Only ${me.itTime.toFixed(1)}s spent as it.`
       : `You placed ${ordinal(me.place)} of ${standings.length}.`) + coinLine;
-    if (typeof me.coinsEarned === 'number') addCoins(me.coinsEarned);
+    if (typeof me.coinsEarned === 'number') {
+      addCoins(me.coinsEarned);
+      bumpStat('coinsEarned', me.coinsEarned);
+    }
     if (me.place === 1) {
       sfx.win();
       bumpStat('wins');
@@ -466,7 +472,9 @@ function tagSpan(cls, text) {
 // ----------------------------------------------------------------- skins
 
 function sendProfile() {
-  net.send({ t: 'profile', name: profile.name, skin: profile.skin, password: profile.namePassword });
+  net.send({
+    t: 'profile', name: profile.name, skin: profile.skin, trail: profile.trail, password: profile.namePassword,
+  });
 }
 
 function equipSkin(skinId) {
@@ -475,6 +483,15 @@ function equipSkin(skinId) {
   sfx.click();
   sendProfile();
   renderSkins();
+  drawProfilePreview();
+}
+
+function equipTrail(trailId) {
+  profile.trail = trailId;
+  save();
+  sfx.click();
+  sendProfile();
+  renderTrails();
   drawProfilePreview();
 }
 
@@ -537,6 +554,151 @@ function renderSkins() {
   $('[data-skin-progress]').textContent = isAdminSession
     ? `${unlockedCount} of ${SKINS.length} unlocked (admin: everything unlocked for preview)${coinNote}`
     : `${unlockedCount} of ${SKINS.length} unlocked. Play to earn coins and stats for the rest.${coinNote}`;
+}
+
+/** Refresh every tab of the Skins screen -- used whenever something that can
+ * change more than one tab's unlock state happens (admin toggle, a progress
+ * reset), so a tab you're not currently looking at isn't left stale. */
+function renderShop() {
+  renderSkins();
+  renderTrails();
+  renderQuests();
+}
+
+function setShopTab(tab) {
+  for (const btn of $$('[data-shop-tab]')) btn.classList.toggle('is-active', btn.dataset.shopTab === tab);
+  $('[data-skin-progress]').hidden = tab !== 'skins';
+  $('[data-skin-grid]').hidden = tab !== 'skins';
+  $('[data-trail-progress]').hidden = tab !== 'trails';
+  $('[data-trail-grid]').hidden = tab !== 'trails';
+  $('[data-quest-progress]').hidden = tab !== 'quests';
+  $('[data-quest-list]').hidden = tab !== 'quests';
+}
+
+function renderTrails() {
+  const grid = $('[data-trail-grid]');
+  grid.innerHTML = '';
+  let unlockedCount = 0;
+
+  for (const trail of TRAILS) {
+    // Same admin-preview rule as skins: unlocked to wear/see, not owned.
+    const owns = isTrailUnlocked(trail, profile.stats, profile.ownedTrails);
+    const unlocked = owns || isAdminSession;
+    if (unlocked) unlockedCount++;
+
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = `skin-card trail-card${unlocked ? '' : ' is-locked'}`;
+    card.setAttribute('aria-pressed', String(profile.trail === trail.id));
+
+    const swatch = document.createElement('div');
+    swatch.className = 'trail-swatch-row';
+    if (trail.colors.length) {
+      for (const c of trail.colors) {
+        const dot = document.createElement('span');
+        dot.className = 'trail-dot';
+        dot.style.background = c;
+        swatch.append(dot);
+      }
+    } else {
+      swatch.append(Object.assign(document.createElement('span'), { className: 'trail-dot trail-dot-none' }));
+    }
+
+    const name = document.createElement('div');
+    name.className = 'skin-name';
+    name.textContent = trail.name;
+    const note = document.createElement('div');
+    note.className = 'skin-note';
+
+    const isCoinTrail = trail.unlock?.type === 'coins';
+    let action = null;
+
+    if (unlocked) {
+      if (!owns && isAdminSession) note.textContent = profile.trail === trail.id ? 'Equipped (admin)' : 'Admin preview';
+      else note.textContent = profile.trail === trail.id ? 'Equipped' : 'Tap to equip';
+      action = () => equipTrail(trail.id);
+    } else if (isCoinTrail) {
+      const afford = (profile.coins || 0) >= trail.unlock.price;
+      note.textContent = `${trail.unlock.price} coins${afford ? ' — tap to buy' : ''}`;
+      card.classList.toggle('is-affordable', afford);
+      if (afford) {
+        action = () => {
+          if (buyTrail(trail.id, trail.unlock.price)) equipTrail(trail.id);
+        };
+      }
+    } else {
+      const have = profile.stats[trail.unlock.stat] || 0;
+      note.textContent = `${trail.unlock.label} (${Math.min(have, trail.unlock.value)}/${trail.unlock.value})`;
+    }
+
+    card.disabled = !action;
+    card.append(swatch, name, note);
+    if (action) card.addEventListener('click', action);
+    grid.append(card);
+  }
+
+  const coinNote = ` · ${profile.coins || 0} coins`;
+  $('[data-trail-progress]').textContent = isAdminSession
+    ? `${unlockedCount} of ${TRAILS.length} unlocked (admin: everything unlocked for preview)${coinNote}`
+    : `${unlockedCount} of ${TRAILS.length} unlocked. Play to earn coins and stats for the rest.${coinNote}`;
+}
+
+function questProgress(quest) {
+  if (quest.stat === 'mapsPlayed') return (profile.mapsPlayed || []).length;
+  return profile.stats[quest.stat] || 0;
+}
+
+function renderQuests() {
+  const list = $('[data-quest-list]');
+  list.innerHTML = '';
+  let claimedCount = 0;
+
+  for (const quest of QUESTS) {
+    const have = questProgress(quest);
+    const done = have >= quest.goal;
+    const claimed = profile.claimedQuests.includes(quest.id);
+    if (claimed) claimedCount++;
+
+    const row = document.createElement('div');
+    row.className = `quest-row${claimed ? ' is-claimed' : done ? ' is-ready' : ''}`;
+
+    const info = document.createElement('div');
+    info.className = 'quest-info';
+    const name = document.createElement('div');
+    name.className = 'quest-name';
+    name.textContent = quest.name;
+    const desc = document.createElement('div');
+    desc.className = 'quest-desc';
+    desc.textContent = `${quest.label} (${Math.min(have, quest.goal)}/${quest.goal})`;
+    info.append(name, desc);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-small';
+    if (claimed) {
+      btn.textContent = 'Claimed';
+      btn.disabled = true;
+    } else if (done) {
+      btn.textContent = `Claim +${quest.reward}`;
+      btn.classList.add('btn-primary');
+      btn.addEventListener('click', () => {
+        if (claimQuest(quest.id, quest.reward)) {
+          sfx.win();
+          renderQuests();
+          drawProfilePreview();
+        }
+      });
+    } else {
+      btn.textContent = `+${quest.reward} coins`;
+      btn.disabled = true;
+    }
+
+    row.append(info, btn);
+    list.append(row);
+  }
+
+  $('[data-quest-progress]').textContent =
+    `${claimedCount} of ${QUESTS.length} quests claimed · ${profile.coins || 0} coins`;
 }
 
 function drawProfilePreview() {
@@ -630,6 +792,8 @@ function renderStats() {
     ['Rounds played', profile.stats.games],
     ['Rounds won', profile.stats.wins],
     ['Moon rounds', profile.stats.moonRounds],
+    ['Shots landed', profile.stats.shotHits],
+    ['Maps played', profile.mapsPlayed.length],
   ];
   grid.innerHTML = '';
   for (const [label, value] of stats) {
@@ -650,6 +814,11 @@ function wire() {
       sfx.click();
       showScreen(el.dataset.go);
     });
+  }
+
+  // Skins screen tabs: Skins / Trails / Quests.
+  for (const btn of $$('[data-shop-tab]')) {
+    btn.addEventListener('click', () => { sfx.click(); setShopTab(btn.dataset.shopTab); });
   }
 
   $('[data-action="refresh-servers"]').addEventListener('click', () => { sfx.click(); refreshServers(); });
@@ -784,7 +953,7 @@ function wire() {
   $('[data-action="reset-stats"]').addEventListener('click', () => {
     resetStats();
     renderStats();
-    renderSkins();
+    renderShop();
     toast('Progress reset.');
   });
 

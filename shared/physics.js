@@ -74,6 +74,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const gravityScale = map.gravityScale ?? 1;
   const frictionScale = map.frictionScale ?? 1;
   const airScale = map.airScale ?? 1;
+  const speedScale = map.speedScale ?? 1;
 
   const events = { jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null };
   b.jumped = false;
@@ -83,7 +84,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   if (dir !== 0) b.facing = dir;
 
-  const maxSpeed = C.MOVE_SPEED * speedMult;
+  const maxSpeed = C.MOVE_SPEED * speedMult * speedScale;
   // Ice keeps most of its acceleration but loses nearly all of its braking.
   const groundAccel = C.ACCEL_GROUND * (0.4 + 0.6 * frictionScale);
   const accel = b.onGround ? groundAccel : C.ACCEL_AIR * airScale;

@@ -50,6 +50,31 @@ export const SKINS = [
     unlock: { type: 'coins', price: 400, label: 'Coin shop' } },
   { id: 'prism',    name: 'Prism',      body: '#ffffff', dark: '#c9c9c9', trim: '#ffffff', eye: '#101018', pattern: 'rainbow',
     unlock: { type: 'coins', price: 600, label: 'Coin shop' } },
+
+  // --- play-stat unlocks (batch 2) ------------------------------------------
+  { id: 'cyan',     name: 'Cyan',       body: '#00d9ff', dark: '#0089a8', trim: '#d6faff', eye: '#031a20', pattern: 'solid',  unlock: null },
+  { id: 'crimson',  name: 'Crimson',    body: '#c81d3f', dark: '#7a0f26', trim: '#ffd6de', eye: '#1a0308', pattern: 'stripe',
+    unlock: { type: 'stat', stat: 'tags', value: 40, label: 'Tag 40 players' } },
+  { id: 'emerald',  name: 'Emerald',    body: '#0fae66', dark: '#086b3f', trim: '#c8ffe3', eye: '#031a10', pattern: 'spots',
+    unlock: { type: 'stat', stat: 'wins', value: 10, label: 'Win 10 rounds' } },
+  { id: 'navy',     name: 'Navy',       body: '#1b2a6b', dark: '#0d1638', trim: '#c7d4ff', eye: '#39f0d8', pattern: 'robot',
+    unlock: { type: 'stat', stat: 'games', value: 30, label: 'Finish 30 rounds' } },
+  { id: 'deadeye',  name: 'Deadeye',    body: '#ff9f1c', dark: '#b8690a', trim: '#ffe4b8', eye: '#1a0d00', pattern: 'visor',
+    unlock: { type: 'stat', stat: 'shotHits', value: 15, label: 'Land 15 shots on Crossfire Yard' } },
+  { id: 'survivor', name: 'Survivor',   body: '#6c757d', dark: '#3d4247', trim: '#e8ecef', eye: '#101214', pattern: 'stripe',
+    unlock: { type: 'stat', stat: 'timesTagged', value: 25, label: 'Get tagged 25 times' } },
+
+  // --- coin shop (batch 2) ---------------------------------------------------
+  { id: 'magenta',  name: 'Magenta',    body: '#e619b0', dark: '#93106f', trim: '#ffd6f2', eye: '#1a0314', pattern: 'spots',
+    unlock: { type: 'coins', price: 180, label: 'Coin shop' } },
+  { id: 'copper',   name: 'Copper',     body: '#b5652f', dark: '#7a3f18', trim: '#ffd9b3', eye: '#1a0d02', pattern: 'robot',
+    unlock: { type: 'coins', price: 200, label: 'Coin shop' } },
+  { id: 'sunset',   name: 'Sunset',     body: '#ff5f6d', dark: '#a83341', trim: '#ffe0c2', eye: '#1a0509', pattern: 'stripe',
+    unlock: { type: 'coins', price: 260, label: 'Coin shop' } },
+  { id: 'indigo',   name: 'Indigo',     body: '#4338ca', dark: '#241d75', trim: '#d4d0ff', eye: '#39f0d8', pattern: 'visor',
+    unlock: { type: 'coins', price: 300, label: 'Coin shop' } },
+  { id: 'chrome',   name: 'Chrome',     body: '#d9dde3', dark: '#8b939e', trim: '#ffffff', eye: '#101018', pattern: 'ghost',
+    unlock: { type: 'coins', price: 380, label: 'Coin shop' } },
 ];
 
 export const SKIN_BY_ID = Object.fromEntries(SKINS.map((s) => [s.id, s]));

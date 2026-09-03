@@ -1,7 +1,7 @@
 {
   "name": "2dtag",
   "version": "1.0.0",
-  "description": "A 2D multiplayer tag game with hosted lobbies, join codes, 10 maps (guns, invisibility, hide-and-seek and a low-gravity moon map among them), skins and bots.",
+  "description": "A 2D multiplayer tag game with hosted lobbies, join codes, 11 maps (guns, invisibility, hide-and-seek, 5x speed and a low-gravity moon map among them), skins, trails, quests and bots.",
   "type": "module",
   "main": "server/index.js",
   "scripts": {

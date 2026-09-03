@@ -15,15 +15,21 @@ const DEFAULTS = {
   name: '',
   namePassword: '', // optional; claims your name so nobody else can play as you
   skin: 'runner',
+  trail: 'none',
   volume: 0.7,
   showNames: true,
   particles: true,
   shake: true,
   showFps: false,
   keys: { ...DEFAULT_KEYS },
-  stats: { tags: 0, games: 0, wins: 0, moonRounds: 0, timesTagged: 0 },
+  stats: {
+    tags: 0, games: 0, wins: 0, moonRounds: 0, timesTagged: 0, shotHits: 0, coinsEarned: 0,
+  },
   coins: 0,
   ownedSkins: [],
+  ownedTrails: [],
+  claimedQuests: [],
+  mapsPlayed: [],
   theme: 'classic', // 'classic' (blue & orange) or 'blossom' (pink & purple)
 };
 
@@ -51,6 +57,9 @@ export const profile = {
   keys: { ...DEFAULT_KEYS, ...(stored.keys || {}) },
   stats: { ...DEFAULTS.stats, ...(stored.stats || {}) },
   ownedSkins: Array.isArray(stored.ownedSkins) ? stored.ownedSkins : [],
+  ownedTrails: Array.isArray(stored.ownedTrails) ? stored.ownedTrails : [],
+  claimedQuests: Array.isArray(stored.claimedQuests) ? stored.claimedQuests : [],
+  mapsPlayed: Array.isArray(stored.mapsPlayed) ? stored.mapsPlayed : [],
 };
 
 if (!profile.name) profile.name = randomName();
@@ -86,6 +95,33 @@ export function buySkin(skinId, price) {
   profile.ownedSkins = [...profile.ownedSkins, skinId];
   save();
   return true;
+}
+
+/** Spend coins on a coin-shop trail. Returns false if you can't afford it. */
+export function buyTrail(trailId, price) {
+  if (profile.ownedTrails.includes(trailId)) return true;
+  if ((profile.coins || 0) < price) return false;
+  profile.coins -= price;
+  profile.ownedTrails = [...profile.ownedTrails, trailId];
+  save();
+  return true;
+}
+
+/** Mark a completed quest claimed and hand out its coins. Returns false if
+ * it was already claimed (so the caller doesn't pay out twice). */
+export function claimQuest(id, reward) {
+  if (profile.claimedQuests.includes(id)) return false;
+  profile.claimedQuests = [...profile.claimedQuests, id];
+  addCoins(reward);
+  save();
+  return true;
+}
+
+/** Record a round played on a map, for the "play N different maps" quest. */
+export function trackMapPlayed(mapId) {
+  if (profile.mapsPlayed.includes(mapId)) return;
+  profile.mapsPlayed = [...profile.mapsPlayed, mapId];
+  save();
 }
 
 export function resetKeys() {

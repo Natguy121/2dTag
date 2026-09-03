@@ -10,9 +10,10 @@
 import * as C from '/shared/constants.js';
 import { getMap } from '/shared/maps.js';
 import { createBody, stepBody } from '/shared/physics.js';
+import { getTrail } from '/shared/trails.js';
 import * as net from './net.js';
 import * as input from './input.js';
-import { profile, bumpStat } from './storage.js';
+import { profile, bumpStat, trackMapPlayed } from './storage.js';
 import { sfx } from './audio.js';
 import {
   drawBackground, drawMap, drawCharacter, Particles, formatTime,
@@ -218,6 +219,7 @@ export class Game {
           } else if (ev.by === this.youId) {
             sfx.tag();
             bumpStat('tags');
+            if (shot) bumpStat('shotHits');
             const name = this.roster.get(ev.to)?.name || 'them';
             this.showCenter(shot ? `SHOT ${name.toUpperCase()}` : `TAGGED ${name.toUpperCase()}`, 0.9);
           } else {
@@ -299,6 +301,7 @@ export class Game {
     if (to === 'results') {
       bumpStat('games');
       if (this.map.moon) bumpStat('moonRounds');
+      trackMapPlayed(this.map.id);
     }
     if (to === 'lobby' && from === 'results') {
       this.hooks.onResults?.(null);
@@ -511,7 +514,7 @@ export class Game {
       const pos = this.selfRenderPos();
       this.drawPlayer(ctx, pos.x, pos.y, {
         vx: this.body.vx, vy: this.body.vy, facing: this.body.facing, flags: self.flags,
-      }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin }, true);
+      }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin, trail: profile.trail }, true);
     }
 
     this.drawShotBeams(ctx);
@@ -548,10 +551,22 @@ export class Game {
     // still see your own outline (faded) so you always know your own state.
     if (invisible && !isSelf) return;
 
-    // Tagger leaves a faint trail so you can see them coming.
+    // Tagger leaves a faint red warning trail so you can see them coming --
+    // always on, unrelated to anyone's equipped cosmetic trail below.
     if (it && !invisible && profile.particles && !respawning && Math.abs(p.vx) > 60 && Math.random() < 0.4) {
       this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H - 4, 1, {
         color: 'rgba(255,77,109,0.6)', speed: 20, life: 0.35, size: 3, gravity: -40,
+      });
+    }
+
+    // Equipped cosmetic trail: a colored particle trickle behind anyone
+    // moving fast enough, regardless of "it" status. No-op for the 'none' trail.
+    const cosmeticTrail = getTrail(meta?.trail);
+    if (cosmeticTrail.colors.length && !invisible && profile.particles && !respawning
+      && (Math.abs(p.vx) > 90 || Math.abs(p.vy) > 220) && Math.random() < 0.5) {
+      const color = cosmeticTrail.colors[Math.floor(Math.random() * cosmeticTrail.colors.length)];
+      this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H - 6, 1, {
+        color, speed: 30, life: 0.4, size: 3.5, gravity: 60, spread: 1.4,
       });
     }
 

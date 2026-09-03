@@ -9,9 +9,12 @@
 //             into one instantly exits out the other, keeping your velocity
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
-// gravityScale / frictionScale / airScale let a map bend the shared physics
-// without touching the simulation itself. A handful of boolean/number flags
-// bend the RULES instead, each read only by server/room.js:
+// gravityScale / frictionScale / airScale / speedScale let a map bend the
+// shared physics without touching the simulation itself (speedScale multiplies
+// C.MOVE_SPEED directly -- geometry on a high-speedScale map needs thick
+// interior solids, since a fast enough body can cross a thin one within a
+// single physics tick without ever registering an overlap). A handful of
+// boolean/number flags bend the RULES instead, each read only by server/room.js:
 //   guns              true  -- only the tagger can fire (see shared/physics
 //                     resolveShot); a hit tags exactly like a touch would
 //   invisibilityCycle true  -- the tagger flickers visible/invisible on a
@@ -548,6 +551,50 @@ export const MAPS = [
     spawns: [
       [100, 860], [500, 860], [900, 860], [1300, 860],
       [150, 730], [850, 730], [500, 470], [1150, 470],
+    ],
+  },
+
+  {
+    id: 'turbo',
+    name: 'Turbo Circuit',
+    blurb: 'Everyone moves at 5x speed. The whole map is over in seconds.',
+    speedScale: 5,
+    width: 3600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#1a0a2e', '#4a1361', '#0f0518'],
+      solid: '#4a2472',
+      solidEdge: '#39f0d8',
+      platform: '#6b3aa0',
+      accent: '#39f0d8',
+      hazard: '#ff4d6d',
+      fog: 'rgba(150,80,255,0.10)',
+      grid: 'rgba(200,150,255,0.10)',
+    },
+    // No interior solids at all -- at 5x speed a body can cross a lot of
+    // ground in a single physics tick, so anything thinner than roughly the
+    // hardCap-speed-per-tick distance risks a clean tunnel-through. Only the
+    // floor and the two boundary walls (thickened well past that margin)
+    // are collidable; every platform is one-way and safe at any speed since
+    // those never block horizontal movement.
+    solids: [
+      [0, 860, 3600, 40],
+      [0, 0, 80, 900],
+      [3520, 0, 80, 900],
+    ],
+    platforms: [
+      [200, 730, 400], [750, 730, 400], [1300, 730, 400], [1850, 730, 400],
+      [2400, 730, 400], [2950, 730, 400],
+      [420, 560, 350], [1020, 560, 350], [1620, 560, 350], [2220, 560, 350], [2820, 560, 350],
+      [650, 390, 300], [1450, 390, 300], [2250, 390, 300], [3050, 390, 300],
+    ],
+    hazards: [],
+    springs: [[500, 846, 60], [1700, 846, 60], [2900, 846, 60]],
+    spawns: [
+      [150, 860], [600, 860], [1050, 860], [1500, 860],
+      [1950, 860], [2400, 860], [2850, 860], [3300, 860],
     ],
   },
 ];

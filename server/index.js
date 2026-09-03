@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 import * as C from '../shared/constants.js';
 import { MAPS } from '../shared/maps.js';
 import { INPUT_MASK } from '../shared/physics.js';
-import { Room, sanitizeName, sanitizeSkin } from './room.js';
+import { Room, sanitizeName, sanitizeSkin, sanitizeTrail } from './room.js';
 import { claimName, checkAdminPassword, adminLoginEnabled } from './accounts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -176,7 +176,7 @@ function joinRoom(ws, room) {
   if (!s) return;
   if (s.room) leaveRoom(ws);
 
-  const player = room.addHuman(ws, s.name, s.skin);
+  const player = room.addHuman(ws, s.name, s.skin, s.trail);
   if (!player) {
     fail(ws, 'That game is full.');
     return;
@@ -197,6 +197,7 @@ wss.on('connection', (ws, req) => {
   sessions.set(ws, {
     name: 'Player',
     skin: 'runner',
+    trail: 'none',
     room: null,
     playerId: null,
     lastInput: 0,
@@ -244,10 +245,12 @@ wss.on('connection', (ws, req) => {
           send(ws, { t: 'renamed', name: s.name, reason: `"${wanted}" needs a password to use -- you're "${s.name}" instead.` });
         }
         s.skin = sanitizeSkin(msg.skin);
+        s.trail = sanitizeTrail(msg.trail);
         const player = s.room?.players.get(s.playerId);
         if (player) {
           player.name = s.name;
           player.skin = s.skin;
+          player.trail = s.trail;
           s.room.rosterDirty = true;
         }
         break;

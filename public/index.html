@@ -207,8 +207,20 @@ try {
     <div class="menu menu-wide">
       <button class="btn btn-back" data-go="home">&larr; Back</button>
       <h2 class="screen-title">Skins</h2>
+      <div class="tab-row" data-shop-tabs>
+        <button type="button" class="tab-btn is-active" data-shop-tab="skins">Skins</button>
+        <button type="button" class="tab-btn" data-shop-tab="trails">Trails</button>
+        <button type="button" class="tab-btn" data-shop-tab="quests">Quests</button>
+      </div>
+
       <p class="hint" data-skin-progress></p>
       <div class="skin-grid" data-skin-grid></div>
+
+      <p class="hint" data-trail-progress hidden></p>
+      <div class="skin-grid" data-trail-grid hidden></div>
+
+      <p class="hint" data-quest-progress hidden></p>
+      <div class="quest-list" data-quest-list hidden></div>
     </div>
   </section>
 

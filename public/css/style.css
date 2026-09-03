@@ -389,6 +389,50 @@ body {
 .skin-card.is-locked.is-affordable .skin-note { color: var(--gold); font-weight: 700; }
 .skin-card.is-locked.is-affordable:hover { border-color: var(--gold); }
 
+/* ------------------------------------------------------ shop screen tabs */
+
+.tab-row { display: flex; gap: 8px; margin: 4px 0 2px; }
+
+.tab-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 2px solid var(--panel-edge);
+  border-radius: 999px;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab-btn.is-active { background: var(--panel); border-color: var(--accent-2); color: var(--text); }
+
+/* -------------------------------------------------------------- trails */
+
+.trail-swatch-row { display: flex; align-items: center; justify-content: center; gap: 4px; height: 62px; }
+.trail-dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.trail-dot-none { width: 10px; height: 10px; background: var(--panel-edge); box-shadow: none; }
+
+/* -------------------------------------------------------------- quests */
+
+.quest-list { display: flex; flex-direction: column; gap: 10px; }
+
+.quest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  border-radius: var(--radius);
+}
+
+.quest-name { font-weight: 800; font-size: 14px; }
+.quest-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.quest-row.is-ready { border-color: var(--gold); }
+.quest-row.is-claimed { opacity: 0.55; }
+
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .stat { padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; }
 .stat b { display: block; font-size: 22px; }
