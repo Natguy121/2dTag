@@ -437,8 +437,8 @@ function renderLobby() {
     hint.textContent = 'Official server - the next round starts automatically.';
   } else if (canModerate) {
     startBtn.hidden = false;
-    startBtn.disabled = room.players.length < 2;
-    hint.textContent = room.players.length < 2
+    startBtn.disabled = room.players.length < 1;
+    hint.textContent = room.players.length < 1
       ? 'Waiting for at least one more player or bot.'
       : isHost ? `Share code ${room.code} so friends can join.` : 'Starting as admin.';
   } else {
@@ -681,10 +681,10 @@ function wire() {
     timeSel.append(opt);
   }
   const maxSel = $('[data-host-max]');
-  for (let n = 2; n <= C.MAX_PLAYERS; n++) {
+  for (let n = 1; n <= C.MAX_PLAYERS; n++) {
     const opt = document.createElement('option');
     opt.value = n;
-    opt.textContent = `${n} players`;
+    opt.textContent = n === 1 ? '1 player (solo)' : `${n} players`;
     if (n === C.MAX_PLAYERS) opt.selected = true;
     maxSel.append(opt);
   }

@@ -5,7 +5,7 @@ export const TICK_RATE = 60;
 export const DT = 1 / TICK_RATE;
 export const SNAPSHOT_RATE = 20;
 
-export const MAX_PLAYERS = 8;
+export const MAX_PLAYERS = 10;
 export const MIN_ACTIVE_PLAYERS = 4; // bots top the room up to this many
 
 // Character body (axis aligned box, x/y is the top-left corner).

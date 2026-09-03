@@ -1,4 +1,4 @@
-// A Room is one game instance: a lobby, a round timer, up to 8 players (human
+// A Room is one game instance: a lobby, a round timer, up to 10 players (human
 // or bot) and the authoritative simulation that drives them.
 
 import * as C from '../shared/constants.js';
@@ -34,10 +34,10 @@ export class Room {
     this.mapId = opts.mapId || 'arena';
     this.isPublic = opts.isPublic !== false;
     this.persistent = !!opts.persistent;
-    this.maxPlayers = Math.min(C.MAX_PLAYERS, Math.max(2, opts.maxPlayers || C.MAX_PLAYERS));
+    this.maxPlayers = Math.min(C.MAX_PLAYERS, Math.max(1, opts.maxPlayers || C.MAX_PLAYERS));
     this.roundTime = opts.roundTime || C.ROUND_TIME_DEFAULT;
     this.botFill = opts.botFill !== false;
-    this.minPlayers = Math.min(this.maxPlayers, Math.max(2, opts.minPlayers || C.MIN_ACTIVE_PLAYERS));
+    this.minPlayers = Math.min(this.maxPlayers, Math.max(1, opts.minPlayers || C.MIN_ACTIVE_PLAYERS));
     this.botDifficulty = opts.botDifficulty || 'normal';
     this.rotateMaps = !!opts.rotateMaps;
 
@@ -220,11 +220,11 @@ export class Room {
     if (typeof patch.isPublic === 'boolean') this.isPublic = patch.isPublic;
     if (typeof patch.botFill === 'boolean') this.botFill = patch.botFill;
     if (patch.maxPlayers) {
-      this.maxPlayers = Math.min(C.MAX_PLAYERS, Math.max(2, Number(patch.maxPlayers) || C.MAX_PLAYERS));
+      this.maxPlayers = Math.min(C.MAX_PLAYERS, Math.max(1, Number(patch.maxPlayers) || C.MAX_PLAYERS));
       this.minPlayers = Math.min(this.minPlayers, this.maxPlayers);
     }
     if (patch.minPlayers) {
-      this.minPlayers = Math.min(this.maxPlayers, Math.max(2, Number(patch.minPlayers)));
+      this.minPlayers = Math.min(this.maxPlayers, Math.max(1, Number(patch.minPlayers)));
     }
     if (patch.botDifficulty && ['easy', 'normal', 'hard'].includes(patch.botDifficulty)) {
       this.botDifficulty = patch.botDifficulty;
@@ -248,7 +248,7 @@ export class Room {
   startCountdown() {
     if (this.state === 'countdown' || this.state === 'playing') return;
     this.syncBots();
-    if (this.players.size < 2) return;
+    if (this.players.size < 1) return;
     this.state = 'countdown';
     this.timer = C.COUNTDOWN_TIME;
     this.standings = null;
@@ -405,7 +405,7 @@ export class Room {
       if (this.timer <= 0) this.beginRound();
     } else if (this.state === 'playing') {
       this.timer -= dt;
-      if (this.timer <= 0 || this.players.size < 2) this.endRound();
+      if (this.timer <= 0 || this.players.size < 1) this.endRound();
     } else if (this.state === 'results') {
       this.timer -= dt;
       if (this.timer <= 0) this.returnToLobby();
@@ -418,7 +418,7 @@ export class Room {
         this.lobbyCheck = 0.5;
         if (this.persistent || this.humanCount() === 0) {
           this.syncBots();
-          if (this.players.size >= 2) this.startCountdown();
+          if (this.players.size >= 1) this.startCountdown();
         }
       }
     }

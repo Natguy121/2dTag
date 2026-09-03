@@ -3,7 +3,7 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Ten maps, up to 8 players per game, hosted lobbies with share codes, coins
+Ten maps, 1 to 10 players per game, hosted lobbies with share codes, coins
 and unlockable skins, and bots that keep every server busy even when nobody
 else is around.
 
@@ -74,8 +74,9 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Blackout** | The tagger flickers invisible for a few seconds at a time. |
 | **Hush House** | Hide-and-seek: the seeker is frozen for a few seconds at the start. |
 
-Every map fits 8 players, with 8 spawn points spread so nobody spawns on top of
-anybody else.
+Every map has 8 dedicated spawn points spread so nobody spawns on top of
+anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
+9th or 10th player reuses one of those 8 spots.
 
 ### Portals
 
