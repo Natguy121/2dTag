@@ -10,7 +10,16 @@
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
 // gravityScale / frictionScale / airScale let a map bend the shared physics
-// without touching the simulation itself.
+// without touching the simulation itself. A handful of boolean/number flags
+// bend the RULES instead, each read only by server/room.js:
+//   guns              true  -- only the tagger can fire (see shared/physics
+//                     resolveShot); a hit tags exactly like a touch would
+//   invisibilityCycle true  -- the tagger flickers visible/invisible on a
+//                     repeating cycle (see INVISIBLE_*_TIME in constants.js)
+//   seekerFreeze      N     -- the tagger can't move for N seconds after the
+//                     round begins, giving everyone else a head start
+//   detectionRange    N     -- bots can't perceive a player farther than
+//                     this for chase/flee purposes; omitted = unlimited
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
@@ -385,6 +394,160 @@ export const MAPS = [
       [500, 860], [650, 730],
       [900, 860], [1050, 730],
       [1300, 860], [1500, 860],
+    ],
+  },
+
+  {
+    id: 'crossfire',
+    name: 'Crossfire Yard',
+    blurb: 'The tagger carries a dart gun. Break their sightline, or get shot from clear across the map.',
+    guns: true,
+    width: 1700,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#2a2620', '#4a4436', '#161410'],
+      solid: '#5c5648',
+      solidEdge: '#d8c98a',
+      platform: '#7a7260',
+      accent: '#ff6b35',
+      hazard: '#ff4d6d',
+      fog: 'rgba(200,180,120,0.10)',
+      grid: 'rgba(220,200,140,0.06)',
+      decor: 'dust',
+    },
+    solids: [
+      [0, 860, 1700, 40],
+      [0, 0, 24, 900],
+      [1676, 0, 24, 900],
+      // Cover -- duck behind these to break the tagger's line of sight.
+      [260, 742, 36, 118],
+      [560, 742, 36, 118],
+      [860, 742, 36, 118],
+      [1160, 742, 36, 118],
+      [1440, 742, 36, 118],
+    ],
+    platforms: [
+      [70, 730, 280],
+      [450, 730, 280],
+      [830, 730, 280],
+      [1210, 730, 280],
+      [130, 600, 280],
+      [530, 600, 280],
+      [930, 600, 280],
+      [70, 470, 280],
+      [450, 470, 280],
+      [830, 470, 280],
+      [1210, 470, 280],
+      [260, 340, 360],
+      [740, 340, 360],
+      [1180, 340, 300],
+    ],
+    hazards: [],
+    springs: [[380, 846, 60], [1300, 846, 60]],
+    spawns: [
+      [150, 860], [420, 860], [950, 860], [1550, 860],
+      [200, 730], [1080, 730],
+      [550, 470], [1350, 470],
+    ],
+  },
+
+  {
+    id: 'blackout',
+    name: 'Blackout',
+    blurb: 'The tagger flickers invisible for a few seconds at a time. Watch for movement, not just shapes.',
+    invisibilityCycle: true,
+    detectionRange: 620,
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#050507', '#0d0d16', '#020203'],
+      solid: '#26232f',
+      solidEdge: '#8b7dff',
+      platform: '#3d3850',
+      accent: '#ff4d6d',
+      hazard: '#ff4d6d',
+      fog: 'rgba(106,99,255,0.12)',
+      grid: 'rgba(120,110,255,0.06)',
+      decor: 'stars',
+    },
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      [420, 720, 40, 140],
+      [1140, 720, 40, 140],
+    ],
+    platforms: [
+      [80, 730, 220],
+      [460, 730, 220],
+      [820, 730, 220],
+      [1180, 730, 220],
+      [180, 600, 240],
+      [1180, 600, 240],
+      [640, 560, 320],
+      [80, 460, 220],
+      [460, 460, 220],
+      [820, 460, 220],
+      [1180, 460, 220],
+      [300, 320, 260],
+      [1000, 320, 260],
+      [660, 220, 280],
+    ],
+    hazards: [],
+    springs: [[770, 846, 60], [140, 846, 60], [1400, 846, 60]],
+    spawns: [
+      [140, 860], [420, 860], [700, 860], [1000, 860],
+      [1300, 860], [1470, 860], [720, 560], [880, 560],
+    ],
+  },
+
+  {
+    id: 'hideseek',
+    name: 'Hush House',
+    blurb: 'The seeker is frozen for a few seconds at the start. Everyone else scatters into the nooks.',
+    seekerFreeze: 4,
+    detectionRange: 480,
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#1c1408', '#3a2a10', '#0e0a04'],
+      solid: '#4a3520',
+      solidEdge: '#c9a45c',
+      platform: '#6b4f2e',
+      accent: '#ffcf5c',
+      hazard: '#ff4d6d',
+      fog: 'rgba(180,140,60,0.14)',
+      grid: 'rgba(200,160,90,0.06)',
+      decor: 'dust',
+    },
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      // Low dividers to duck behind -- same jumpable height already proven
+      // safe on Neon Arena and Cozy House, just placed in the floor gaps
+      // between platform tiers so they read as cover, not clutter.
+      [330, 740, 36, 120],
+      [670, 740, 36, 120],
+      [1010, 740, 36, 120],
+    ],
+    platforms: [
+      [70, 730, 220], [410, 730, 220], [750, 730, 220], [1090, 730, 220],
+      [170, 600, 220], [510, 600, 220], [850, 600, 220], [1190, 600, 220],
+      [70, 470, 220], [410, 470, 220], [750, 470, 220], [1090, 470, 220],
+      [300, 340, 260], [820, 340, 260],
+    ],
+    hazards: [],
+    springs: [[1100, 846, 60]],
+    spawns: [
+      [100, 860], [500, 860], [900, 860], [1300, 860],
+      [150, 730], [850, 730], [500, 470], [1150, 470],
     ],
   },
 ];

@@ -4,7 +4,7 @@
 
 import * as C from '../shared/constants.js';
 import { PLATFORM_H } from '../shared/maps.js';
-import { IN_LEFT, IN_RIGHT, IN_JUMP, IN_DOWN } from '../shared/physics.js';
+import { IN_LEFT, IN_RIGHT, IN_JUMP, IN_DOWN, IN_SHOOT, resolveShot } from '../shared/physics.js';
 
 export const DIFFICULTIES = {
   easy:   { react: 0.34, accuracy: 0.62, jumpiness: 0.5, threat: 260, panic: 0.55 },
@@ -111,6 +111,16 @@ export function think(self, others, map, dt, state) {
   const alive = others.filter((p) => p.id !== self.id && p.respawn <= 0);
   const tagger = alive.find((p) => p.it) || null;
 
+  function inDetectionRange(p) {
+    if (!map.detectionRange) return true;
+    const px = p.body.x + C.PLAYER_W / 2;
+    const py = p.body.y + C.PLAYER_H / 2;
+    return Math.hypot(px - cx, py - cy) <= map.detectionRange;
+  }
+  // A bot can't react to a threat it can't perceive: too far away on a map
+  // with limited detection, or the tagger is mid-invisible on Blackout.
+  const perceivedTagger = tagger && !tagger.invisible && inDetectionRange(tagger) ? tagger : null;
+
   if (brain.think <= 0) {
     // A detour is a commitment: keep walking around the obstacle instead of
     // turning straight back into it the moment we re-target.
@@ -125,7 +135,7 @@ export function think(self, others, map, dt, state) {
       brain.wantJump = Math.random() < 0.15;
     } else if (self.it) {
       // --- chase -----------------------------------------------------------
-      const targets = alive.filter((p) => p.immunity <= 0);
+      const targets = alive.filter((p) => p.immunity <= 0 && inDetectionRange(p));
       let best = null;
       let bestScore = Infinity;
       for (const p of targets) {
@@ -150,15 +160,15 @@ export function think(self, others, map, dt, state) {
       }
     } else {
       // --- flee ------------------------------------------------------------
-      const threat = tagger
-        ? Math.hypot(tagger.body.x + C.PLAYER_W / 2 - cx, (tagger.body.y - b.y) * 0.8)
+      const threat = perceivedTagger
+        ? Math.hypot(perceivedTagger.body.x + C.PLAYER_W / 2 - cx, (perceivedTagger.body.y - b.y) * 0.8)
         : Infinity;
-      if (tagger && threat < cfg.threat) {
-        const tx = tagger.body.x + C.PLAYER_W / 2;
+      if (perceivedTagger && threat < cfg.threat) {
+        const tx = perceivedTagger.body.x + C.PLAYER_W / 2;
         brain.dir = tx > cx ? -1 : 1;
         if (Math.random() > cfg.panic) brain.dir *= -1;
         // Break line of sight vertically when they are right on top of us.
-        const above = tagger.body.y + C.PLAYER_H < b.y + 8;
+        const above = perceivedTagger.body.y + C.PLAYER_H < b.y + 8;
         if (above && Math.abs(tx - cx) < 90) brain.wantDown = true;
         else if (Math.random() < cfg.jumpiness * 0.8) brain.wantJump = true;
         brain.roamX = null;
@@ -234,11 +244,21 @@ export function think(self, others, map, dt, state) {
   const holding = brain.jumpHold > 0;
   brain.jumpHold = Math.max(0, brain.jumpHold - dt);
 
+  // Crossfire Yard: only fire when a shot would actually land -- reusing the
+  // real resolver means a bot never wastes a shot on a wall or thin air.
+  let wantShoot = false;
+  if (map.guns && self.it && self.shotCooldown <= 0) {
+    const facing = dir !== 0 ? dir : b.facing;
+    const candidates = alive.filter((p) => p.immunity <= 0).map((p) => ({ id: p.id, body: p.body }));
+    wantShoot = resolveShot({ x: b.x, y: b.y, facing }, map, candidates).hitId !== null;
+  }
+
   let bits = 0;
   if (dir < 0) bits |= IN_LEFT;
   if (dir > 0) bits |= IN_RIGHT;
   if (holding) bits |= IN_JUMP;
   if (brain.wantDown) bits |= IN_DOWN;
+  if (wantShoot) bits |= IN_SHOOT;
 
   return bits;
 }

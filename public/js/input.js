@@ -5,7 +5,7 @@ import { profile } from './storage.js';
 import { encodeInput } from '/shared/physics.js';
 
 const held = new Set();
-const touch = { left: false, right: false, jump: false, down: false };
+const touch = { left: false, right: false, jump: false, down: false, shoot: false };
 let capturing = false;
 
 // Extra keys that always work regardless of the configured bindings, so the
@@ -15,6 +15,7 @@ const ALIASES = {
   right: ['KeyD'],
   jump: ['KeyW', 'ArrowUp'],
   down: ['KeyS'],
+  shoot: ['KeyF'],
 };
 
 function isDown(action) {
@@ -31,6 +32,7 @@ export function currentBits() {
     right: isDown('right'),
     jump: isDown('jump'),
     down: isDown('down'),
+    shoot: isDown('shoot'),
   });
 }
 
@@ -42,7 +44,7 @@ export function setCapturing(on) {
 
 export function clear() {
   held.clear();
-  touch.left = touch.right = touch.jump = touch.down = false;
+  touch.left = touch.right = touch.jump = touch.down = touch.shoot = false;
 }
 
 export function init({ onEscape } = {}) {

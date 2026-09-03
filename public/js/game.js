@@ -32,6 +32,7 @@ export class Game {
     this.roster = new Map(); // id -> { name, skin, isBot }
     this.state = 'lobby';
     this.timer = 0;
+    this.seekerFreeze = 0;
     this.resultsShown = false;
 
     this.body = createBody();
@@ -44,6 +45,7 @@ export class Game {
     this.serverNow = 0;
 
     this.particles = new Particles();
+    this.shotBeams = []; // {x1, y1, x2, y2, age, life, hit} -- Crossfire Yard laser flashes
     this.shake = 0;
     this.cam = { x: 0, y: 0, scale: 1, ready: false };
     this.time = 0;
@@ -123,6 +125,7 @@ export class Game {
 
   onSnapshot(msg) {
     this.timer = msg.timer;
+    this.seekerFreeze = msg.seekerFreeze || 0;
     this.applyState(msg.state);
 
     const byId = new Map();
@@ -199,7 +202,9 @@ export class Game {
     for (const ev of events) {
       const mine = ev.id === this.youId || ev.to === this.youId || ev.by === this.youId;
       switch (ev.type) {
-        case 'tag': {
+        case 'tag':
+        case 'shotTag': {
+          const shot = ev.type === 'shotTag';
           const pos = { x: ev.x, y: ev.y };
           if (profile.particles) {
             this.particles.spawn(pos.x, pos.y, 26, { color: '#ff4d6d', speed: 260, life: 0.6, size: 4, gravity: 700 });
@@ -214,9 +219,23 @@ export class Game {
             sfx.tag();
             bumpStat('tags');
             const name = this.roster.get(ev.to)?.name || 'them';
-            this.showCenter(`TAGGED ${name.toUpperCase()}`, 0.9);
+            this.showCenter(shot ? `SHOT ${name.toUpperCase()}` : `TAGGED ${name.toUpperCase()}`, 0.9);
           } else {
             sfx.tag();
+          }
+          break;
+        }
+        case 'shot': {
+          const mineShot = ev.by === this.youId;
+          this.shotBeams.push({
+            x1: ev.fromX, y1: ev.fromY, x2: ev.toX, y2: ev.fromY,
+            age: 0, life: mineShot ? 0.16 : 0.22, hit: !!ev.hitId,
+          });
+          if (mineShot) sfx.shoot();
+          if (profile.particles) {
+            this.particles.spawn(ev.toX, ev.fromY, ev.hitId ? 10 : 5, {
+              color: ev.hitId ? '#ff4d6d' : '#ffb38a', speed: 140, life: 0.3, size: 2.5, gravity: 0,
+            });
           }
           break;
         }
@@ -325,6 +344,11 @@ export class Game {
       this.correction.t = Math.max(0, this.correction.t - dt);
     }
     this.particles.update(dt);
+    for (let i = this.shotBeams.length - 1; i >= 0; i--) {
+      const b = this.shotBeams[i];
+      b.age += dt;
+      if (b.age >= b.life) this.shotBeams.splice(i, 1);
+    }
     this.shake = Math.max(0, this.shake - dt * 40);
 
     if (this.centerMessage && this.time > this.centerUntil) {
@@ -490,8 +514,26 @@ export class Game {
       }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin }, true);
     }
 
+    this.drawShotBeams(ctx);
     this.particles.draw(ctx);
     ctx.restore();
+  }
+
+  drawShotBeams(ctx) {
+    for (const b of this.shotBeams) {
+      const k = 1 - b.age / b.life;
+      ctx.save();
+      ctx.globalAlpha = k;
+      ctx.strokeStyle = b.hit ? '#ff4d6d' : '#ff6b35';
+      ctx.lineWidth = 3 * k + 1;
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(b.x1, b.y1);
+      ctx.lineTo(b.x2, b.y2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   drawPlayer(ctx, x, y, p, meta, isSelf = false) {
@@ -499,13 +541,22 @@ export class Game {
     const immune = !!(p.flags & 4);
     const respawning = !!(p.flags & 8);
     const onGround = !!(p.flags & 1);
+    const invisible = !!(p.flags & 16);
+
+    // Blackout: the tagger vanishes to everyone else while invisible -- no
+    // sprite, no trail, no name, nothing that gives their position away. You
+    // still see your own outline (faded) so you always know your own state.
+    if (invisible && !isSelf) return;
 
     // Tagger leaves a faint trail so you can see them coming.
-    if (it && profile.particles && !respawning && Math.abs(p.vx) > 60 && Math.random() < 0.4) {
+    if (it && !invisible && profile.particles && !respawning && Math.abs(p.vx) > 60 && Math.random() < 0.4) {
       this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H - 4, 1, {
         color: 'rgba(255,77,109,0.6)', speed: 20, life: 0.35, size: 3, gravity: -40,
       });
     }
+
+    if (invisible) ctx.save();
+    if (invisible) ctx.globalAlpha *= 0.35;
 
     drawCharacter(ctx, x, y, {
       skinId: meta?.skin || 'runner',
@@ -518,6 +569,8 @@ export class Game {
       onGround,
       time: this.time,
     });
+
+    if (invisible) ctx.restore();
 
     if (profile.showNames && meta) {
       ctx.save();
@@ -552,12 +605,16 @@ export class Game {
     }
     rows.sort((a, b) => a.itTime - b.itTime);
     const itPlayer = rows.find((r) => r.it);
+    let itName = itPlayer ? (itPlayer.isYou ? 'You are IT' : `${itPlayer.name} is IT`) : '';
+    if (itPlayer?.isYou && this.seekerFreeze > 0) {
+      itName = `Frozen ${Math.ceil(this.seekerFreeze)}s -- let them hide!`;
+    }
     return {
       state: this.state,
       timer: this.timer,
       timeLabel: formatTime(this.timer),
       rows,
-      itName: itPlayer ? (itPlayer.isYou ? 'You are IT' : `${itPlayer.name} is IT`) : '',
+      itName,
       fps: this.fps,
       ping: net.state.ping,
     };

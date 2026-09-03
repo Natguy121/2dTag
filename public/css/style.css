@@ -66,9 +66,12 @@ html, body {
 }
 
 body {
+  /* Sized in vmin, not px: a fixed pixel size this large is a subtle corner
+     glow on a desktop window but was bigger than an entire phone screen,
+     washing the whole page out to one flat color instead of a soft accent. */
   background:
-    radial-gradient(1200px 700px at 20% -10%, var(--blob-1) 0%, transparent 60%),
-    radial-gradient(900px 600px at 110% 110%, var(--blob-2) 0%, transparent 55%),
+    radial-gradient(90vmin 55vmin at 20% -10%, var(--blob-1) 0%, transparent 60%),
+    radial-gradient(70vmin 45vmin at 110% 110%, var(--blob-2) 0%, transparent 55%),
     var(--bg);
 }
 
@@ -617,6 +620,8 @@ body {
 
 .touch-btn:active, .touch-btn.is-down { background: rgba(var(--accent-rgb), 0.75); }
 .touch-jump { font-size: 15px; background: rgba(var(--accent-2-rgb), 0.28); }
+.touch-shoot { font-size: 26px; background: rgba(255, 77, 109, 0.28); border-color: rgba(255, 130, 150, 0.4); }
+.touch-shoot:active, .touch-shoot.is-down { background: rgba(255, 77, 109, 0.75); }
 
 /* ----------------------------------------------------- rotate prompt */
 

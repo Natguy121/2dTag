@@ -8,6 +8,7 @@ export const DEFAULT_KEYS = {
   right: 'ArrowRight',
   jump: 'Space',
   down: 'ArrowDown',
+  shoot: 'KeyF',
 };
 
 const DEFAULTS = {

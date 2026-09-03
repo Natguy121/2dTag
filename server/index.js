@@ -11,8 +11,9 @@ import { WebSocketServer } from 'ws';
 
 import * as C from '../shared/constants.js';
 import { MAPS } from '../shared/maps.js';
+import { INPUT_MASK } from '../shared/physics.js';
 import { Room, sanitizeName, sanitizeSkin } from './room.js';
-import { claimName, checkAdminPassword } from './accounts.js';
+import { claimName, checkAdminPassword, adminLoginEnabled } from './accounts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -260,7 +261,10 @@ wss.on('connection', (ws, req) => {
           player.isAdmin = ok;
           s.room.rosterDirty = true;
         }
-        send(ws, { t: 'adminResult', ok });
+        // Distinguish "not configured at all" from "wrong password" -- the
+        // fix for each is completely different, so don't make someone guess.
+        const reason = ok ? null : (adminLoginEnabled() ? 'wrong' : 'unset');
+        send(ws, { t: 'adminResult', ok, reason });
         break;
       }
 
@@ -338,7 +342,7 @@ wss.on('connection', (ws, req) => {
         const seq = Number(msg.seq) || 0;
         if (seq < player.lastSeq) break; // stale/out of order
         player.lastSeq = seq;
-        player.inputBits = Number(msg.bits) & 15;
+        player.inputBits = Number(msg.bits) & INPUT_MASK;
         break;
       }
 

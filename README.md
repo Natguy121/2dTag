@@ -3,7 +3,7 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Seven maps, up to 8 players per game, hosted lobbies with share codes, coins
+Ten maps, up to 8 players per game, hosted lobbies with share codes, coins
 and unlockable skins, and bots that keep every server busy even when nobody
 else is around.
 
@@ -56,8 +56,8 @@ controls still work if a keyboard's attached.
 ### Controls
 
 Arrow keys or WASD to move, **Space**/**W**/**Up** to jump, **Down**/**S** to
-drop through a platform. Every binding is remappable in Settings, and
-touchscreens get on-screen buttons.
+drop through a platform, **F** to fire on gun maps. Every binding is
+remappable in Settings, and touchscreens get on-screen buttons.
 
 ## Maps
 
@@ -70,6 +70,9 @@ touchscreens get on-screen buttons.
 | **Canopy Grove** | Layered branches; drop through anything to break a chase. |
 | **Moon Base** | **34% gravity.** Jumps go three times higher and hang in the air nearly three times as long. |
 | **Cozy House** | Four rooms, two pairs of magic doors. Step through one to cross the whole house instantly. |
+| **Crossfire Yard** | The tagger carries a gun. Break their sightline, or get shot from clear across the map. |
+| **Blackout** | The tagger flickers invisible for a few seconds at a time. |
+| **Hush House** | Hide-and-seek: the seeker is frozen for a few seconds at the start. |
 
 Every map fits 8 players, with 8 spawn points spread so nobody spawns on top of
 anybody else.
@@ -82,6 +85,25 @@ has its own color so you can tell them apart -- a blue front-door/back-door
 pair for crossing the house, and a pink basement/attic pair for a vertical
 shortcut. A brief cooldown after arriving stops you from immediately
 bouncing straight back through.
+
+### Guns, invisibility & hide-and-seek
+
+Three maps bend the base rules further, each in a different direction:
+
+- **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
+  on-screen target button on touch) to send a straight horizontal shot --
+  it tags on hit exactly like a touch would, same immunity window and all,
+  but it reaches clear across the map and stops dead at the first wall or
+  platform in its path. One second of cooldown between shots. Only the
+  current tagger can fire; everyone else just has to stay out of the lane.
+- **Blackout** makes the tagger flicker: visible for 3 seconds, invisible
+  for 2, on a repeating loop for as long as they're it. An invisible tagger
+  renders for nobody but themselves (as a faint outline, so you always know
+  your own state) -- and bots lose track of an invisible tagger exactly like
+  a human would, so it's not an unfair advantage over the AI.
+- **Hush House** is hide-and-seek: whoever's it is frozen in place for the
+  first 4 seconds of every round, giving everyone else a genuine head start
+  to scatter into the nooks and side rooms before the chase begins.
 
 ## Bots
 

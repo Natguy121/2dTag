@@ -77,6 +77,10 @@ export const sfx = {
     blip({ freq: 700, to: 1400, dur: 0.16, type: 'sine', gain: 0.12 });
     blip({ freq: 1400, to: 500, dur: 0.22, type: 'sine', gain: 0.1, delay: 0.05 });
   },
+  shoot: () => {
+    blip({ freq: 1100, to: 300, dur: 0.09, type: 'sawtooth', gain: 0.14 });
+    noise({ dur: 0.04, gain: 0.08, freq: 3000 });
+  },
   tag: () => {
     blip({ freq: 880, to: 220, dur: 0.2, type: 'sawtooth', gain: 0.2 });
     noise({ dur: 0.16, gain: 0.12, freq: 2200 });

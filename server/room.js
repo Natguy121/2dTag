@@ -4,7 +4,7 @@
 import * as C from '../shared/constants.js';
 import { getMap, MAPS } from '../shared/maps.js';
 import { BOT_NAMES, BOT_SKINS, DEFAULT_SKIN, SKIN_BY_ID } from '../shared/skins.js';
-import { createBody, placeAtSpawn, stepBody, bodiesTouch } from '../shared/physics.js';
+import { createBody, placeAtSpawn, stepBody, bodiesTouch, decodeInput, resolveShot } from '../shared/physics.js';
 import { createBrain, think } from './bots.js';
 
 let nextPlayerId = 1;
@@ -51,6 +51,7 @@ export class Room {
     this.emptySince = Date.now();
     this.rosterDirty = true;
     this.lobbyCheck = 0;
+    this.seekerFreezeTimer = 0;
     this.onEmpty = null;
   }
 
@@ -95,6 +96,10 @@ export class Room {
       immunity: 0,
       respawn: 0,
       ping: 0,
+      shotCooldown: 0,
+      prevShoot: false,
+      invisCycle: 0,
+      invisible: false,
       ai: isBot ? createBrain(this.botDifficulty) : null,
       joinedAt: Date.now(),
     };
@@ -256,6 +261,10 @@ export class Room {
       p.immunity = 0;
       p.respawn = 0;
       p.inputBits = 0;
+      p.shotCooldown = 0;
+      p.prevShoot = false;
+      p.invisCycle = 0;
+      p.invisible = false;
     }
     const starter = pick([...this.players.values()]);
     starter.it = true;
@@ -266,6 +275,9 @@ export class Room {
   beginRound() {
     this.state = 'playing';
     this.timer = this.roundTime;
+    // Hide-and-seek maps freeze the tagger for a head start; everyone else is
+    // free to move and scatter the instant the round begins.
+    this.seekerFreezeTimer = this.map.seekerFreeze || 0;
     this.rosterDirty = true;
     this.pushEvent({ type: 'go' });
   }
@@ -327,6 +339,8 @@ export class Room {
     this.tick++;
     const map = this.map;
     const frozen = this.state === 'countdown' || this.state === 'results';
+    if (this.state === 'playing') this.seekerFreezeTimer = Math.max(0, this.seekerFreezeTimer - dt);
+    const seekerFrozen = this.seekerFreezeTimer > 0;
 
     // Bots decide first so they move on the same tick as the humans.
     if (this.players.size) {
@@ -348,7 +362,9 @@ export class Room {
         continue;
       }
 
-      const bits = frozen ? 0 : p.inputBits;
+      // Hide-and-seek: the tagger can't move for the first few seconds, so
+      // everyone else gets a genuine head start to find a hiding spot.
+      const bits = frozen || (seekerFrozen && p.it) ? 0 : p.inputBits;
       const speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
       const ev = stepBody(p.body, bits, map, dt, { speedMult });
 
@@ -377,7 +393,11 @@ export class Room {
       if (p.it && this.state === 'playing') p.itTime += dt;
     }
 
-    if (this.state === 'playing') this.resolveTags();
+    if (this.state === 'playing') {
+      this.resolveTags();
+      this.resolveShots(map, dt);
+      this.updateInvisibility(map, dt);
+    }
 
     // Timers.
     if (this.state === 'countdown') {
@@ -405,32 +425,86 @@ export class Room {
   }
 
   resolveTags() {
+    // Touch-tagging stays active on every map, guns included -- a gun just
+    // adds a ranged option (see resolveShots()), it doesn't remove this one.
     const tagger = [...this.players.values()].find((p) => p.it);
     if (!tagger || tagger.respawn > 0) return;
 
     for (const p of this.players.values()) {
       if (p.id === tagger.id || p.respawn > 0 || p.immunity > 0) continue;
       if (!bodiesTouch(tagger.body, p.body, C.TAG_REACH)) continue;
-
-      tagger.it = false;
-      tagger.tags += 1;
-      // Immunity protects the freed player from an instant tag-back. The new
-      // tagger has no lockout of their own -- they can tag anyone else right
-      // away, they just can't touch the player who's still immune.
-      tagger.immunity = C.TAG_IMMUNITY;
-
-      p.it = true;
-      p.timesTagged += 1;
-
-      this.pushEvent({
-        type: 'tag',
-        by: tagger.id,
-        to: p.id,
-        x: p.body.x + C.PLAYER_W / 2,
-        y: p.body.y + C.PLAYER_H / 2,
-      });
-      this.rosterDirty = true;
+      this.applyTag(tagger, p, 'tag');
       return; // only one tag per tick
+    }
+  }
+
+  /** Transfer "it" from tagger to target and announce it. Shared by the
+   * touch-based resolveTags() and the gun maps' resolveShots(). */
+  applyTag(tagger, target, eventType) {
+    tagger.it = false;
+    tagger.tags += 1;
+    // Immunity protects the freed player from an instant tag-back. The new
+    // tagger has no lockout of their own -- they can tag anyone else right
+    // away, they just can't touch the player who's still immune.
+    tagger.immunity = C.TAG_IMMUNITY;
+
+    target.it = true;
+    target.timesTagged += 1;
+    target.invisCycle = 0;
+    target.invisible = false;
+
+    this.pushEvent({
+      type: eventType,
+      by: tagger.id,
+      to: target.id,
+      x: target.body.x + C.PLAYER_W / 2,
+      y: target.body.y + C.PLAYER_H / 2,
+    });
+    this.rosterDirty = true;
+  }
+
+  /** Gun maps: only the tagger can fire, on a cooldown, tapping (not holding)
+   * the shoot input. A hit tags exactly like a touch would. */
+  resolveShots(map, dt) {
+    for (const p of this.players.values()) {
+      p.shotCooldown = Math.max(0, p.shotCooldown - dt);
+    }
+    if (!map.guns) return;
+
+    const tagger = [...this.players.values()].find((p) => p.it);
+    if (!tagger || tagger.respawn > 0) return;
+
+    const input = decodeInput(tagger.inputBits);
+    const pressed = input.shoot && !tagger.prevShoot;
+    tagger.prevShoot = input.shoot;
+    if (!pressed || tagger.shotCooldown > 0) return;
+    tagger.shotCooldown = C.SHOT_COOLDOWN;
+
+    const targets = [...this.players.values()]
+      .filter((p) => p.id !== tagger.id && p.respawn <= 0 && p.immunity <= 0)
+      .map((p) => ({ id: p.id, body: p.body }));
+    const shot = resolveShot(tagger.body, map, targets);
+
+    this.pushEvent({
+      type: 'shot', by: tagger.id, hitId: shot.hitId,
+      fromX: shot.fromX, fromY: shot.fromY, toX: shot.toX,
+    });
+
+    if (shot.hitId) {
+      const target = this.players.get(shot.hitId);
+      if (target) this.applyTag(tagger, target, 'shotTag');
+    }
+  }
+
+  /** Invisibility maps: the tagger cycles visible/invisible on a repeating
+   * timer, always starting visible right when they become "it". */
+  updateInvisibility(map, dt) {
+    for (const p of this.players.values()) {
+      if (!p.it || !map.invisibilityCycle) { p.invisCycle = 0; p.invisible = false; continue; }
+      p.invisCycle += dt;
+      const cycle = C.INVISIBLE_VISIBLE_TIME + C.INVISIBLE_HIDDEN_TIME;
+      if (p.invisCycle >= cycle) p.invisCycle -= cycle;
+      p.invisible = p.invisCycle >= C.INVISIBLE_VISIBLE_TIME;
     }
   }
 
@@ -472,6 +546,7 @@ export class Room {
       if (p.it) flags |= 2;
       if (p.immunity > 0) flags |= 4;
       if (p.respawn > 0) flags |= 8;
+      if (p.invisible) flags |= 16;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,
@@ -487,6 +562,7 @@ export class Room {
       tick: this.tick,
       state: this.state,
       timer: Math.max(0, Math.round(this.timer * 10) / 10),
+      seekerFreeze: Math.round(this.seekerFreezeTimer * 10) / 10,
       players,
       ev: this.events,
     };

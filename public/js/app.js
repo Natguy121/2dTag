@@ -64,6 +64,7 @@ function showScreen(name) {
     if (!game) game = createGame();
     game.start(youId);
     $('[data-touch]').hidden = !input.isTouchDevice();
+    $('[data-shoot-btn]').hidden = !game.map.guns;
     lockLandscape();
   } else if (game) {
     game.stop();
@@ -126,7 +127,12 @@ net.on('renamed', (msg) => {
 net.on('adminResult', (msg) => {
   isAdminSession = msg.ok;
   if (!msg.ok) adminPasswordCache = '';
-  toast(msg.ok ? 'Admin access granted.' : 'Wrong admin password.');
+  const message = msg.ok
+    ? 'Admin access granted.'
+    : msg.reason === 'unset'
+      ? "This server has no admin password set -- the owner needs to add ADMIN_PASSWORD in Render's Environment tab."
+      : 'Wrong admin password.';
+  toast(message, msg.ok ? 2600 : 4200);
   if (currentScreen === 'settings') renderSettings();
   if (currentScreen === 'skins') renderSkins();
   if (room) renderLobby();
@@ -578,7 +584,7 @@ function renderSettings() {
   $('[data-admin-form]').hidden = isAdminSession;
 }
 
-const KEY_LABELS = { left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down' };
+const KEY_LABELS = { left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down', shoot: 'Shoot (gun maps)' };
 
 function renderKeybinds() {
   const wrap = $('[data-keybinds]');

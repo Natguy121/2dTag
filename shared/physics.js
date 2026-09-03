@@ -9,9 +9,12 @@ export const IN_LEFT = 1;
 export const IN_RIGHT = 2;
 export const IN_JUMP = 4;
 export const IN_DOWN = 8;
+export const IN_SHOOT = 16;
+export const INPUT_MASK = 31; // every bit above, OR'd together
 
-export function encodeInput({ left, right, jump, down }) {
-  return (left ? IN_LEFT : 0) | (right ? IN_RIGHT : 0) | (jump ? IN_JUMP : 0) | (down ? IN_DOWN : 0);
+export function encodeInput({ left, right, jump, down, shoot }) {
+  return (left ? IN_LEFT : 0) | (right ? IN_RIGHT : 0) | (jump ? IN_JUMP : 0)
+    | (down ? IN_DOWN : 0) | (shoot ? IN_SHOOT : 0);
 }
 
 export function decodeInput(bits) {
@@ -20,6 +23,7 @@ export function decodeInput(bits) {
     right: !!(bits & IN_RIGHT),
     jump: !!(bits & IN_JUMP),
     down: !!(bits & IN_DOWN),
+    shoot: !!(bits & IN_SHOOT),
   };
 }
 
@@ -237,6 +241,48 @@ export function bodiesTouch(a, b, reach = 0) {
 
 export function centerOf(b) {
   return { x: b.x + C.PLAYER_W / 2, y: b.y + C.PLAYER_H / 2 };
+}
+
+/**
+ * Straight horizontal shot from `shooter`'s center, in their facing
+ * direction, out to SHOT_RANGE. Solid geometry blocks line of sight; the
+ * first target body it reaches (if any) before that is the hit. Pure and
+ * read-only -- the caller applies whatever a hit means (a tag).
+ *
+ * @param shooter body-like {x, y, facing}
+ * @param targets [{ id, body }] candidates, already filtered by the caller
+ *   (exclude the shooter, anyone immune/respawning, etc.)
+ */
+export function resolveShot(shooter, map, targets) {
+  const cx = shooter.x + C.PLAYER_W / 2;
+  const cy = shooter.y + C.PLAYER_H / 2;
+  const dir = shooter.facing < 0 ? -1 : 1;
+  let limit = dir > 0 ? cx + C.SHOT_RANGE : cx - C.SHOT_RANGE;
+
+  for (const s of map.solids) {
+    if (cy < s[1] || cy > s[1] + s[3]) continue;
+    if (dir > 0) {
+      if (s[0] >= cx && s[0] < limit) limit = s[0];
+    } else {
+      const right = s[0] + s[2];
+      if (right <= cx && right > limit) limit = right;
+    }
+  }
+
+  let hit = null;
+  let hitDist = Infinity;
+  for (const t of targets) {
+    const b = t.body;
+    if (cy < b.y || cy > b.y + C.PLAYER_H) continue;
+    const near = dir > 0 ? b.x : b.x + C.PLAYER_W;
+    const far = dir > 0 ? b.x + C.PLAYER_W : b.x;
+    if (dir > 0 ? (far < cx || near > limit) : (far > cx || near < limit)) continue;
+    const dist = Math.abs(near - cx);
+    if (dist < hitDist) { hitDist = dist; hit = t; }
+  }
+
+  const endX = hit ? (dir > 0 ? hit.body.x : hit.body.x + C.PLAYER_W) : limit;
+  return { hitId: hit ? hit.id : null, fromX: cx, fromY: cy, toX: endX };
 }
 
 export { overlaps };

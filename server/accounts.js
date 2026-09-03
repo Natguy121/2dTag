@@ -53,7 +53,16 @@ export function isNameClaimed(name) {
 
 /** Timing-safe compare against the server owner's private ADMIN_PASSWORD env var. */
 export function checkAdminPassword(password) {
-  const real = process.env.ADMIN_PASSWORD;
-  if (!real || !password) return false;
-  return timingSafeStringEqual(password, real);
+  // Trimmed on both sides: a pasted value in a dashboard's env var field or a
+  // typed one in a terminal very easily picks up a trailing space or newline,
+  // which would otherwise silently turn a correct password into a rejection.
+  const real = process.env.ADMIN_PASSWORD?.trim();
+  const given = password?.trim();
+  if (!real || !given) return false;
+  return timingSafeStringEqual(given, real);
+}
+
+/** True only when the server owner has actually set ADMIN_PASSWORD at all. */
+export function adminLoginEnabled() {
+  return !!process.env.ADMIN_PASSWORD?.trim();
 }

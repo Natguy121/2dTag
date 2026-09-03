@@ -32,6 +32,21 @@ export const TAGGER_SPEED_MULT = 1.11;
 export const TAG_IMMUNITY = 0.9; // the player who was just "it" cannot be tagged
 export const TAG_REACH = 6; // extra pixels of grab range around the tagger
 
+// Guns (maps with map.guns: true). Only the current tagger can fire -- a shot
+// is a straight horizontal ray, blocked by solid geometry, and tags on hit
+// exactly like a touch would (same immunity, same events).
+export const SHOT_COOLDOWN = 1.0;
+export const SHOT_RANGE = 900;
+
+// Invisibility (maps with map.invisibilityCycle: true). The tagger alternates
+// visible/invisible on a repeating cycle -- a fresh tagger always starts
+// visible, giving everyone a fair moment to see who they're running from.
+export const INVISIBLE_VISIBLE_TIME = 3;
+export const INVISIBLE_HIDDEN_TIME = 2;
+
+// Hide and seek (maps with map.seekerFreeze: N). The tagger can't move for N
+// seconds after the round begins, giving everyone else a head start to hide.
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;
