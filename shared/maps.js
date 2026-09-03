@@ -5,6 +5,8 @@
 //   platforms [x, y, w]     one-way, 14px thick, drop through by holding down
 //   hazards   [x, y, w, h]  touching respawns you at a free spawn point
 //   springs   [x, y, w]     14px thick launch pad
+//   portals   { a: [x, y], b: [x, y], hue }  fixed-size doorway pair; walking
+//             into one instantly exits out the other, keeping your velocity
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
 // gravityScale / frictionScale / airScale let a map bend the shared physics
@@ -12,6 +14,8 @@
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
+export const PORTAL_W = 46;
+export const PORTAL_H = 74;
 
 export const MAPS = [
   {
@@ -322,6 +326,65 @@ export const MAPS = [
     spawns: [
       [120, 1000], [380, 1000], [700, 1000], [900, 1000],
       [1200, 1000], [1460, 1000], [275, 830], [1325, 830],
+    ],
+  },
+
+  {
+    id: 'house',
+    name: 'Cozy House',
+    blurb: 'Four rooms and two pairs of magic doors. Duck through one to cross the whole house instantly.',
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#2b1f14', '#4a3524', '#1a120b'],
+      solid: '#5c3d24',
+      solidEdge: '#d4a373',
+      platform: '#8a5a35',
+      accent: '#ffd166',
+      hazard: '#ff4d6d',
+      fog: 'rgba(120,80,40,0.14)',
+      grid: 'rgba(200,160,100,0.06)',
+      decor: 'dust',
+    },
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      // Low room dividers -- counters and bookcases, jumpable like any other
+      // waist-high obstacle. They mark out four rooms without walling anyone in.
+      [370, 740, 40, 120],
+      [770, 740, 40, 120],
+      [1170, 740, 40, 120],
+    ],
+    platforms: [
+      [70, 730, 210],
+      [470, 730, 220],
+      [850, 730, 220],
+      [1290, 730, 210],
+      [180, 620, 240],
+      [980, 620, 240],
+      [560, 500, 480],
+      [90, 396, 230],
+      [1280, 396, 230],
+      [660, 286, 280],
+      [200, 180, 200],
+      [1200, 180, 200],
+    ],
+    hazards: [],
+    springs: [[250, 846, 60], [1350, 846, 60]],
+    portals: [
+      // Front door <-> back door: a straight shortcut across the whole house.
+      { a: [150, 786], b: [1420, 786], hue: '#4cc9f0' },
+      // Basement door <-> attic door: floor-to-loft vertical shortcut.
+      { a: [560, 786], b: [1260, 106], hue: '#ff6b9d' },
+    ],
+    spawns: [
+      [130, 860], [300, 860],
+      [500, 860], [650, 730],
+      [900, 860], [1050, 730],
+      [1300, 860], [1500, 860],
     ],
   },
 ];

@@ -3,8 +3,9 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Six maps, up to 8 players per game, hosted lobbies with share codes, unlockable
-skins, and bots that keep every server busy even when nobody else is around.
+Seven maps, up to 8 players per game, hosted lobbies with share codes,
+unlockable skins, and bots that keep every server busy even when nobody else
+is around.
 
 ## Running it
 
@@ -32,9 +33,9 @@ To play with friends on your network, they open `http://<your-ip>:3000` and use
 
 ### Rules
 
-- One player is "it". Touching anyone else passes it on.
-- The new tagger cannot tag for 1.2s, and whoever was just tagged out gets a
-  short grace period, so tag-backs are not instant.
+- One player is "it". Touching anyone else passes it on, instantly, no lockout.
+- Whoever was just tagged out gets a 0.9s grace period, so the new tagger can't
+  immediately tag them right back -- but can freely tag anyone else at once.
 - The tagger moves ~11% faster, so chases actually resolve.
 - Time as "it" accumulates. Lowest total wins; ties break on tags made.
 - Falling out of the world or touching lava respawns you after ~1 second.
@@ -55,9 +56,19 @@ touchscreens get on-screen buttons.
 | **Lava Foundry** | Molten channels below the walkways. |
 | **Canopy Grove** | Layered branches; drop through anything to break a chase. |
 | **Moon Base** | **34% gravity.** Jumps go three times higher and hang in the air nearly three times as long. |
+| **Cozy House** | Four rooms, two pairs of magic doors. Step through one to cross the whole house instantly. |
 
 Every map fits 8 players, with 8 spawn points spread so nobody spawns on top of
 anybody else.
+
+### Portals
+
+Cozy House introduces portals: walk into either door of a linked pair and you
+instantly come out the other side, keeping your speed and direction. Each pair
+has its own color so you can tell them apart -- a blue front-door/back-door
+pair for crossing the house, and a pink basement/attic pair for a vertical
+shortcut. A brief cooldown after arriving stops you from immediately
+bouncing straight back through.
 
 ## Bots
 

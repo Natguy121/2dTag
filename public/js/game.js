@@ -222,6 +222,18 @@ export class Game {
           }
           if (mine) sfx.spring();
           break;
+        case 'portal':
+          // The local player already got instant feedback in tickInput() the
+          // moment their own prediction crossed the threshold -- this branch
+          // is only for seeing OTHER players use a portal.
+          if (!mine) {
+            if (profile.particles) {
+              this.particles.spawn(ev.fromX, ev.fromY, 14, { color: '#ffffff', speed: 150, life: 0.35, size: 3, gravity: 0 });
+              this.particles.spawn(ev.x, ev.y, 14, { color: '#ffffff', speed: 150, life: 0.4, size: 3, gravity: 0 });
+            }
+            sfx.portal();
+          }
+          break;
         case 'hazard':
           if (profile.particles) {
             this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H, 20, {
@@ -337,6 +349,17 @@ export class Game {
         if (profile.particles) {
           this.particles.spawn(this.body.x + C.PLAYER_W / 2, this.body.y + C.PLAYER_H, 5, {
             color: 'rgba(255,255,255,0.8)', speed: 70, life: 0.3, size: 2.5, gravity: 300, angle: -Math.PI / 2, spread: 2.4,
+          });
+        }
+      }
+      if (ev.portal) {
+        sfx.portal();
+        if (profile.particles) {
+          this.particles.spawn(ev.portal.from.x, ev.portal.from.y, 16, {
+            color: '#ffffff', speed: 160, life: 0.35, size: 3, gravity: 0,
+          });
+          this.particles.spawn(ev.portal.to.x, ev.portal.to.y, 16, {
+            color: '#ffffff', speed: 160, life: 0.4, size: 3, gravity: 0,
           });
         }
       }

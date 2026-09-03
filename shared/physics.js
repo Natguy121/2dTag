@@ -3,7 +3,7 @@
 // its own player, so a correct prediction reconciles to a zero-delta.
 
 import * as C from './constants.js';
-import { PLATFORM_H, SPRING_H } from './maps.js';
+import { PLATFORM_H, SPRING_H, PORTAL_W, PORTAL_H } from './maps.js';
 
 export const IN_LEFT = 1;
 export const IN_RIGHT = 2;
@@ -36,6 +36,7 @@ export function createBody(x = 0, y = 0) {
     prevJump: false,
     dropTimer: 0,
     springTimer: 0,
+    portalTimer: 0,
     jumped: false, // set for one step when a jump starts (drives sfx/particles)
     landed: false,
   };
@@ -51,6 +52,7 @@ export function placeAtSpawn(body, spawn) {
   body.jumpBuf = 0;
   body.dropTimer = 0;
   body.springTimer = 0;
+  body.portalTimer = 0;
   return body;
 }
 
@@ -69,7 +71,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const frictionScale = map.frictionScale ?? 1;
   const airScale = map.airScale ?? 1;
 
-  const events = { jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false };
+  const events = { jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null };
   b.jumped = false;
   b.landed = false;
 
@@ -191,6 +193,28 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     b.onGround = false;
     b.springTimer = 0.35;
     events.spring = true;
+  }
+
+  // --- portals -------------------------------------------------------------
+  // A brief post-warp timer stops the player from immediately re-triggering
+  // the portal they just arrived through and bouncing straight back.
+  b.portalTimer = Math.max(0, b.portalTimer - dt);
+  if (b.portalTimer <= 0) {
+    const portals = map.portals || [];
+    for (let i = 0; i < portals.length; i++) {
+      const pr = portals[i];
+      let dest = null;
+      if (overlaps(b.x, b.y, W, H, pr.a[0], pr.a[1], PORTAL_W, PORTAL_H)) dest = pr.b;
+      else if (overlaps(b.x, b.y, W, H, pr.b[0], pr.b[1], PORTAL_W, PORTAL_H)) dest = pr.a;
+      if (!dest) continue;
+
+      const from = { x: b.x + W / 2, y: b.y + H / 2 };
+      b.x = dest[0] + PORTAL_W / 2 - W / 2;
+      b.y = dest[1] + PORTAL_H / 2 - H / 2;
+      b.portalTimer = 0.5;
+      events.portal = { from, to: { x: b.x + W / 2, y: b.y + H / 2 } };
+      break;
+    }
   }
 
   // --- hazards / falling out of the world --------------------------------

@@ -2,7 +2,7 @@
 // shared with the menu previews so a skin always looks the same everywhere.
 
 import * as C from '/shared/constants.js';
-import { PLATFORM_H, SPRING_H } from '/shared/maps.js';
+import { PLATFORM_H, SPRING_H, PORTAL_W, PORTAL_H } from '/shared/maps.js';
 import { getSkin } from '/shared/skins.js';
 
 // ------------------------------------------------------------- characters
@@ -217,6 +217,58 @@ function drawSpring(ctx, s, theme, time) {
   }
 }
 
+function drawPortalDoor(ctx, x, y, hue, time, phase) {
+  const cx = x + PORTAL_W / 2;
+  const cy = y + PORTAL_H / 2;
+
+  // Frame.
+  ctx.save();
+  ctx.strokeStyle = hue;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 3;
+  roundRect(ctx, x, y, PORTAL_W, PORTAL_H, 10);
+  ctx.stroke();
+  ctx.restore();
+
+  // Swirling glow inside the frame -- a few rotating rings, clipped to the door.
+  ctx.save();
+  roundRect(ctx, x + 3, y + 3, PORTAL_W - 6, PORTAL_H - 6, 8);
+  ctx.clip();
+
+  const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, PORTAL_W * 0.7);
+  grad.addColorStop(0, 'rgba(10,6,16,0.92)');
+  grad.addColorStop(1, hue);
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, PORTAL_W, PORTAL_H);
+
+  ctx.strokeStyle = hue;
+  for (let i = 0; i < 3; i++) {
+    const t = time * (1.4 + i * 0.3) + phase + i * 2.1;
+    const rw = PORTAL_W * (0.22 + i * 0.16);
+    const rh = PORTAL_H * (0.14 + i * 0.11);
+    ctx.globalAlpha = 0.5 - i * 0.12;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.abs(rw), Math.abs(rh), t, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Soft outer bloom so it reads from a distance.
+  ctx.save();
+  ctx.globalAlpha = 0.35 + Math.sin(time * 2.5 + phase) * 0.08;
+  ctx.filter = 'blur(8px)';
+  ctx.fillStyle = hue;
+  roundRect(ctx, x - 4, y - 4, PORTAL_W + 8, PORTAL_H + 8, 12);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPortal(ctx, portal, time) {
+  drawPortalDoor(ctx, portal.a[0], portal.a[1], portal.hue, time, 0);
+  drawPortalDoor(ctx, portal.b[0], portal.b[1], portal.hue, time, Math.PI);
+}
+
 function drawHazard(ctx, h, theme, time) {
   const [x, y, w, hh] = h;
   const grad = ctx.createLinearGradient(0, y - 6, 0, y + hh);
@@ -309,6 +361,25 @@ function drawBackground(ctx, map, cam, view, time) {
       ctx.ellipse(sx, sy, 5, 2.5, time + i, 0, Math.PI * 2);
       ctx.fill();
     }
+  } else if (theme.decor === 'dust') {
+    // Warm motes drifting slowly through lamplight, plus a couple of soft
+    // window-glow patches so the room doesn't feel flat.
+    ctx.fillStyle = '#ffe9b8';
+    for (let i = 0; i < 40; i++) {
+      const sx = ((i * 163 + px * 0.5 + Math.sin(time * 0.4 + i) * 26) % (view.w + 40)) - 20;
+      const sy = ((i * 131 + time * 8 + py * 0.5 + Math.sin(time * 0.6 + i * 1.7) * 18) % (view.h + 40)) - 20;
+      ctx.globalAlpha = 0.22 + Math.sin(time * 1.3 + i) * 0.1;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffd166';
+    for (const [gx, gy] of [[0.18, 0.3], [0.62, 0.18], [0.85, 0.5]]) {
+      ctx.globalAlpha = 0.1;
+      ctx.beginPath();
+      ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 140, 90, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
     // Neon grid.
     ctx.strokeStyle = theme.grid;
@@ -345,6 +416,7 @@ export function drawMap(ctx, map, time) {
   for (const p of map.platforms) drawPlatform(ctx, p, theme);
   for (const s of map.springs || []) drawSpring(ctx, s, theme, time);
   for (const h of map.hazards || []) drawHazard(ctx, h, theme, time);
+  for (const pr of map.portals || []) drawPortal(ctx, pr, time);
 }
 
 export { drawBackground };
@@ -439,6 +511,11 @@ export function drawMapPreview(canvas, map) {
   for (const s of map.springs || []) ctx.fillRect(s[0], s[1], s[2], SPRING_H);
   ctx.fillStyle = theme.hazard;
   for (const h of map.hazards || []) ctx.fillRect(h[0], h[1], h[2], h[3]);
+  for (const pr of map.portals || []) {
+    ctx.fillStyle = pr.hue;
+    ctx.fillRect(pr.a[0], pr.a[1], PORTAL_W, PORTAL_H);
+    ctx.fillRect(pr.b[0], pr.b[1], PORTAL_W, PORTAL_H);
+  }
 
   ctx.restore();
 }

@@ -91,7 +91,6 @@ export class Room {
       itTime: 0,
       tags: 0,
       timesTagged: 0,
-      tagCooldown: 0,
       immunity: 0,
       respawn: 0,
       ping: 0,
@@ -146,7 +145,6 @@ export class Room {
       if (candidates.length) {
         const next = pick(candidates);
         next.it = true;
-        next.tagCooldown = C.TAG_COOLDOWN;
         this.pushEvent({ type: 'newIt', to: next.id, reason: 'left' });
       }
     }
@@ -182,7 +180,6 @@ export class Room {
         if (others.length) {
           const next = pick(others);
           next.it = true;
-          next.tagCooldown = C.TAG_COOLDOWN;
           this.pushEvent({ type: 'newIt', to: next.id, reason: 'left' });
         }
       }
@@ -255,14 +252,12 @@ export class Room {
       p.itTime = 0;
       p.tags = 0;
       p.timesTagged = 0;
-      p.tagCooldown = 0;
       p.immunity = 0;
       p.respawn = 0;
       p.inputBits = 0;
     }
     const starter = pick([...this.players.values()]);
     starter.it = true;
-    starter.tagCooldown = C.TAG_COOLDOWN;
     this.pushEvent({ type: 'newIt', to: starter.id, reason: 'start' });
     this.rosterDirty = true;
   }
@@ -305,7 +300,6 @@ export class Room {
     this.resetPositions();
     for (const p of this.players.values()) {
       p.it = false;
-      p.tagCooldown = 0;
       p.immunity = 0;
       p.respawn = 0;
     }
@@ -351,6 +345,13 @@ export class Room {
 
       if (ev.jumped) this.pushEvent({ type: 'jump', id: p.id, x: p.body.x, y: p.body.y });
       if (ev.spring) this.pushEvent({ type: 'spring', id: p.id, x: p.body.x, y: p.body.y });
+      if (ev.portal) {
+        this.pushEvent({
+          type: 'portal', id: p.id,
+          fromX: ev.portal.from.x, fromY: ev.portal.from.y,
+          x: ev.portal.to.x, y: ev.portal.to.y,
+        });
+      }
       if (ev.hazard || ev.outOfBounds) {
         p.respawn = C.RESPAWN_TIME;
         p.body.vx = 0;
@@ -363,7 +364,6 @@ export class Room {
         });
       }
 
-      p.tagCooldown = Math.max(0, p.tagCooldown - dt);
       p.immunity = Math.max(0, p.immunity - dt);
       if (p.it && this.state === 'playing') p.itTime += dt;
     }
@@ -397,7 +397,7 @@ export class Room {
 
   resolveTags() {
     const tagger = [...this.players.values()].find((p) => p.it);
-    if (!tagger || tagger.respawn > 0 || tagger.tagCooldown > 0) return;
+    if (!tagger || tagger.respawn > 0) return;
 
     for (const p of this.players.values()) {
       if (p.id === tagger.id || p.respawn > 0 || p.immunity > 0) continue;
@@ -405,11 +405,13 @@ export class Room {
 
       tagger.it = false;
       tagger.tags += 1;
+      // Immunity protects the freed player from an instant tag-back. The new
+      // tagger has no lockout of their own -- they can tag anyone else right
+      // away, they just can't touch the player who's still immune.
       tagger.immunity = C.TAG_IMMUNITY;
 
       p.it = true;
       p.timesTagged += 1;
-      p.tagCooldown = C.TAG_COOLDOWN;
 
       this.pushEvent({
         type: 'tag',
@@ -460,7 +462,6 @@ export class Room {
       if (p.it) flags |= 2;
       if (p.immunity > 0) flags |= 4;
       if (p.respawn > 0) flags |= 8;
-      if (p.tagCooldown > 0) flags |= 16;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,

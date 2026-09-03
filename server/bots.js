@@ -144,7 +144,8 @@ export function think(self, others, map, dt, state) {
         // Jump toward a target that is above us, or drop toward one below.
         if (ty < cy - 40) brain.wantJump = true;
         else if (ty > cy + 60) brain.wantDown = Math.random() < 0.7;
-      } else if (self.tagCooldown > 0) {
+      } else {
+        // No valid target (everyone reachable is immune) -- pace around.
         brain.dir = Math.random() < 0.5 ? -1 : 1;
       }
     } else {

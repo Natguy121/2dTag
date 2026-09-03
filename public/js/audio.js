@@ -73,6 +73,10 @@ export const sfx = {
   jump: () => blip({ freq: 380, to: 700, dur: 0.11, type: 'triangle', gain: 0.1 }),
   land: () => noise({ dur: 0.07, gain: 0.05, freq: 500 }),
   spring: () => blip({ freq: 300, to: 1200, dur: 0.22, type: 'sine', gain: 0.16 }),
+  portal: () => {
+    blip({ freq: 700, to: 1400, dur: 0.16, type: 'sine', gain: 0.12 });
+    blip({ freq: 1400, to: 500, dur: 0.22, type: 'sine', gain: 0.1, delay: 0.05 });
+  },
   tag: () => {
     blip({ freq: 880, to: 220, dur: 0.2, type: 'sawtooth', gain: 0.2 });
     noise({ dur: 0.16, gain: 0.12, freq: 2200 });

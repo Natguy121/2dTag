@@ -29,7 +29,6 @@ export const SPRING_VELOCITY = 1180;
 
 // Tag rules.
 export const TAGGER_SPEED_MULT = 1.11;
-export const TAG_COOLDOWN = 1.2; // the fresh tagger cannot tag anybody
 export const TAG_IMMUNITY = 0.9; // the player who was just "it" cannot be tagged
 export const TAG_REACH = 6; // extra pixels of grab range around the tagger
 
