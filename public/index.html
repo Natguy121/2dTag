@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12091f">
+<title>2D Tag</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127939;</text></svg>">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ------------------------------------------------------------- HOME -->
+  <section class="screen is-active" data-screen="home">
+    <div class="menu">
+      <h1 class="logo"><span class="logo-2d">2D</span><span class="logo-tag">TAG</span></h1>
+      <p class="tagline">Don't be it when the clock runs out.</p>
+      <nav class="menu-buttons">
+        <button class="btn btn-primary btn-xl" data-go="play">Play</button>
+        <button class="btn btn-xl" data-go="skins">Skins</button>
+        <button class="btn btn-xl" data-go="settings">Settings</button>
+      </nav>
+      <div class="home-profile">
+        <canvas class="profile-preview" width="120" height="140" data-profile-preview></canvas>
+        <div>
+          <div class="profile-label">Playing as</div>
+          <div class="profile-name" data-profile-name>Player</div>
+          <button class="btn btn-small" data-go="settings">Change</button>
+        </div>
+      </div>
+      <p class="version">6 maps &middot; up to 8 players &middot; bots included</p>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- PLAY -->
+  <section class="screen" data-screen="play">
+    <div class="menu">
+      <button class="btn btn-back" data-go="home">&larr; Back</button>
+      <h2 class="screen-title">Play</h2>
+      <nav class="menu-buttons">
+        <button class="btn btn-primary btn-xl" data-go="join-server">
+          <span class="btn-title">Join Server</span>
+          <span class="btn-sub">Browse live public games</span>
+        </button>
+        <button class="btn btn-xl" data-go="host">
+          <span class="btn-title">Host Game</span>
+          <span class="btn-sub">Pick a map and invite friends</span>
+        </button>
+        <button class="btn btn-xl" data-go="join-code">
+          <span class="btn-title">Join Code</span>
+          <span class="btn-sub">Enter a 4 character room code</span>
+        </button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ JOIN SERVER -->
+  <section class="screen" data-screen="join-server">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-go="play">&larr; Back</button>
+      <h2 class="screen-title">Servers</h2>
+      <div class="server-toolbar">
+        <button class="btn btn-small" data-action="refresh-servers">Refresh</button>
+        <button class="btn btn-small btn-primary" data-action="quick-join">Quick Play</button>
+      </div>
+      <div class="server-list" data-server-list>
+        <p class="empty">Loading servers&hellip;</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------- JOIN CODE -->
+  <section class="screen" data-screen="join-code">
+    <div class="menu">
+      <button class="btn btn-back" data-go="play">&larr; Back</button>
+      <h2 class="screen-title">Join with a code</h2>
+      <p class="hint">Ask the host for their 4 character room code.</p>
+      <form class="code-form" data-code-form>
+        <input class="code-input" data-code-input maxlength="4" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" placeholder="ABCD" aria-label="Room code">
+        <button class="btn btn-primary btn-xl" type="submit">Join Game</button>
+      </form>
+      <p class="form-error" data-code-error></p>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- HOST -->
+  <section class="screen" data-screen="host">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-go="play">&larr; Back</button>
+      <h2 class="screen-title">Host a game</h2>
+
+      <label class="field">
+        <span class="field-label">Server name</span>
+        <input class="text-input" data-host-name maxlength="14" placeholder="My game">
+      </label>
+
+      <div class="field">
+        <span class="field-label">Map</span>
+        <div class="map-grid" data-map-grid></div>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Round length</span>
+          <select class="select" data-host-time></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Max players</span>
+          <select class="select" data-host-max></select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Fill with bots</span>
+          <select class="select" data-host-botfill>
+            <option value="1">Yes &mdash; keep the game busy</option>
+            <option value="0">No &mdash; humans only</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Bot skill</span>
+          <select class="select" data-host-botskill>
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Visibility</span>
+        <select class="select" data-host-public>
+          <option value="1">Public &mdash; listed in Join Server</option>
+          <option value="0">Private &mdash; code only</option>
+        </select>
+      </label>
+
+      <button class="btn btn-primary btn-xl" data-action="create-game">Create Game</button>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ LOBBY -->
+  <section class="screen" data-screen="lobby">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-action="leave-room">&larr; Leave</button>
+      <h2 class="screen-title" data-lobby-title>Lobby</h2>
+
+      <div class="code-banner">
+        <div>
+          <div class="field-label">Room code</div>
+          <div class="room-code" data-room-code>----</div>
+        </div>
+        <button class="btn btn-small" data-action="copy-code">Copy</button>
+      </div>
+
+      <div class="lobby-body">
+        <div class="lobby-map">
+          <canvas class="map-preview" width="320" height="180" data-lobby-map></canvas>
+          <div class="map-name" data-lobby-map-name></div>
+          <div class="map-blurb" data-lobby-map-blurb></div>
+        </div>
+        <div class="lobby-players">
+          <div class="field-label" data-lobby-count>Players</div>
+          <ul class="player-list" data-lobby-list></ul>
+        </div>
+      </div>
+
+      <div class="host-controls" data-host-controls hidden>
+        <div class="field">
+          <span class="field-label">Change map</span>
+          <div class="map-grid map-grid-small" data-lobby-map-grid></div>
+        </div>
+      </div>
+
+      <p class="hint" data-lobby-hint></p>
+      <button class="btn btn-primary btn-xl" data-action="start-round">Start Round</button>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ SKINS -->
+  <section class="screen" data-screen="skins">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-go="home">&larr; Back</button>
+      <h2 class="screen-title">Skins</h2>
+      <p class="hint" data-skin-progress></p>
+      <div class="skin-grid" data-skin-grid></div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------- SETTINGS -->
+  <section class="screen" data-screen="settings">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-go="home">&larr; Back</button>
+      <h2 class="screen-title">Settings</h2>
+
+      <label class="field">
+        <span class="field-label">Display name</span>
+        <input class="text-input" data-setting-name maxlength="14" placeholder="Player">
+      </label>
+
+      <div class="field">
+        <span class="field-label">Controls</span>
+        <div class="keybinds" data-keybinds></div>
+        <button class="btn btn-small" data-action="reset-keys">Reset to defaults</button>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Sound volume <span data-volume-value>70%</span></span>
+        <input class="range" type="range" min="0" max="100" step="5" data-setting-volume>
+      </label>
+
+      <div class="field">
+        <span class="field-label">Options</span>
+        <label class="check"><input type="checkbox" data-setting-names> Show player names</label>
+        <label class="check"><input type="checkbox" data-setting-particles> Particle effects</label>
+        <label class="check"><input type="checkbox" data-setting-shake> Screen shake</label>
+        <label class="check"><input type="checkbox" data-setting-fps> Show FPS &amp; ping</label>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Progress</span>
+        <div class="stats-grid" data-stats-grid></div>
+        <button class="btn btn-small btn-danger" data-action="reset-stats">Reset progress</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- GAME -->
+  <section class="screen screen-game" data-screen="game">
+    <canvas id="game-canvas"></canvas>
+
+    <div class="hud">
+      <div class="hud-top">
+        <div class="hud-timer" data-hud-timer>0:00</div>
+        <div class="hud-it" data-hud-it></div>
+      </div>
+      <ul class="hud-scores" data-hud-scores></ul>
+      <div class="hud-debug" data-hud-debug hidden></div>
+    </div>
+
+    <div class="center-message" data-center-message hidden></div>
+
+    <div class="overlay" data-results-overlay hidden>
+      <div class="results-card">
+        <h2 class="results-title">Round Over</h2>
+        <p class="results-sub" data-results-sub></p>
+        <ol class="results-list" data-results-list></ol>
+        <p class="hint" data-results-next></p>
+        <div class="results-actions">
+          <button class="btn" data-action="leave-room">Leave</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-small btn-quit" data-action="leave-room">Quit</button>
+
+    <div class="touch-controls" data-touch hidden>
+      <div class="touch-pad">
+        <button class="touch-btn" data-touch-key="left">&#9664;</button>
+        <button class="touch-btn" data-touch-key="right">&#9654;</button>
+      </div>
+      <div class="touch-pad">
+        <button class="touch-btn" data-touch-key="down">&#9660;</button>
+        <button class="touch-btn touch-jump" data-touch-key="jump">JUMP</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Connection banner, shown over everything -->
+  <div class="net-banner" data-net-banner hidden></div>
+  <div class="toast" data-toast hidden></div>
+</div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
