@@ -47,6 +47,13 @@ export const INVISIBLE_HIDDEN_TIME = 2;
 // Hide and seek (maps with map.seekerFreeze: N). The tagger can't move for N
 // seconds after the round begins, giving everyone else a head start to hide.
 
+// Candy (maps with map.candies: [...]). Touching a candy piece freezes
+// whoever touched it in place -- anyone, tagger or not, no exceptions -- for
+// CANDY_FREEZE_TIME seconds. CANDY_IMMUNITY is a short grace period right
+// after thawing so standing on the same piece doesn't immediately re-freeze.
+export const CANDY_FREEZE_TIME = 3;
+export const CANDY_IMMUNITY = 1.5;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

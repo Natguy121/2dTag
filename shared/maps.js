@@ -7,6 +7,10 @@
 //   springs   [x, y, w]     14px thick launch pad
 //   portals   { a: [x, y], b: [x, y], hue }  fixed-size doorway pair; walking
 //             into one instantly exits out the other, keeping your velocity
+//   candies   [x, y, w, h]  touching one freezes you in place for a few
+//             seconds -- anyone, tagger or not (see CANDY_*_TIME in
+//             constants.js). Purely a map decoration otherwise; the freeze
+//             logic lives in server/room.js.
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
 // gravityScale / frictionScale / airScale / speedScale let a map bend the
@@ -595,6 +599,56 @@ export const MAPS = [
     spawns: [
       [150, 860], [600, 860], [1050, 860], [1500, 860],
       [1950, 860], [2400, 860], [2850, 860], [3300, 860],
+    ],
+  },
+
+  {
+    id: 'candyland',
+    name: 'Candy Land',
+    blurb: 'Candy everywhere -- step on a piece and you freeze in place for 3 seconds.',
+    width: 1700,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#ffd6ec', '#ffb3d9', '#fff0f8'],
+      solid: '#ff6b9d',
+      solidEdge: '#ffffff',
+      platform: '#ffd1e8',
+      accent: '#39f0d8',
+      hazard: '#ff4d6d',
+      fog: 'rgba(255,150,200,0.14)',
+      grid: 'rgba(255,255,255,0.08)',
+      decor: 'sprinkles',
+    },
+    solids: [
+      [0, 860, 1700, 40],
+      [0, 0, 24, 900],
+      [1676, 0, 24, 900],
+      [400, 742, 36, 120],
+      [860, 742, 36, 120],
+      [1320, 742, 36, 120],
+    ],
+    platforms: [
+      [80, 730, 260], [480, 730, 260], [880, 730, 260], [1280, 730, 260],
+      [230, 600, 260], [630, 600, 260], [1030, 600, 260], [1400, 600, 220],
+      [100, 470, 300], [520, 470, 300], [940, 470, 300], [1340, 470, 260],
+    ],
+    hazards: [],
+    springs: [[300, 846, 60], [1200, 846, 60]],
+    // Small (26x26) pickups sitting right on top of a surface -- never solid,
+    // so they can never block a path or trap anyone, just tempt them.
+    candies: [
+      [180, 834, 26, 26], [660, 834, 26, 26], [1080, 834, 26, 26], [1560, 834, 26, 26],
+      [130, 704, 26, 26], [560, 704, 26, 26], [960, 704, 26, 26], [1350, 704, 26, 26],
+      [300, 574, 26, 26], [780, 574, 26, 26], [1200, 574, 26, 26],
+      [220, 444, 26, 26], [680, 444, 26, 26], [1100, 444, 26, 26],
+    ],
+    spawns: [
+      [60, 860], [1640, 860], [720, 860],
+      [280, 730], [1220, 730],
+      [700, 600], [1400, 600],
+      [900, 470],
     ],
   },
 ];

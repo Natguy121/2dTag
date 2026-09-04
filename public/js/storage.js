@@ -17,6 +17,8 @@ const DEFAULTS = {
   skin: 'runner',
   trail: 'none',
   volume: 0.7,
+  musicVolume: 0.35,
+  musicTrack: 'chiptune-rush',
   showNames: true,
   particles: true,
   shake: true,

@@ -233,6 +233,53 @@ function drawSpring(ctx, s, theme, time) {
   }
 }
 
+const CANDY_COLORS = ['#ff4d6d', '#ffd166', '#4ff0c1', '#4cc9f0', '#a06bff', '#ff8fc4'];
+
+/** A small wrapped candy pickup. Purely a map decoration -- server/room.js
+ * owns the actual freeze-on-touch logic. */
+function drawCandy(ctx, c, time, seed) {
+  const [x, y, w, h] = c;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const bob = Math.sin(time * 2.4 + seed) * 2;
+  const color = CANDY_COLORS[seed % CANDY_COLORS.length];
+
+  ctx.save();
+  ctx.translate(cx, cy + bob);
+
+  // Wrapper twists on either side of the round body.
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.5, 0);
+  ctx.lineTo(-w * 0.3, -h * 0.22);
+  ctx.lineTo(-w * 0.3, h * 0.22);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(w * 0.5, 0);
+  ctx.lineTo(w * 0.3, -h * 0.22);
+  ctx.lineTo(w * 0.3, h * 0.22);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(0, 0, w * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.arc(-w * 0.1, -h * 0.1, w * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+
+  const tw = 0.4 + Math.max(0, Math.sin(time * 3 + seed * 1.7)) * 0.6;
+  ctx.globalAlpha = tw;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(w * 0.22, h * 0.18, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
 function drawPortalDoor(ctx, x, y, hue, time, phase) {
   const cx = x + PORTAL_W / 2;
   const cy = y + PORTAL_H / 2;
@@ -396,6 +443,19 @@ function drawBackground(ctx, map, cam, view, time) {
       ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 140, 90, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+  } else if (theme.decor === 'sprinkles') {
+    // Colorful confetti-like sprinkles drifting down for the candy map.
+    for (let i = 0; i < 60; i++) {
+      const sx = ((i * 149 + px * 0.6 + Math.sin(time * 0.5 + i) * 22) % (view.w + 40)) - 20;
+      const sy = ((i * 107 + time * 30 + py * 0.6) % (view.h + 40)) - 20;
+      ctx.fillStyle = CANDY_COLORS[i % CANDY_COLORS.length];
+      ctx.globalAlpha = 0.4;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(time * 0.8 + i);
+      ctx.fillRect(-2, -1, 4, 2);
+      ctx.restore();
+    }
   } else {
     // Neon grid.
     ctx.strokeStyle = theme.grid;
@@ -433,6 +493,8 @@ export function drawMap(ctx, map, time) {
   for (const s of map.springs || []) drawSpring(ctx, s, theme, time);
   for (const h of map.hazards || []) drawHazard(ctx, h, theme, time);
   for (const pr of map.portals || []) drawPortal(ctx, pr, time);
+  const candies = map.candies || [];
+  for (let i = 0; i < candies.length; i++) drawCandy(ctx, candies[i], time, i);
 }
 
 export { drawBackground };
@@ -531,6 +593,14 @@ export function drawMapPreview(canvas, map) {
     ctx.fillStyle = pr.hue;
     ctx.fillRect(pr.a[0], pr.a[1], PORTAL_W, PORTAL_H);
     ctx.fillRect(pr.b[0], pr.b[1], PORTAL_W, PORTAL_H);
+  }
+  const candies = map.candies || [];
+  for (let i = 0; i < candies.length; i++) {
+    ctx.fillStyle = CANDY_COLORS[i % CANDY_COLORS.length];
+    const c = candies[i];
+    ctx.beginPath();
+    ctx.arc(c[0] + c[2] / 2, c[1] + c[3] / 2, c[2] * 0.6, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();

@@ -279,6 +279,19 @@ export class Game {
             });
           }
           break;
+        case 'candy':
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 18, {
+              color: '#ffb3d9', speed: 170, life: 0.5, size: 3, gravity: 200, spread: Math.PI * 2,
+            });
+          }
+          if (mine) {
+            sfx.candy();
+            this.showCenter('STUCK IN CANDY!', 2.6);
+          } else {
+            sfx.candyPop();
+          }
+          break;
         case 'go':
           sfx.go();
           this.showCenter('GO!', 0.8);
@@ -545,6 +558,7 @@ export class Game {
     const respawning = !!(p.flags & 8);
     const onGround = !!(p.flags & 1);
     const invisible = !!(p.flags & 16);
+    const candyFrozen = !!(p.flags & 32);
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
     // sprite, no trail, no name, nothing that gives their position away. You
@@ -570,6 +584,15 @@ export class Game {
       });
     }
 
+    // Frozen in candy: a light sparkle trickle while stuck (the glow ring
+    // and candy icon are drawn after the character below) -- applies to
+    // anyone, tagger included.
+    if (candyFrozen && profile.particles && Math.random() < 0.3) {
+      this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H / 2, 1, {
+        color: '#ffb3d9', speed: 40, life: 0.5, size: 2.5, gravity: -20, spread: Math.PI * 2,
+      });
+    }
+
     if (invisible) ctx.save();
     if (invisible) ctx.globalAlpha *= 0.35;
 
@@ -586,6 +609,33 @@ export class Game {
     });
 
     if (invisible) ctx.restore();
+
+    if (candyFrozen) {
+      // A pulsing glow ring reads against any map's colors (a flat pink tint
+      // would vanish into Candy Land's own pink background), plus a candy
+      // icon with a dark stroke so it stays legible even without a
+      // color-emoji font available.
+      ctx.save();
+      const pulse = 0.55 + Math.sin(this.time * 8) * 0.3;
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ff4d9e';
+      ctx.shadowBlur = 10;
+      ctx.strokeRect(x - 4, y - 4, C.PLAYER_W + 8, C.PLAYER_H + 8);
+      ctx.restore();
+
+      ctx.save();
+      const bob = Math.sin(this.time * 5) * 2;
+      ctx.font = '18px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeText('\u{1F36C}', x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('\u{1F36C}', x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.restore();
+    }
 
     if (profile.showNames && meta) {
       ctx.save();

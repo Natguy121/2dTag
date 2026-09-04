@@ -106,6 +106,8 @@ export class Room {
       prevShoot: false,
       invisCycle: 0,
       invisible: false,
+      candyFreeze: 0,
+      candyImmune: 0,
       ai: isBot ? createBrain(this.botDifficulty) : null,
       joinedAt: Date.now(),
     };
@@ -272,6 +274,8 @@ export class Room {
       p.prevShoot = false;
       p.invisCycle = 0;
       p.invisible = false;
+      p.candyFreeze = 0;
+      p.candyImmune = 0;
     }
     const starter = pick([...this.players.values()]);
     starter.it = true;
@@ -369,11 +373,24 @@ export class Room {
         continue;
       }
 
+      // Candy: touching a piece freezes movement for a few seconds, then a
+      // short immunity window so standing on the same piece doesn't
+      // instantly re-freeze the moment it wears off.
+      const wasCandyFrozen = p.candyFreeze > 0;
+      p.candyFreeze = Math.max(0, p.candyFreeze - dt);
+      if (wasCandyFrozen && p.candyFreeze <= 0) p.candyImmune = C.CANDY_IMMUNITY;
+      else p.candyImmune = Math.max(0, p.candyImmune - dt);
+
       // Hide-and-seek: the tagger can't move for the first few seconds, so
       // everyone else gets a genuine head start to find a hiding spot.
-      const bits = frozen || (seekerFrozen && p.it) ? 0 : p.inputBits;
+      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 ? 0 : p.inputBits;
       const speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
       const ev = stepBody(p.body, bits, map, dt, { speedMult });
+
+      if (ev.candy && p.candyFreeze <= 0 && p.candyImmune <= 0 && this.state === 'playing') {
+        p.candyFreeze = C.CANDY_FREEZE_TIME;
+        this.pushEvent({ type: 'candy', id: p.id, x: p.body.x, y: p.body.y });
+      }
 
       if (ev.jumped) this.pushEvent({ type: 'jump', id: p.id, x: p.body.x, y: p.body.y });
       if (ev.spring) this.pushEvent({ type: 'spring', id: p.id, x: p.body.x, y: p.body.y });
@@ -555,6 +572,7 @@ export class Room {
       if (p.immunity > 0) flags |= 4;
       if (p.respawn > 0) flags |= 8;
       if (p.invisible) flags |= 16;
+      if (p.candyFreeze > 0) flags |= 32;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,

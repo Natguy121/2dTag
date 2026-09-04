@@ -3,9 +3,10 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Eleven maps, 1 to 10 players per game, hosted lobbies with share codes, coins
-earned by playing or from quests, unlockable skins and trails, and bots that
-keep every server busy even when nobody else is around.
+Twelve maps, 1 to 10 players per game, hosted lobbies with share codes, coins
+earned by playing or from quests, unlockable skins and trails, 20 background
+music tracks, and bots that keep every server busy even when nobody else is
+around.
 
 ## Running it
 
@@ -74,6 +75,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Blackout** | The tagger flickers invisible for a few seconds at a time. |
 | **Hush House** | Hide-and-seek: the seeker is frozen for a few seconds at the start. |
 | **Turbo Circuit** | **5x speed.** A 3600px straightaway that's over in seconds. |
+| **Candy Land** | Candy everywhere. Step on a piece and freeze in place for 3 seconds. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -90,7 +92,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Four maps bend the base rules further, each in a different direction:
+Five maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -113,6 +115,13 @@ Four maps bend the base rules further, each in a different direction:
   tick without ever registering the collision. Only the floor and the two
   boundary walls (thickened well past that margin) are solid; every platform
   is one-way and safe at any speed.
+- **Candy Land** scatters wrapped candy pieces across the map. Touch one --
+  tagger or not, no exceptions -- and you freeze in place for 3 seconds
+  (a pulsing glow ring and a candy icon over your character while it lasts),
+  with a crinkling wrapper sound that runs exactly as long as the freeze
+  does. A short grace period after thawing stops the same piece from
+  instantly re-catching you before you can step off it. Candy is never
+  solid, so it can't block a path or trap anyone -- only tempt them.
 
 ## Bots
 
@@ -159,6 +168,24 @@ play on 5 different maps, and so on -- each paying a coin bounty once you
 hit its goal. Progress ticks up automatically from the same stats that gate
 skin and trail unlocks; claiming is a separate tap so finishing one is its
 own moment instead of a number quietly changing in the background.
+
+## Music
+
+20 background tracks, all synthesised live with WebAudio -- same as every
+sound effect, so there are no audio files to ship. Each one is really the
+same small bass/lead/light-drum generator fed a different parameter set
+(tempo, scale, chord progression, oscillator waveforms per voice), which is
+what makes 20 distinct-sounding loops practical without hand-authoring 20
+scores: `Chiptune Rush`, `Lo-Fi Chill`, `Retro Arcade`, `Epic Chase`,
+`Candy Pop`, `Space Drift`, `Neon Nights`, `Jungle Groove`, `Frost Waltz`,
+`Volcano Heat`, `Moonlight Float`, `Turbo Blitz`, `Spy Stealth`,
+`Carnival Fun`, `Dungeon Crawl`, `Sunny Meadow`, `Robot Factory`,
+`Pixel Dreams`, `Disco Dash` and `Victory March`.
+
+Pick a track and its volume independently of sound effects in **Settings**
+-- music starts on the first click or key press anywhere (browsers won't
+allow audio before that), keeps looping across every screen, and switches
+instantly if you change track mid-game.
 
 ## Passwords & admin
 
@@ -215,10 +242,11 @@ sides from the same files**, which is what makes client prediction exact:
 ```
 shared/     constants, maps, physics, skins, trails, quests   (server + browser)
 server/     websocket server, rooms, bot AI, name-claim + admin passwords
-public/     the client: menus, renderer, prediction, input, audio
+public/     the client: menus, renderer, prediction, input, audio, music
 ```
 
-Sound is synthesised with WebAudio, so there are no asset files to load.
+Every sound effect and all 20 music tracks are synthesised with WebAudio, so
+there are no audio asset files to load.
 
 ## Notes
 

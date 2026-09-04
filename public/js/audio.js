@@ -26,6 +26,14 @@ export function unlock() {
   if (c && c.state === 'suspended') c.resume().catch(() => {});
 }
 
+/** The shared AudioContext, lazily created on first use (see unlock() --
+ * it can only actually start making sound after a user gesture). Exposed
+ * so public/js/music.js can hang its own gain node off the same context
+ * instead of opening a second one. */
+export function getContext() {
+  return ensure();
+}
+
 export function setVolume(v) {
   if (master) master.gain.value = v;
 }
@@ -102,4 +110,22 @@ export const sfx = {
   },
   click: () => blip({ freq: 620, dur: 0.05, type: 'square', gain: 0.08 }),
   join: () => blip({ freq: 500, to: 800, dur: 0.14, type: 'sine', gain: 0.12 }),
+  // A ~3s wrapper-crinkle texture -- a lot of short, irregularly-timed noise
+  // crackles layered together, matching the candy freeze duration exactly so
+  // the sound only stops once you can actually move again.
+  candy: () => {
+    const bursts = 36;
+    for (let i = 0; i < bursts; i++) {
+      const delay = (i / bursts) * 2.9 + Math.random() * 0.06;
+      noise({ dur: 0.03 + Math.random() * 0.05, gain: 0.05 + Math.random() * 0.05, freq: 2200 + Math.random() * 2600, delay });
+    }
+  },
+  // Heard when someone ELSE gets caught -- one quick crinkle-catch cue
+  // instead of the full 3s texture, so a busy round doesn't turn into a
+  // wall of wrapper noise.
+  candyPop: () => {
+    noise({ dur: 0.04, gain: 0.08, freq: 3200 });
+    noise({ dur: 0.05, gain: 0.06, freq: 2400, delay: 0.05 });
+    blip({ freq: 700, to: 500, dur: 0.08, type: 'triangle', gain: 0.08, delay: 0.02 });
+  },
 };

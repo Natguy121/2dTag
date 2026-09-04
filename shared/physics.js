@@ -76,7 +76,9 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const airScale = map.airScale ?? 1;
   const speedScale = map.speedScale ?? 1;
 
-  const events = { jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null };
+  const events = {
+    jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null, candy: false,
+  };
   b.jumped = false;
   b.landed = false;
 
@@ -229,6 +231,16 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     if (overlaps(b.x, b.y, W, H, h[0], h[1], h[2], h[3])) { events.hazard = true; break; }
   }
   if (b.y > map.height + 140) events.outOfBounds = true;
+
+  // --- candy (maps with map.candies) --------------------------------------
+  // Just an overlap flag -- the caller (room.js) owns the freeze timer and
+  // the re-trigger guard, since that's per-player state this pure step
+  // function doesn't otherwise track.
+  const candies = map.candies || [];
+  for (let i = 0; i < candies.length; i++) {
+    const c = candies[i];
+    if (overlaps(b.x, b.y, W, H, c[0], c[1], c[2], c[3])) { events.candy = true; break; }
+  }
 
   return events;
 }

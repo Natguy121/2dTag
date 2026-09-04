@@ -13,6 +13,7 @@ import {
   claimQuest, DEFAULT_KEYS,
 } from './storage.js';
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
+import * as music from './music.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
 import { Game } from './game.js';
 
@@ -732,6 +733,9 @@ function renderSettings() {
   renderThemePicker();
   $('[data-setting-volume]').value = Math.round(profile.volume * 100);
   $('[data-volume-value]').textContent = `${Math.round(profile.volume * 100)}%`;
+  $('[data-setting-music-volume]').value = Math.round(profile.musicVolume * 100);
+  $('[data-music-volume-value]').textContent = `${Math.round(profile.musicVolume * 100)}%`;
+  $('[data-setting-music-track]').value = profile.musicTrack;
   $('[data-setting-names]').checked = profile.showNames;
   $('[data-setting-particles]').checked = profile.particles;
   $('[data-setting-shake]').checked = profile.shake;
@@ -860,6 +864,14 @@ function wire() {
     maxSel.append(opt);
   }
   $('[data-host-name]').value = `${profile.name}'s game`.slice(0, 14);
+
+  const musicSel = $('[data-setting-music-track]');
+  for (const t of music.MUSIC_TRACKS) {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.name;
+    musicSel.append(opt);
+  }
   refreshHostMapGrid();
 
   $('[data-action="create-game"]').addEventListener('click', () => {
@@ -939,6 +951,19 @@ function wire() {
     $('[data-volume-value]').textContent = `${e.target.value}%`;
     save();
   });
+  $('[data-setting-music-volume]').addEventListener('input', (e) => {
+    profile.musicVolume = Number(e.target.value) / 100;
+    music.setVolume(profile.musicVolume);
+    $('[data-music-volume-value]').textContent = `${e.target.value}%`;
+    save();
+  });
+  $('[data-setting-music-track]').addEventListener('change', (e) => {
+    profile.musicTrack = e.target.value;
+    save();
+    // Switch immediately if music is already playing; if it hasn't started
+    // yet (no gesture unlocked audio), the choice just takes effect once it does.
+    if (music.currentTrack()) music.play(profile.musicTrack);
+  });
   const toggles = [
     ['[data-setting-names]', 'showNames'],
     ['[data-setting-particles]', 'particles'],
@@ -959,9 +984,15 @@ function wire() {
     toast('Progress reset.');
   });
 
-  // Unlock audio on the first interaction anywhere.
-  window.addEventListener('pointerdown', unlockAudio, { once: true });
-  window.addEventListener('keydown', unlockAudio, { once: true });
+  // Unlock audio (sfx + background music) on the first interaction anywhere
+  // -- browsers refuse to make sound before one, so this is the earliest
+  // either can actually start.
+  function unlockAll() {
+    unlockAudio();
+    music.play(profile.musicTrack);
+  }
+  window.addEventListener('pointerdown', unlockAll, { once: true });
+  window.addEventListener('keydown', unlockAll, { once: true });
 
   input.init({
     onEscape: () => {
@@ -974,6 +1005,7 @@ function wire() {
 wire();
 drawProfilePreview();
 setVolume(profile.volume);
+music.setVolume(profile.musicVolume);
 net.connect();
 
 // Cache the shell so it loads instantly on a repeat visit or a shaky
