@@ -77,6 +77,18 @@ body {
 
 #app { height: 100%; }
 
+/* The start screen gets its own louder, more colorful wash than the rest of
+   the app -- everywhere else stays calmer and darker so menus full of text
+   (Host, Settings, Skins) stay easy to read. */
+[data-screen="home"] {
+  background:
+    radial-gradient(85vmin 55vmin at 12% -8%, rgba(var(--accent-2-rgb), 0.55) 0%, transparent 60%),
+    radial-gradient(75vmin 50vmin at 100% 0%, rgba(45, 220, 190, 0.42) 0%, transparent 58%),
+    radial-gradient(80vmin 55vmin at 100% 105%, rgba(179, 112, 255, 0.42) 0%, transparent 58%),
+    radial-gradient(75vmin 50vmin at 0% 105%, rgba(var(--accent-rgb), 0.4) 0%, transparent 58%),
+    var(--bg-2);
+}
+
 /* ------------------------------------------------------------- screens */
 
 .screen {
@@ -139,7 +151,7 @@ body {
   gap: 18px;
   padding: 14px 18px;
   background: var(--panel);
-  border: 1px solid var(--panel-edge);
+  border: 2px solid rgba(var(--accent-2-rgb), 0.45);
   border-radius: var(--radius);
 }
 
@@ -180,6 +192,23 @@ body {
   box-shadow: 0 10px 26px rgba(var(--primary-shadow-rgb), 0.35);
 }
 .btn-primary .btn-sub { color: rgba(255, 255, 255, 0.78); }
+
+/* Extra bright color variants -- used on the home screen so Play isn't the
+   only vivid button in the row. */
+.btn-teal {
+  background: linear-gradient(180deg, #2fe0c8, #0f9a88);
+  border-color: rgba(79, 240, 193, 0.5);
+  box-shadow: 0 10px 26px rgba(45, 220, 190, 0.32);
+  color: #04231b;
+}
+.btn-teal .btn-sub { color: rgba(4, 35, 27, 0.72); }
+
+.btn-violet {
+  background: linear-gradient(180deg, #b370ff, #7a2fd6);
+  border-color: rgba(179, 112, 255, 0.5);
+  box-shadow: 0 10px 26px rgba(150, 80, 230, 0.32);
+}
+.btn-violet .btn-sub { color: rgba(255, 255, 255, 0.78); }
 
 .btn-small { padding: 8px 14px; font-size: 14px; align-self: flex-start; }
 .btn-danger { background: linear-gradient(180deg, #a33049, #7a1f33); border-color: #ff4d6d55; }
