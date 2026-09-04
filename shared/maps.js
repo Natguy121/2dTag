@@ -17,8 +17,14 @@
 // shared physics without touching the simulation itself (speedScale multiplies
 // C.MOVE_SPEED directly -- geometry on a high-speedScale map needs thick
 // interior solids, since a fast enough body can cross a thin one within a
-// single physics tick without ever registering an overlap). A handful of
-// boolean/number flags bend the RULES instead, each read only by server/room.js:
+// single physics tick without ever registering an overlap). A NEGATIVE
+// gravityScale flips the world instead of just scaling it: "down" (the
+// direction gravity pulls and jumping pushes away from) becomes up, so a
+// solid meant to be stood on belongs near the top of the map instead of the
+// bottom -- see shared/physics.js's stepBody for how every direction check
+// (landing, one-way platforms, world edges) mirrors accordingly. A handful
+// of other boolean/number flags bend the RULES instead, each read only by
+// server/room.js:
 //   guns              true  -- only the tagger can fire (see shared/physics
 //                     resolveShot); a hit tags exactly like a touch would
 //   invisibilityCycle true  -- the tagger flickers visible/invisible on a
@@ -27,6 +33,8 @@
 //                     round begins, giving everyone else a head start
 //   detectionRange    N     -- bots can't perceive a player farther than
 //                     this for chase/flee purposes; omitted = unlimited
+//   coinBonus         N     -- multiplies everyone's end-of-round coin
+//                     payout on this map; omitted = 1 (no change)
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
@@ -649,6 +657,59 @@ export const MAPS = [
       [280, 730], [1220, 730],
       [700, 600], [1400, 600],
       [900, 470],
+    ],
+  },
+
+  {
+    id: 'upside',
+    name: 'Upside Down',
+    blurb: 'Gravity flipped -- the floor is at the top. Pays double coins.',
+    width: 1600,
+    height: 900,
+    gravityScale: -1,
+    frictionScale: 1,
+    coinBonus: 2,
+    theme: {
+      sky: ['#2a0a4a', '#4a1a6b', '#1a0530'],
+      solid: '#8b3aff',
+      solidEdge: '#ffd166',
+      platform: '#b980ff',
+      accent: '#39f0d8',
+      hazard: '#ff4d6d',
+      fog: 'rgba(139,58,255,0.14)',
+      grid: 'rgba(200,150,255,0.10)',
+      decor: 'clouds',
+    },
+    // Neon Arena's exact geometry, mirrored vertically (y' = height - y - h,
+    // and spawns adjusted the same way) -- since that map is already proven
+    // fully reachable, the mirror image is too, just approached from a
+    // flipped gravity instead of a re-derived layout.
+    solids: [
+      [0, 0, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      [430, 40, 40, 120],
+      [1130, 40, 40, 120],
+      [720, 170, 160, 40],
+    ],
+    platforms: [
+      [170, 160, 230],
+      [1200, 160, 230],
+      [545, 300, 200],
+      [855, 300, 200],
+      [290, 416, 240],
+      [1070, 416, 240],
+      [660, 534, 280],
+      [110, 570, 190],
+      [1300, 570, 190],
+      [400, 676, 200],
+      [1000, 676, 200],
+    ],
+    hazards: [],
+    springs: [],
+    spawns: [
+      [150, 78], [400, 78], [640, 78], [980, 78],
+      [1230, 78], [1450, 78], [700, 586], [900, 586],
     ],
   },
 ];

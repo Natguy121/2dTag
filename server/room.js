@@ -308,14 +308,16 @@ export class Room {
     }));
     // Least time spent as "it" wins; more tags made breaks a tie.
     list.sort((a, b) => (a.itTime - b.itTime) || (b.tags - a.tags) || a.name.localeCompare(b.name));
+    const coinMult = this.map.coinBonus || 1;
     list.forEach((entry, i) => {
       entry.place = i + 1;
       // Coins: a flat payout for finishing the round, more for tags made and
       // for time spent NOT it, with a bonus for placing well. Skins are
       // purely cosmetic, so this only ever buys a look, never an advantage.
+      // Some maps (map.coinBonus) multiply the whole payout further.
       const evadeBonus = Math.round(Math.max(0, this.roundTime - entry.itTime) / 12);
       const placeBonus = entry.place === 1 ? 20 : entry.place === 2 ? 10 : entry.place === 3 ? 5 : 0;
-      entry.coinsEarned = 8 + entry.tags * 4 + evadeBonus + placeBonus;
+      entry.coinsEarned = Math.round((8 + entry.tags * 4 + evadeBonus + placeBonus) * coinMult);
     });
     this.standings = list;
     this.rosterDirty = true;

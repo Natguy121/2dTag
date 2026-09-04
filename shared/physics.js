@@ -75,6 +75,12 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const frictionScale = map.frictionScale ?? 1;
   const airScale = map.airScale ?? 1;
   const speedScale = map.speedScale ?? 1;
+  // A negative gravityScale flips the world: "down" (the direction gravity
+  // pulls, and the direction jumping pushes away from) becomes up instead.
+  // Every direction-sensitive check below is written so gravityDir > 0
+  // reduces to exactly the original code -- existing maps (gravityScale
+  // always >= 0 today) are completely unaffected.
+  const gravityDir = gravityScale < 0 ? -1 : 1;
 
   const events = {
     jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null, candy: false,
@@ -115,7 +121,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     // Launch velocity does NOT scale with gravity, so a low gravity map jumps
     // proportionally higher: height = v^2 / (2 * G * gravityScale). Moon Base
     // at 0.34 gravity gives roughly three times the arc of a normal map.
-    b.vy = -C.JUMP_VELOCITY * (map.jumpScale ?? 1);
+    b.vy = -C.JUMP_VELOCITY * (map.jumpScale ?? 1) * gravityDir;
     b.jumpBuf = 0;
     b.coyote = 0;
     b.onGround = false;
@@ -123,7 +129,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     events.jumped = true;
   }
   // Releasing jump early cuts the arc short.
-  if (!input.jump && b.vy < 0 && b.springTimer <= 0) b.vy *= Math.pow(C.JUMP_CUT, dt * 30);
+  if (!input.jump && b.vy * gravityDir < 0 && b.springTimer <= 0) b.vy *= Math.pow(C.JUMP_CUT, dt * 30);
   b.prevJump = input.jump;
 
   // --- drop through one-way platforms ------------------------------------
@@ -133,8 +139,12 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
 
   // --- gravity -----------------------------------------------------------
   b.vy += C.GRAVITY * gravityScale * dt;
-  const maxFall = C.MAX_FALL * Math.sqrt(Math.max(gravityScale, 0.05));
-  if (b.vy > maxFall) b.vy = maxFall;
+  const maxFall = C.MAX_FALL * Math.sqrt(Math.max(Math.abs(gravityScale), 0.05));
+  if (gravityDir > 0) {
+    if (b.vy > maxFall) b.vy = maxFall;
+  } else if (b.vy < -maxFall) {
+    b.vy = -maxFall;
+  }
 
   // --- integrate + collide ----------------------------------------------
   const W = C.PLAYER_W;
@@ -155,6 +165,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   if (b.x > map.width - W) { b.x = map.width - W; if (b.vx > 0) b.vx = 0; }
 
   // Vertical pass.
+  const prevTop = b.y;
   const prevBottom = b.y + H;
   b.y += b.vy * dt;
   const wasOnGround = b.onGround;
@@ -165,28 +176,49 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     if (!overlaps(b.x, b.y, W, H, s[0], s[1], s[2], s[3])) continue;
     if (b.vy > 0) {
       b.y = s[1] - H;
-      b.onGround = true;
+      if (gravityDir > 0) b.onGround = true;
     } else if (b.vy < 0) {
       b.y = s[1] + s[3];
+      if (gravityDir < 0) b.onGround = true;
     }
     b.vy = 0;
   }
 
-  if (b.vy >= 0 && b.dropTimer <= 0) {
+  if (gravityDir > 0) {
+    if (b.vy >= 0 && b.dropTimer <= 0) {
+      const platforms = map.platforms;
+      for (let i = 0; i < platforms.length; i++) {
+        const p = platforms[i];
+        if (!overlaps(b.x, b.y, W, H, p[0], p[1], p[2], PLATFORM_H)) continue;
+        // Only land on it if we were above the surface at the start of the step.
+        if (prevBottom <= p[1] + 1) {
+          b.y = p[1] - H;
+          b.vy = 0;
+          b.onGround = true;
+        }
+      }
+    }
+  } else if (b.vy <= 0 && b.dropTimer <= 0) {
+    // Inverted gravity: the same one-way platforms are landed on from
+    // underneath instead, moving "up" (toward the flipped ground).
     const platforms = map.platforms;
     for (let i = 0; i < platforms.length; i++) {
       const p = platforms[i];
       if (!overlaps(b.x, b.y, W, H, p[0], p[1], p[2], PLATFORM_H)) continue;
-      // Only land on it if we were above the surface at the start of the step.
-      if (prevBottom <= p[1] + 1) {
-        b.y = p[1] - H;
+      if (prevTop >= p[1] + PLATFORM_H - 1) {
+        b.y = p[1] + PLATFORM_H;
         b.vy = 0;
         b.onGround = true;
       }
     }
   }
 
-  if (b.y < 0) { b.y = 0; if (b.vy < 0) b.vy = 0; }
+  if (gravityDir > 0) {
+    if (b.y < 0) { b.y = 0; if (b.vy < 0) b.vy = 0; }
+  } else if (b.y + H > map.height) {
+    b.y = map.height - H;
+    if (b.vy > 0) b.vy = 0;
+  }
   if (b.onGround && !wasOnGround) { b.landed = true; events.landed = true; }
 
   // --- springs -----------------------------------------------------------
@@ -230,7 +262,11 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     const h = hazards[i];
     if (overlaps(b.x, b.y, W, H, h[0], h[1], h[2], h[3])) { events.hazard = true; break; }
   }
-  if (b.y > map.height + 140) events.outOfBounds = true;
+  if (gravityDir > 0) {
+    if (b.y > map.height + 140) events.outOfBounds = true;
+  } else if (b.y < -140) {
+    events.outOfBounds = true;
+  }
 
   // --- candy (maps with map.candies) --------------------------------------
   // Just an overlap flag -- the caller (room.js) owns the freeze timer and

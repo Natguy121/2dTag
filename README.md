@@ -3,10 +3,10 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Twelve maps, 1 to 10 players per game, hosted lobbies with share codes, coins
-earned by playing or from quests, unlockable skins and trails, 20 background
-music tracks, and bots that keep every server busy even when nobody else is
-around.
+Thirteen maps, 1 to 10 players per game, hosted lobbies with share codes,
+coins earned by playing or from quests, unlockable skins and trails, 20
+background music tracks, and bots that keep every server busy even when
+nobody else is around.
 
 ## Running it
 
@@ -82,6 +82,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Hush House** | Hide-and-seek: the seeker is frozen for a few seconds at the start. |
 | **Turbo Circuit** | **5x speed.** A 3600px straightaway that's over in seconds. |
 | **Candy Land** | Candy everywhere. Step on a piece and freeze in place for 3 seconds. |
+| **Upside Down** | Gravity flipped -- the floor is at the top. Pays double coins. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -98,7 +99,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Five maps bend the base rules further, each in a different direction:
+Six maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -128,6 +129,11 @@ Five maps bend the base rules further, each in a different direction:
   does. A short grace period after thawing stops the same piece from
   instantly re-catching you before you can step off it. Candy is never
   solid, so it can't block a path or trap anyone -- only tempt them.
+- **Upside Down** flips gravity: the floor is a solid strip along the top of
+  the map instead of the bottom, jumping pushes you down instead of up, and
+  one-way platforms hang from below rather than resting on top -- every
+  direction-sensitive part of the physics mirrors accordingly. Everyone's
+  end-of-round coin payout is doubled here, so it's worth the disorientation.
 
 ## Bots
 
@@ -152,7 +158,8 @@ vivid (no black or near-black skin exists). The rest unlock two ways:
 - **Coin shop** (21 skins, 120-600 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
-  top 3 -- so even a rough round earns something. The flagship is **Prism** at
+  top 3 -- so even a rough round earns something. Upside Down doubles that
+  entire payout for everyone in the round. The flagship is **Prism** at
   600 coins, a shimmering rainbow finish.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
