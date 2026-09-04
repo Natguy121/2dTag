@@ -43,6 +43,7 @@ export function createBody(x = 0, y = 0) {
     portalTimer: 0,
     jumped: false, // set for one step when a jump starts (drives sfx/particles)
     landed: false,
+    extraJumpUsed: false, // the Double Jump power's air jump, refreshed on landing
   };
 }
 
@@ -57,6 +58,7 @@ export function placeAtSpawn(body, spawn) {
   body.dropTimer = 0;
   body.springTimer = 0;
   body.portalTimer = 0;
+  body.extraJumpUsed = false;
   return body;
 }
 
@@ -72,7 +74,13 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const input = decodeInput(inputBits);
   const speedMult = opts.speedMult ?? 1;
   const jumpMult = opts.jumpMult ?? 1;
-  const gravityScale = map.gravityScale ?? 1;
+  // The Gravity Flip power flips one player's own world upside down without
+  // touching the map -- folded in right here, at the source, so every
+  // direction-sensitive computation below (which all derive from
+  // gravityScale/gravityDir) is automatically correct for it with no
+  // further changes, exactly the same machinery the Upside Down map's
+  // negative map.gravityScale already relies on.
+  const gravityScale = (map.gravityScale ?? 1) * (opts.gravityFlip ? -1 : 1);
   const frictionScale = map.frictionScale ?? 1;
   const airScale = map.airScale ?? 1;
   const speedScale = map.speedScale ?? 1;
@@ -126,6 +134,14 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     b.jumpBuf = 0;
     b.coyote = 0;
     b.onGround = false;
+    b.jumped = true;
+    events.jumped = true;
+  } else if (b.jumpBuf > 0 && opts.canDoubleJump && !b.extraJumpUsed) {
+    // The Double Jump power: one extra mid-air jump, refreshed the moment
+    // this body next touches ground (see the onGround check below).
+    b.vy = -C.JUMP_VELOCITY * (map.jumpScale ?? 1) * gravityDir;
+    b.jumpBuf = 0;
+    b.extraJumpUsed = true;
     b.jumped = true;
     events.jumped = true;
   }
@@ -221,6 +237,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     if (b.vy > 0) b.vy = 0;
   }
   if (b.onGround && !wasOnGround) { b.landed = true; events.landed = true; }
+  if (b.onGround) b.extraJumpUsed = false;
 
   // --- springs -----------------------------------------------------------
   const springs = map.springs || [];

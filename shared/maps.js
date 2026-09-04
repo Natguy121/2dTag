@@ -12,12 +12,11 @@
 //             constants.js). Purely a map decoration otherwise; the freeze
 //             logic lives in server/room.js.
 //   orbs      [x, y, w, h]  glowing pickup; touching one grants a random
-//             mini superpower for ORB_POWER_TIME seconds -- speed, a big
-//             jump, a shield, or brief invisibility (see ORB_* in
-//             constants.js) -- then that orb goes dark for
-//             ORB_RESPAWN_TIME seconds before it can be grabbed again.
-//             Purely a map decoration otherwise; the power/cooldown logic
-//             lives in server/room.js.
+//             mini superpower for ORB_POWER_TIME seconds -- see the full
+//             ORB_POWERS list and what each one does in constants.js --
+//             then that orb goes dark for ORB_RESPAWN_TIME seconds before
+//             it can be grabbed again. Purely a map decoration otherwise;
+//             the power/cooldown logic lives in server/room.js.
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
 // gravityScale / frictionScale / airScale / speedScale let a map bend the
@@ -723,7 +722,7 @@ export const MAPS = [
   {
     id: 'surge',
     name: 'Surge Ruins',
-    blurb: 'Glowing orbs grant a random mini superpower: speed, a big jump, a shield or brief invisibility.',
+    blurb: 'Glowing orbs grant one of 9 random mini superpowers, from speed and shields to gravity flips and radar.',
     width: 1600,
     height: 900,
     gravityScale: 1,

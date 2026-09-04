@@ -83,7 +83,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Turbo Circuit** | **5x speed.** A 3600px straightaway that's over in seconds. |
 | **Candy Land** | Candy everywhere. Step on a piece and freeze in place for 3 seconds. |
 | **Upside Down** | Gravity flipped -- the floor is at the top. Pays double coins. |
-| **Surge Ruins** | Glowing orbs grant a random mini superpower: speed, a big jump, a shield or brief invisibility. |
+| **Surge Ruins** | Glowing orbs grant one of 9 random mini superpowers. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -136,12 +136,26 @@ Seven maps bend the base rules further, each in a different direction:
   direction-sensitive part of the physics mirrors accordingly. Everyone's
   end-of-round coin payout is doubled here, so it's worth the disorientation.
 - **Surge Ruins** scatters 11 glowing orbs across the ruins, one on top of
-  every platform. Touch one -- anyone, tagger or not -- and it grants a
-  random mini superpower for 6 seconds: a burst of **speed**, a much bigger
-  **jump**, a **shield** that can't be tagged or shot, or brief
-  **invisibility** (hidden from everyone but yourself, same as Blackout's
-  tagger). That orb then goes dark and can't be grabbed again for 9 seconds,
-  so the map keeps redistributing power instead of one player camping every
+  every platform. Touch one -- anyone, tagger or not -- and it grants one of
+  nine random mini superpowers for 6 seconds:
+  - **Speed** -- a burst of extra move speed.
+  - **Jump** -- a much bigger single jump.
+  - **Shield** -- can't be tagged or shot.
+  - **Invisible** -- hidden from everyone but yourself, same rendering as
+    Blackout's tagger.
+  - **Gravity Flip** -- your own personal Upside Down: gravity flips just
+    for you, independent of what the map is doing, so you fall up and land
+    on the underside of platforms until it wears off.
+  - **Double Jump** -- one extra jump in mid-air, refreshed the instant you
+    next touch ground.
+  - **Frost Touch** -- touching another player freezes them in place for a
+    few seconds, exactly like stepping on a Candy Land piece.
+  - **Radar** -- a compass arrow always points at the current tagger (or,
+    if you're the tagger, at the nearest other player instead).
+  - **Long Reach** -- a much bigger grab range for tagging.
+
+  That orb then goes dark and can't be grabbed again for 9 seconds, so the
+  map keeps redistributing power instead of one player camping every
   pickup. A small on-screen ring and an icon over your head show which power
   you're holding and how long it has left; a matching badge in the HUD
   spells it out.

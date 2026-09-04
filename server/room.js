@@ -409,7 +409,11 @@ export class Room {
       let jumpMult = 1;
       if (p.powerTimer > 0 && p.powerType === 'speed') speedMult *= C.ORB_SPEED_MULT;
       if (p.powerTimer > 0 && p.powerType === 'jump') jumpMult *= C.ORB_JUMP_MULT;
-      const ev = stepBody(p.body, bits, map, dt, { speedMult, jumpMult });
+      const gravityFlip = p.powerTimer > 0 && p.powerType === 'gravity';
+      const canDoubleJump = p.powerTimer > 0 && p.powerType === 'doublejump';
+      const ev = stepBody(p.body, bits, map, dt, {
+        speedMult, jumpMult, gravityFlip, canDoubleJump,
+      });
 
       if (ev.candy && p.candyFreeze <= 0 && p.candyImmune <= 0 && this.state === 'playing') {
         p.candyFreeze = C.CANDY_FREEZE_TIME;
@@ -454,6 +458,7 @@ export class Room {
     if (this.state === 'playing') {
       this.resolveTags();
       this.resolveShots(map, dt);
+      this.resolveFreezeTouch();
       this.updateInvisibility(map, dt);
     }
 
@@ -488,10 +493,16 @@ export class Room {
     const tagger = [...this.players.values()].find((p) => p.it);
     if (!tagger || tagger.respawn > 0) return;
 
+    // The Reach power extends the tagger's grab range; irrelevant to anyone
+    // who isn't currently "it" (the power still counts down while they hold
+    // it, it just does nothing until they actually become the tagger).
+    const reach = tagger.powerTimer > 0 && tagger.powerType === 'reach'
+      ? C.TAG_REACH + C.ORB_REACH_BONUS : C.TAG_REACH;
+
     for (const p of this.players.values()) {
       if (p.id === tagger.id || p.respawn > 0 || p.immunity > 0) continue;
       if (p.powerTimer > 0 && p.powerType === 'shield') continue;
-      if (!bodiesTouch(tagger.body, p.body, C.TAG_REACH)) continue;
+      if (!bodiesTouch(tagger.body, p.body, reach)) continue;
       this.applyTag(tagger, p, 'tag');
       return; // only one tag per tick
     }
@@ -520,6 +531,28 @@ export class Room {
       y: target.body.y + C.PLAYER_H / 2,
     });
     this.rosterDirty = true;
+  }
+
+  /** The Frost Touch power: while held, touching any other player -- tagger
+   * or not, no exceptions, same philosophy as candy pieces -- freezes them
+   * in place. Reuses candyFreeze/candyImmune wholesale (same timers, same
+   * frozen-movement handling above, same snapshot flag) since freezing
+   * someone in place is exactly what that mechanic already does; only the
+   * trigger (a player touch instead of a map candy tile) and the event type
+   * differ, so the client can show ice instead of candy. */
+  resolveFreezeTouch() {
+    for (const holder of this.players.values()) {
+      if (holder.respawn > 0 || holder.powerTimer <= 0 || holder.powerType !== 'freeze') continue;
+      for (const p of this.players.values()) {
+        if (p.id === holder.id || p.respawn > 0) continue;
+        if (p.candyFreeze > 0 || p.candyImmune > 0) continue;
+        if (!bodiesTouch(holder.body, p.body, C.TAG_REACH)) continue;
+        p.candyFreeze = C.CANDY_FREEZE_TIME;
+        this.pushEvent({
+          type: 'freeze', id: p.id, by: holder.id, x: p.body.x, y: p.body.y,
+        });
+      }
+    }
   }
 
   /** Gun maps: only the tagger can fire, on a cooldown, tapping (not holding)

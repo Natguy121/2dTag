@@ -136,4 +136,26 @@ export const sfx = {
   orbFar: () => {
     blip({ freq: 700, to: 1100, dur: 0.12, type: 'sine', gain: 0.06 });
   },
+  // A ~3s icy crystalline chime, matching CANDY_FREEZE_TIME -- cold and
+  // glassy where candy's cue is a warm paper crinkle, so the Frost Touch
+  // power doesn't sound like a candy wrapper appeared out of nowhere on a
+  // map with no candy in sight.
+  freeze: () => {
+    const notes = 14;
+    for (let i = 0; i < notes; i++) {
+      const delay = (i / notes) * 2.8 + Math.random() * 0.05;
+      const freq = 1500 + Math.random() * 1300;
+      blip({
+        freq, to: freq * 0.7, dur: 0.4, type: 'sine', gain: 0.05, delay,
+      });
+    }
+  },
+  // Heard by whoever lands the freeze, and by anyone else nearby -- one
+  // quick icy crack instead of the full sustained chime.
+  freezePop: () => {
+    blip({ freq: 1400, to: 700, dur: 0.14, type: 'sine', gain: 0.1 });
+    blip({
+      freq: 2000, to: 1000, dur: 0.1, type: 'triangle', gain: 0.06, delay: 0.03,
+    });
+  },
 };

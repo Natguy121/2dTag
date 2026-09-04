@@ -23,9 +23,18 @@ const INTERP_DELAY = 0.1; // seconds of buffer for remote players
 const CORRECTION_TIME = 0.12;
 
 // Keyed by power name (see C.ORB_POWERS), used for pickup particles/HUD/aura.
-export const POWER_COLORS = { speed: '#ffd166', jump: '#4ff08a', shield: '#4cc9f0', invis: '#c58bff' };
-const POWER_LABELS = { speed: 'SPEED BOOST!', jump: 'SUPER JUMP!', shield: 'SHIELD UP!', invis: 'INVISIBLE!' };
-const POWER_ICONS = { speed: '⚡', jump: '⬆', shield: '\u{1F6E1}', invis: '\u{1F47B}' };
+export const POWER_COLORS = {
+  speed: '#ffd166', jump: '#4ff08a', shield: '#4cc9f0', invis: '#c58bff',
+  gravity: '#ff5fd1', doublejump: '#ff9142', freeze: '#b3ecff', radar: '#caff4d', reach: '#ff6b6b',
+};
+const POWER_LABELS = {
+  speed: 'SPEED BOOST!', jump: 'SUPER JUMP!', shield: 'SHIELD UP!', invis: 'INVISIBLE!',
+  gravity: 'GRAVITY FLIP!', doublejump: 'DOUBLE JUMP!', freeze: 'FROST TOUCH!', radar: 'RADAR ON!', reach: 'LONG REACH!',
+};
+const POWER_ICONS = {
+  speed: '⚡', jump: '⬆', shield: '\u{1F6E1}', invis: '\u{1F47B}',
+  gravity: '\u{1F643}', doublejump: '⏫', freeze: '❄️', radar: '\u{1F9ED}', reach: '\u{1F590}\u{FE0F}',
+};
 
 export class Game {
   constructor(canvas, hooks = {}) {
@@ -176,7 +185,10 @@ export class Game {
     // Replay everything the server has not acknowledged yet.
     this.pending = this.pending.filter((p) => p.seq > ack);
     for (const p of this.pending) {
-      stepBody(b, p.bits, this.map, C.DT, { speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult() });
+      stepBody(b, p.bits, this.map, C.DT, {
+        speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
+        gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
+      });
     }
 
     if (this.predictReady) {
@@ -192,17 +204,61 @@ export class Game {
     this.predictReady = true;
   }
 
+  /** Which power (if any) the local player is currently holding, per the
+   * latest server snapshot -- the single source every local-prediction
+   * opt below reads from, so they can never disagree with each other. */
+  localPower() {
+    const me = this.latestServerSelf();
+    return me && me.powerT > 0 ? C.ORB_POWERS[me.power - 1] : null;
+  }
+
   localSpeedMult() {
     const me = this.latestServerSelf();
     const isIt = me ? !!(me.flags & 2) : false;
     let mult = isIt && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
-    if (me && me.powerT > 0 && C.ORB_POWERS[me.power - 1] === 'speed') mult *= C.ORB_SPEED_MULT;
+    if (this.localPower() === 'speed') mult *= C.ORB_SPEED_MULT;
     return mult;
   }
 
   localJumpMult() {
+    return this.localPower() === 'jump' ? C.ORB_JUMP_MULT : 1;
+  }
+
+  localGravityFlip() {
+    return this.localPower() === 'gravity';
+  }
+
+  localCanDoubleJump() {
+    return this.localPower() === 'doublejump';
+  }
+
+  /** Radar power: while not "it", points at the current tagger; while "it",
+   * points at the nearest other (non-invisible) player instead, so it's
+   * useful either way you're holding it. Pure client-side lookup -- every
+   * player's live position is already in the snapshot the radar just reads
+   * from, so there's nothing new for the server to send. */
+  radarTarget() {
+    if (this.localPower() !== 'radar') return null;
     const me = this.latestServerSelf();
-    return me && me.powerT > 0 && C.ORB_POWERS[me.power - 1] === 'jump' ? C.ORB_JUMP_MULT : 1;
+    if (!me) return null;
+    const meIsIt = !!(me.flags & 2);
+    let targetId = null;
+    if (!meIsIt) {
+      for (const [id, meta] of this.roster) if (meta.it) { targetId = id; break; }
+    } else {
+      let bestDist = Infinity;
+      for (const [id] of this.roster) {
+        if (id === this.youId) continue;
+        const p = this.interpolated(id);
+        if (!p || (p.flags & 16)) continue; // radar doesn't see through invisibility
+        const d = Math.hypot(p.x - this.body.x, p.y - this.body.y);
+        if (d < bestDist) { bestDist = d; targetId = id; }
+      }
+    }
+    if (!targetId || targetId === this.youId) return null;
+    const pos = this.interpolated(targetId);
+    if (!pos || (pos.flags & 16)) return null;
+    return { x: pos.x + C.PLAYER_W / 2, y: pos.y + C.PLAYER_H / 2 };
   }
 
   latestServerSelf() {
@@ -304,6 +360,28 @@ export class Game {
             this.showCenter('STUCK IN CANDY!', 2.6);
           } else {
             sfx.candyPop();
+          }
+          break;
+        case 'freeze':
+          // Same frozen-in-place mechanic as candy (see the shared
+          // candyFreeze flag in drawPlayer), but triggered by another
+          // player's Frost Touch power instead of a map candy tile -- an
+          // icy cue instead of a wrapper crinkle so it doesn't sound like
+          // candy appeared out of nowhere on a non-Candy-Land map.
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 18, {
+              color: '#b3ecff', speed: 170, life: 0.5, size: 3, gravity: 100, spread: Math.PI * 2,
+            });
+          }
+          if (ev.id === this.youId) {
+            sfx.freeze();
+            this.showCenter('FROZEN!', 2.6);
+          } else if (ev.by === this.youId) {
+            sfx.freezePop();
+            const name = this.roster.get(ev.id)?.name || 'them';
+            this.showCenter(`FROZE ${name.toUpperCase()}`, 1.2);
+          } else {
+            sfx.freezePop();
           }
           break;
         case 'orb': {
@@ -416,8 +494,16 @@ export class Game {
     const frozen = this.state === 'countdown' || this.state === 'results';
     const self = this.latestServerSelf();
     const respawning = self ? !!(self.flags & 8) : false;
-    if (!frozen && !respawning) {
-      const ev = stepBody(this.body, bits, this.map, C.DT, { speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult() });
+    // Candy Land's freeze and the Frost Touch power both hold movement
+    // still server-side (see room.js's step()) -- mirror that here too, or
+    // the local prediction would keep drifting on stale input until the
+    // next snapshot yanks it back.
+    const iceFrozen = self ? !!(self.flags & 32) : false;
+    if (!frozen && !respawning && !iceFrozen) {
+      const ev = stepBody(this.body, bits, this.map, C.DT, {
+        speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
+        gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
+      });
       // Local feedback fires immediately rather than waiting for the server.
       if (ev.jumped) sfx.jump();
       if (ev.landed) {
@@ -565,6 +651,38 @@ export class Game {
     this.drawShotBeams(ctx);
     this.particles.draw(ctx);
     ctx.restore();
+
+    // Radar's compass arrow is a fixed-size screen-space overlay, drawn
+    // after the world transform is popped so camera zoom doesn't scale it.
+    this.drawRadar(ctx);
+  }
+
+  drawRadar(ctx) {
+    const target = this.radarTarget();
+    if (!target) return;
+    const me = this.selfRenderPos();
+    const angle = Math.atan2(
+      target.y - (me.y + C.PLAYER_H / 2),
+      target.x - (me.x + C.PLAYER_W / 2),
+    );
+    const cx = this.viewW / 2;
+    const cy = this.viewH / 2;
+    const radius = 70;
+
+    ctx.save();
+    ctx.translate(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+    ctx.rotate(angle);
+    ctx.globalAlpha = 0.6 + Math.sin(this.time * 6) * 0.2;
+    ctx.fillStyle = POWER_COLORS.radar;
+    ctx.shadowColor = POWER_COLORS.radar;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(11, 0);
+    ctx.lineTo(-6, -7);
+    ctx.lineTo(-6, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
   drawShotBeams(ctx) {
@@ -617,12 +735,15 @@ export class Game {
       });
     }
 
-    // Frozen in candy: a light sparkle trickle while stuck (the glow ring
-    // and candy icon are drawn after the character below) -- applies to
-    // anyone, tagger included.
+    // Frozen in place: a light sparkle trickle while stuck (the glow ring
+    // and icon are drawn after the character below) -- applies to anyone,
+    // tagger included. Candy Land's candy tiles and Surge Ruins' Frost
+    // Touch power both set this same flag; only the color/icon differ, so
+    // it reads as candy on one map and ice on the other.
+    const isCandySource = !!this.map.candies?.length;
     if (candyFrozen && profile.particles && Math.random() < 0.3) {
       this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H / 2, 1, {
-        color: '#ffb3d9', speed: 40, life: 0.5, size: 2.5, gravity: -20, spread: Math.PI * 2,
+        color: isCandySource ? '#ffb3d9' : '#b3ecff', speed: 40, life: 0.5, size: 2.5, gravity: -20, spread: Math.PI * 2,
       });
     }
 
@@ -653,15 +774,18 @@ export class Game {
 
     if (candyFrozen) {
       // A pulsing glow ring reads against any map's colors (a flat pink tint
-      // would vanish into Candy Land's own pink background), plus a candy
-      // icon with a dark stroke so it stays legible even without a
-      // color-emoji font available.
+      // would vanish into Candy Land's own pink background), plus an icon
+      // with a dark stroke so it stays legible even without a color-emoji
+      // font available. Candy Land gets its candy icon back; anywhere else
+      // (Surge Ruins' Frost Touch power) gets a snowflake in ice blue.
+      const glowColor = isCandySource ? '#ff4d9e' : '#5fd0ff';
+      const icon = isCandySource ? '\u{1F36C}' : '❄️';
       ctx.save();
       const pulse = 0.55 + Math.sin(this.time * 8) * 0.3;
       ctx.globalAlpha = pulse;
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 3;
-      ctx.shadowColor = '#ff4d9e';
+      ctx.shadowColor = glowColor;
       ctx.shadowBlur = 10;
       ctx.strokeRect(x - 4, y - 4, C.PLAYER_W + 8, C.PLAYER_H + 8);
       ctx.restore();
@@ -672,9 +796,9 @@ export class Game {
       ctx.textAlign = 'center';
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-      ctx.strokeText('\u{1F36C}', x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.strokeText(icon, x + C.PLAYER_W / 2, y - 12 + bob);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('\u{1F36C}', x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.fillText(icon, x + C.PLAYER_W / 2, y - 12 + bob);
       ctx.restore();
     }
 
