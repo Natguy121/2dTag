@@ -1,6 +1,6 @@
 /* 2D Tag - menus and HUD. The game itself is drawn on a canvas. */
 
-/* Two color themes, switched by setting data-theme on <html> (see Settings
+/* Four color themes, switched by setting data-theme on <html> (see Settings
    -> Theme). Everything below :root reads these tokens rather than fixed
    colors, so a theme swap reaches every screen consistently, not just the
    home screen. The *-rgb tokens exist so shadow/glow rgba() values can
@@ -50,6 +50,48 @@
   --primary-2: #d63fc0;
   --primary-border: rgba(255, 190, 240, 0.45);
   --primary-shadow-rgb: 240, 70, 200;
+}
+
+:root[data-theme="pink"] {
+  --bg: #1f0a18;
+  --bg-2: #2c0f22;
+  --panel: rgba(45, 15, 35, 0.82);
+  --panel-edge: rgba(255, 100, 180, 0.26);
+  --text: #ffeef5;
+  --muted: #d99ec0;
+  --accent: #ff2d95;
+  --accent-rgb: 255, 45, 149;
+  --accent-tint: #ffc2e0;
+  --accent-2: #ff8fc4;
+  --accent-2-rgb: 255, 143, 196;
+  --accent-2-tint: #ffd9ec;
+  --blob-1: #6b1a4a;
+  --blob-2: #8a1f5c;
+  --primary-1: #ff7ec9;
+  --primary-2: #e6399e;
+  --primary-border: rgba(255, 190, 220, 0.45);
+  --primary-shadow-rgb: 230, 60, 150;
+}
+
+:root[data-theme="blue"] {
+  --bg: #060c22;
+  --bg-2: #0a1638;
+  --panel: rgba(10, 25, 60, 0.82);
+  --panel-edge: rgba(80, 160, 255, 0.28);
+  --text: #eaf4ff;
+  --muted: #8fb0e0;
+  --accent: #2b8fff;
+  --accent-rgb: 43, 143, 255;
+  --accent-tint: #b8dcff;
+  --accent-2: #4fd8f0;
+  --accent-2-rgb: 79, 216, 240;
+  --accent-2-tint: #c8f5ff;
+  --blob-1: #123a78;
+  --blob-2: #0d5a8a;
+  --primary-1: #4fb3ff;
+  --primary-2: #1a7ae0;
+  --primary-border: rgba(150, 210, 255, 0.45);
+  --primary-shadow-rgb: 40, 140, 255;
 }
 
 * { box-sizing: border-box; }
@@ -491,6 +533,8 @@ body {
 .swatch-dot { width: 20px; height: 20px; border-radius: 50%; flex: none; }
 .swatch-classic { background: linear-gradient(135deg, #3b6fed, #ff8c3a); }
 .swatch-blossom { background: linear-gradient(135deg, #b34fe0, #ff6bd6); }
+.swatch-pink { background: linear-gradient(135deg, #ff2d95, #ff8fc4); }
+.swatch-blue { background: linear-gradient(135deg, #2b8fff, #4fd8f0); }
 
 /* ---------------------------------------------------------- keybinding */
 

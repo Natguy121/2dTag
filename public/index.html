@@ -24,7 +24,7 @@
 <script>
 try {
   var p = JSON.parse(localStorage.getItem('twodtag.profile.v1') || '{}');
-  if (p.theme === 'blossom') document.documentElement.setAttribute('data-theme', 'blossom');
+  if (['blossom', 'pink', 'blue'].indexOf(p.theme) !== -1) document.documentElement.setAttribute('data-theme', p.theme);
 } catch (e) {}
 </script>
 </head>
@@ -249,6 +249,12 @@ try {
           </button>
           <button type="button" class="theme-swatch" data-theme-option="blossom">
             <span class="swatch-dot swatch-blossom" aria-hidden="true"></span> Pink &amp; Purple
+          </button>
+          <button type="button" class="theme-swatch" data-theme-option="pink">
+            <span class="swatch-dot swatch-pink" aria-hidden="true"></span> Pink
+          </button>
+          <button type="button" class="theme-swatch" data-theme-option="blue">
+            <span class="swatch-dot swatch-blue" aria-hidden="true"></span> Blue
           </button>
         </div>
       </div>

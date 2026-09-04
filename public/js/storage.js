@@ -30,7 +30,7 @@ const DEFAULTS = {
   ownedTrails: [],
   claimedQuests: [],
   mapsPlayed: [],
-  theme: 'classic', // 'classic' (blue & orange) or 'blossom' (pink & purple)
+  theme: 'classic', // 'classic' (blue & orange), 'blossom' (pink & purple), 'pink' or 'blue'
 };
 
 function randomName() {

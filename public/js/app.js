@@ -716,11 +716,13 @@ function renderThemePicker() {
   }
 }
 
+const THEMES = ['classic', 'blossom', 'pink', 'blue'];
+
 function applyTheme(theme) {
-  profile.theme = theme === 'blossom' ? 'blossom' : 'classic';
+  profile.theme = THEMES.includes(theme) ? theme : 'classic';
   save();
-  if (profile.theme === 'blossom') document.documentElement.setAttribute('data-theme', 'blossom');
-  else document.documentElement.removeAttribute('data-theme');
+  if (profile.theme === 'classic') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', profile.theme);
   renderThemePicker();
 }
 
