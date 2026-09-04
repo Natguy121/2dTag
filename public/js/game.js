@@ -22,6 +22,11 @@ import {
 const INTERP_DELAY = 0.1; // seconds of buffer for remote players
 const CORRECTION_TIME = 0.12;
 
+// Keyed by power name (see C.ORB_POWERS), used for pickup particles/HUD/aura.
+export const POWER_COLORS = { speed: '#ffd166', jump: '#4ff08a', shield: '#4cc9f0', invis: '#c58bff' };
+const POWER_LABELS = { speed: 'SPEED BOOST!', jump: 'SUPER JUMP!', shield: 'SHIELD UP!', invis: 'INVISIBLE!' };
+const POWER_ICONS = { speed: '⚡', jump: '⬆', shield: '\u{1F6E1}', invis: '\u{1F47B}' };
+
 export class Game {
   constructor(canvas, hooks = {}) {
     this.canvas = canvas;
@@ -34,6 +39,7 @@ export class Game {
     this.state = 'lobby';
     this.timer = 0;
     this.seekerFreeze = 0;
+    this.orbState = []; // per-orb seconds until it respawns, from the last snapshot
     this.resultsShown = false;
 
     this.body = createBody();
@@ -127,12 +133,13 @@ export class Game {
   onSnapshot(msg) {
     this.timer = msg.timer;
     this.seekerFreeze = msg.seekerFreeze || 0;
+    this.orbState = msg.orbs || [];
     this.applyState(msg.state);
 
     const byId = new Map();
     for (const p of msg.players) {
       byId.set(p[0], {
-        x: p[1], y: p[2], vx: p[3], vy: p[4], facing: p[5], flags: p[6],
+        x: p[1], y: p[2], vx: p[3], vy: p[4], facing: p[5], flags: p[6], power: p[7] || 0, powerT: p[8] || 0,
       });
     }
     this.snapshots.push({ time: performance.now() / 1000, players: byId });
@@ -169,7 +176,7 @@ export class Game {
     // Replay everything the server has not acknowledged yet.
     this.pending = this.pending.filter((p) => p.seq > ack);
     for (const p of this.pending) {
-      stepBody(b, p.bits, this.map, C.DT, { speedMult: this.localSpeedMult() });
+      stepBody(b, p.bits, this.map, C.DT, { speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult() });
     }
 
     if (this.predictReady) {
@@ -188,7 +195,14 @@ export class Game {
   localSpeedMult() {
     const me = this.latestServerSelf();
     const isIt = me ? !!(me.flags & 2) : false;
-    return isIt && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
+    let mult = isIt && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
+    if (me && me.powerT > 0 && C.ORB_POWERS[me.power - 1] === 'speed') mult *= C.ORB_SPEED_MULT;
+    return mult;
+  }
+
+  localJumpMult() {
+    const me = this.latestServerSelf();
+    return me && me.powerT > 0 && C.ORB_POWERS[me.power - 1] === 'jump' ? C.ORB_JUMP_MULT : 1;
   }
 
   latestServerSelf() {
@@ -292,6 +306,21 @@ export class Game {
             sfx.candyPop();
           }
           break;
+        case 'orb': {
+          const color = POWER_COLORS[ev.power] || '#ffffff';
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 22, {
+              color, speed: 220, life: 0.55, size: 3.5, gravity: -60, spread: Math.PI * 2,
+            });
+          }
+          if (mine) {
+            sfx.orb();
+            this.showCenter(POWER_LABELS[ev.power] || 'POWER UP!', 1.6);
+          } else {
+            sfx.orbFar();
+          }
+          break;
+        }
         case 'go':
           sfx.go();
           this.showCenter('GO!', 0.8);
@@ -388,7 +417,7 @@ export class Game {
     const self = this.latestServerSelf();
     const respawning = self ? !!(self.flags & 8) : false;
     if (!frozen && !respawning) {
-      const ev = stepBody(this.body, bits, this.map, C.DT, { speedMult: this.localSpeedMult() });
+      const ev = stepBody(this.body, bits, this.map, C.DT, { speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult() });
       // Local feedback fires immediately rather than waiting for the server.
       if (ev.jumped) sfx.jump();
       if (ev.landed) {
@@ -455,6 +484,8 @@ export class Game {
       vy: b.vy,
       facing: b.facing,
       flags: b.flags,
+      power: b.power,
+      powerT: b.powerT,
     };
   }
 
@@ -512,7 +543,7 @@ export class Game {
     ctx.scale(this.cam.scale, this.cam.scale);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    drawMap(ctx, this.map, this.time);
+    drawMap(ctx, this.map, this.time, this.orbState);
 
     // Remote players first, local player on top.
     for (const [id, meta] of this.roster) {
@@ -527,6 +558,7 @@ export class Game {
       const pos = this.selfRenderPos();
       this.drawPlayer(ctx, pos.x, pos.y, {
         vx: this.body.vx, vy: this.body.vy, facing: this.body.facing, flags: self.flags,
+        power: self.power, powerT: self.powerT,
       }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin, trail: profile.trail }, true);
     }
 
@@ -559,6 +591,7 @@ export class Game {
     const onGround = !!(p.flags & 1);
     const invisible = !!(p.flags & 16);
     const candyFrozen = !!(p.flags & 32);
+    const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
     // sprite, no trail, no name, nothing that gives their position away. You
@@ -590,6 +623,14 @@ export class Game {
     if (candyFrozen && profile.particles && Math.random() < 0.3) {
       this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H / 2, 1, {
         color: '#ffb3d9', speed: 40, life: 0.5, size: 2.5, gravity: -20, spread: Math.PI * 2,
+      });
+    }
+
+    // Holding a power-orb effect: a colored trickle in that power's color
+    // (the ring + icon are drawn after the character below, same as candy).
+    if (power && profile.particles && Math.random() < 0.35) {
+      this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H / 2, 1, {
+        color: POWER_COLORS[power], speed: 55, life: 0.4, size: 2.5, gravity: -30, spread: Math.PI * 2,
       });
     }
 
@@ -637,6 +678,38 @@ export class Game {
       ctx.restore();
     }
 
+    if (power) {
+      // A colored ring (a bubble for shield, a rectangle otherwise so it
+      // doesn't get confused with the shield bubble at a glance) plus an
+      // icon above the head naming which of the four powers is active.
+      const color = POWER_COLORS[power];
+      ctx.save();
+      ctx.globalAlpha = 0.5 + Math.sin(this.time * 6) * 0.22;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+      if (power === 'shield') {
+        ctx.beginPath();
+        ctx.arc(x + C.PLAYER_W / 2, y + C.PLAYER_H / 2, C.PLAYER_W * 0.9, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.strokeRect(x - 4, y - 4, C.PLAYER_W + 8, C.PLAYER_H + 8);
+      }
+      ctx.restore();
+
+      ctx.save();
+      const bob = Math.sin(this.time * 5) * 2;
+      ctx.font = '16px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeText(POWER_ICONS[power], x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.fillStyle = color;
+      ctx.fillText(POWER_ICONS[power], x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.restore();
+    }
+
     if (profile.showNames && meta) {
       ctx.save();
       ctx.font = '600 11px system-ui, sans-serif';
@@ -674,12 +747,20 @@ export class Game {
     if (itPlayer?.isYou && this.seekerFreeze > 0) {
       itName = `Frozen ${Math.ceil(this.seekerFreeze)}s -- let them hide!`;
     }
+
+    const me = this.latestServerSelf();
+    const power = me && me.powerT > 0 ? C.ORB_POWERS[me.power - 1] : null;
+
     return {
       state: this.state,
       timer: this.timer,
       timeLabel: formatTime(this.timer),
       rows,
       itName,
+      power,
+      powerLabel: power ? POWER_LABELS[power] : '',
+      powerIcon: power ? POWER_ICONS[power] : '',
+      powerT: me ? me.powerT : 0,
       fps: this.fps,
       ping: net.state.ping,
     };

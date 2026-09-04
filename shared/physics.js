@@ -71,6 +71,7 @@ function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
 export function stepBody(b, inputBits, map, dt, opts = {}) {
   const input = decodeInput(inputBits);
   const speedMult = opts.speedMult ?? 1;
+  const jumpMult = opts.jumpMult ?? 1;
   const gravityScale = map.gravityScale ?? 1;
   const frictionScale = map.frictionScale ?? 1;
   const airScale = map.airScale ?? 1;
@@ -83,7 +84,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   const gravityDir = gravityScale < 0 ? -1 : 1;
 
   const events = {
-    jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null, candy: false,
+    jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null, candy: false, orb: -1,
   };
   b.jumped = false;
   b.landed = false;
@@ -121,7 +122,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     // Launch velocity does NOT scale with gravity, so a low gravity map jumps
     // proportionally higher: height = v^2 / (2 * G * gravityScale). Moon Base
     // at 0.34 gravity gives roughly three times the arc of a normal map.
-    b.vy = -C.JUMP_VELOCITY * (map.jumpScale ?? 1) * gravityDir;
+    b.vy = -C.JUMP_VELOCITY * (map.jumpScale ?? 1) * jumpMult * gravityDir;
     b.jumpBuf = 0;
     b.coyote = 0;
     b.onGround = false;
@@ -276,6 +277,16 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   for (let i = 0; i < candies.length; i++) {
     const c = candies[i];
     if (overlaps(b.x, b.y, W, H, c[0], c[1], c[2], c[3])) { events.candy = true; break; }
+  }
+
+  // --- power orbs (maps with map.orbs) ------------------------------------
+  // Just an overlap flag carrying which orb index was touched -- the caller
+  // (room.js) owns each orb's cooldown and picks the random power, since
+  // that's mutable per-orb state this pure step function doesn't track.
+  const orbs = map.orbs || [];
+  for (let i = 0; i < orbs.length; i++) {
+    const o = orbs[i];
+    if (overlaps(b.x, b.y, W, H, o[0], o[1], o[2], o[3])) { events.orb = i; break; }
   }
 
   return events;

@@ -280,6 +280,63 @@ function drawCandy(ctx, c, time, seed) {
   ctx.restore();
 }
 
+const ORB_COLORS = ['#ffd166', '#4ff08a', '#4cc9f0', '#c58bff'];
+
+/** A glowing power-orb pickup. cooldown > 0 means it was just grabbed and
+ * hasn't respawned yet, so it's drawn dim and inert instead of glowing. */
+function drawOrb(ctx, o, time, seed, cooldown) {
+  const [x, y, w, h] = o;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const color = ORB_COLORS[seed % ORB_COLORS.length];
+
+  if (cooldown > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, w * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  const bob = Math.sin(time * 2.2 + seed) * 3;
+  const pulse = 0.7 + Math.sin(time * 4 + seed * 1.6) * 0.3;
+
+  ctx.save();
+  ctx.translate(cx, cy + bob);
+
+  // Soft outer bloom.
+  ctx.globalAlpha = 0.35 * pulse;
+  ctx.filter = 'blur(6px)';
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(0, 0, w * 0.62, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.filter = 'none';
+
+  // Solid core with a bright highlight so it reads as a sphere, not a disc.
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(0, 0, w * 0.36, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath();
+  ctx.arc(-w * 0.1, -h * 0.1, w * 0.13, 0, Math.PI * 2);
+  ctx.fill();
+
+  // A thin rotating ring hints at "unstable power" better than a static circle.
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.52, w * 0.2, time * 1.6 + seed, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function drawPortalDoor(ctx, x, y, hue, time, phase) {
   const cx = x + PORTAL_W / 2;
   const cy = y + PORTAL_H / 2;
@@ -474,7 +531,7 @@ function drawBackground(ctx, map, cam, view, time) {
 }
 
 /** Draw the whole world. Camera transform is applied by the caller. */
-export function drawMap(ctx, map, time) {
+export function drawMap(ctx, map, time, orbState) {
   const theme = map.theme;
 
   // Depth wash over the play area. A flat fill reads as a hard-edged block
@@ -495,6 +552,8 @@ export function drawMap(ctx, map, time) {
   for (const pr of map.portals || []) drawPortal(ctx, pr, time);
   const candies = map.candies || [];
   for (let i = 0; i < candies.length; i++) drawCandy(ctx, candies[i], time, i);
+  const orbs = map.orbs || [];
+  for (let i = 0; i < orbs.length; i++) drawOrb(ctx, orbs[i], time, i, orbState?.[i] || 0);
 }
 
 export { drawBackground };
@@ -600,6 +659,14 @@ export function drawMapPreview(canvas, map) {
     const c = candies[i];
     ctx.beginPath();
     ctx.arc(c[0] + c[2] / 2, c[1] + c[3] / 2, c[2] * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const orbs = map.orbs || [];
+  for (let i = 0; i < orbs.length; i++) {
+    ctx.fillStyle = ORB_COLORS[i % ORB_COLORS.length];
+    const o = orbs[i];
+    ctx.beginPath();
+    ctx.arc(o[0] + o[2] / 2, o[1] + o[3] / 2, o[2] * 0.55, 0, Math.PI * 2);
     ctx.fill();
   }
 

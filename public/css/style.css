@@ -639,6 +639,42 @@ body {
   align-self: center;
 }
 
+.hud-power {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(10, 6, 20, 0.55);
+  border: 1px solid var(--power-color, var(--panel-edge));
+  align-self: center;
+}
+
+.hud-power-icon { font-size: 16px; }
+
+.hud-power-label {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--power-color, #fff);
+  white-space: nowrap;
+}
+
+.hud-power-bar {
+  width: 46px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.hud-power-fill {
+  height: 100%;
+  background: var(--power-color, #fff);
+  border-radius: 3px;
+  transition: width 0.15s linear;
+}
+
 .hud-scores {
   list-style: none;
   margin: 0;

@@ -16,7 +16,7 @@ import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
 import * as homeDemo from './homeDemo.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
-import { Game } from './game.js';
+import { Game, POWER_COLORS } from './game.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -207,6 +207,16 @@ function updateHud(hud) {
   const itEl = $('[data-hud-it]');
   itEl.textContent = hud.itName;
   itEl.hidden = !hud.itName || hud.state === 'lobby';
+
+  const powerEl = $('[data-hud-power]');
+  powerEl.hidden = !hud.power || hud.state !== 'playing';
+  if (hud.power) {
+    powerEl.style.setProperty('--power-color', POWER_COLORS[hud.power] || '#fff');
+    $('[data-hud-power-icon]').textContent = hud.powerIcon;
+    $('[data-hud-power-label]').textContent = hud.powerLabel;
+    const pct = Math.max(0, Math.min(100, (hud.powerT / C.ORB_POWER_TIME) * 100));
+    $('[data-hud-power-fill]').style.width = `${pct}%`;
+  }
 
   const list = $('[data-hud-scores]');
   list.innerHTML = '';

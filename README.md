@@ -3,7 +3,7 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Thirteen maps, 1 to 10 players per game, hosted lobbies with share codes,
+Fourteen maps, 1 to 10 players per game, hosted lobbies with share codes,
 coins earned by playing or from quests, unlockable skins and trails, 20
 background music tracks, and bots that keep every server busy even when
 nobody else is around.
@@ -83,6 +83,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Turbo Circuit** | **5x speed.** A 3600px straightaway that's over in seconds. |
 | **Candy Land** | Candy everywhere. Step on a piece and freeze in place for 3 seconds. |
 | **Upside Down** | Gravity flipped -- the floor is at the top. Pays double coins. |
+| **Surge Ruins** | Glowing orbs grant a random mini superpower: speed, a big jump, a shield or brief invisibility. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -99,7 +100,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Six maps bend the base rules further, each in a different direction:
+Seven maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -134,6 +135,16 @@ Six maps bend the base rules further, each in a different direction:
   one-way platforms hang from below rather than resting on top -- every
   direction-sensitive part of the physics mirrors accordingly. Everyone's
   end-of-round coin payout is doubled here, so it's worth the disorientation.
+- **Surge Ruins** scatters 11 glowing orbs across the ruins, one on top of
+  every platform. Touch one -- anyone, tagger or not -- and it grants a
+  random mini superpower for 6 seconds: a burst of **speed**, a much bigger
+  **jump**, a **shield** that can't be tagged or shot, or brief
+  **invisibility** (hidden from everyone but yourself, same as Blackout's
+  tagger). That orb then goes dark and can't be grabbed again for 9 seconds,
+  so the map keeps redistributing power instead of one player camping every
+  pickup. A small on-screen ring and an icon over your head show which power
+  you're holding and how long it has left; a matching badge in the HUD
+  spells it out.
 
 ## Bots
 

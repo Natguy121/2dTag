@@ -128,4 +128,12 @@ export const sfx = {
     noise({ dur: 0.05, gain: 0.06, freq: 2400, delay: 0.05 });
     blip({ freq: 700, to: 500, dur: 0.08, type: 'triangle', gain: 0.08, delay: 0.02 });
   },
+  // A rising magical arpeggio for grabbing a power orb yourself.
+  orb: () => {
+    [520, 780, 1040, 1400].forEach((f, i) => blip({ freq: f, dur: 0.13, type: 'sine', gain: 0.14, delay: i * 0.045 }));
+  },
+  // A quieter, shorter cue heard when someone ELSE grabs one.
+  orbFar: () => {
+    blip({ freq: 700, to: 1100, dur: 0.12, type: 'sine', gain: 0.06 });
+  },
 };

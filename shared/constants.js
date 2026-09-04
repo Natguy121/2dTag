@@ -54,6 +54,21 @@ export const INVISIBLE_HIDDEN_TIME = 2;
 export const CANDY_FREEZE_TIME = 3;
 export const CANDY_IMMUNITY = 1.5;
 
+// Power orbs (maps with map.orbs: [...]). Touching a glowing orb grants
+// whoever touched it -- anyone, tagger or not -- one of four random mini
+// superpowers for ORB_POWER_TIME seconds: extra speed, a much bigger jump,
+// a shield that can't be tagged, or brief invisibility (same rendering as
+// INVISIBLE_* above). That orb then goes dark for ORB_RESPAWN_TIME seconds
+// before it can be grabbed again.
+export const ORB_POWER_TIME = 6;
+export const ORB_RESPAWN_TIME = 9;
+export const ORB_SPEED_MULT = 1.6;
+export const ORB_JUMP_MULT = 1.55;
+// Snapshot player entries carry a power as 1-based index into this list (0 =
+// no power) -- both server and client read the same array so the wire code
+// and the display name/icon can never drift apart.
+export const ORB_POWERS = ['speed', 'jump', 'shield', 'invis'];
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

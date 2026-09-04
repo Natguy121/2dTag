@@ -11,6 +11,13 @@
 //             seconds -- anyone, tagger or not (see CANDY_*_TIME in
 //             constants.js). Purely a map decoration otherwise; the freeze
 //             logic lives in server/room.js.
+//   orbs      [x, y, w, h]  glowing pickup; touching one grants a random
+//             mini superpower for ORB_POWER_TIME seconds -- speed, a big
+//             jump, a shield, or brief invisibility (see ORB_* in
+//             constants.js) -- then that orb goes dark for
+//             ORB_RESPAWN_TIME seconds before it can be grabbed again.
+//             Purely a map decoration otherwise; the power/cooldown logic
+//             lives in server/room.js.
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
 // gravityScale / frictionScale / airScale / speedScale let a map bend the
@@ -710,6 +717,68 @@ export const MAPS = [
     spawns: [
       [150, 78], [400, 78], [640, 78], [980, 78],
       [1230, 78], [1450, 78], [700, 586], [900, 586],
+    ],
+  },
+
+  {
+    id: 'surge',
+    name: 'Surge Ruins',
+    blurb: 'Glowing orbs grant a random mini superpower: speed, a big jump, a shield or brief invisibility.',
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    theme: {
+      sky: ['#0a2230', '#123f4f', '#04121a'],
+      solid: '#1f4a52',
+      solidEdge: '#ffd166',
+      platform: '#2f6b6f',
+      accent: '#7dffea',
+      hazard: '#ff4d6d',
+      fog: 'rgba(60,200,190,0.14)',
+      grid: 'rgba(120,255,230,0.08)',
+      decor: 'dust',
+    },
+    // Neon Arena's exact geometry -- already proven fully reachable by
+    // reach.mjs, so reusing it here guarantees the same for these ruins
+    // without re-deriving a layout from scratch. Only the theme and the
+    // added orbs are new.
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      [430, 740, 40, 120],
+      [1130, 740, 40, 120],
+      [720, 690, 160, 40],
+    ],
+    platforms: [
+      [170, 726, 230],
+      [1200, 726, 230],
+      [545, 586, 200],
+      [855, 586, 200],
+      [290, 470, 240],
+      [1070, 470, 240],
+      [660, 352, 280],
+      [110, 316, 190],
+      [1300, 316, 190],
+      [400, 210, 200],
+      [1000, 210, 200],
+    ],
+    hazards: [],
+    springs: [[770, 846, 60]],
+    // One orb centered on top of every platform -- 28x28, resting right on
+    // the surface exactly like a candy pickup does on Candy Land.
+    orbs: [
+      [271, 698, 28, 28], [1301, 698, 28, 28],
+      [631, 558, 28, 28], [941, 558, 28, 28],
+      [396, 442, 28, 28], [1176, 442, 28, 28],
+      [786, 324, 28, 28],
+      [191, 288, 28, 28], [1381, 288, 28, 28],
+      [486, 182, 28, 28], [1086, 182, 28, 28],
+    ],
+    spawns: [
+      [150, 860], [400, 860], [640, 860], [980, 860],
+      [1230, 860], [1450, 860], [700, 352], [900, 352],
     ],
   },
 ];

@@ -14,6 +14,11 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Power orb pickups (map.orbs) roll one of C.ORB_POWERS at random. 'speed'
+// and 'jump' are read by stepBody's speedMult/jumpMult opts; 'shield' is
+// checked in resolveTags()/resolveShots(); 'invis' feeds updateInvisibility()
+// the same p.invisible flag Blackout's tagger-cycle already uses.
+
 export function sanitizeName(raw, fallback = 'Player') {
   // Strip control characters, collapse whitespace runs, then clamp length.
   let name = String(raw ?? '')
@@ -57,6 +62,7 @@ export class Room {
     this.rosterDirty = true;
     this.lobbyCheck = 0;
     this.seekerFreezeTimer = 0;
+    this.orbCooldowns = []; // one entry per map.orbs, seconds until it can be grabbed again
     this.onEmpty = null;
   }
 
@@ -108,6 +114,8 @@ export class Room {
       invisible: false,
       candyFreeze: 0,
       candyImmune: 0,
+      powerType: null,
+      powerTimer: 0,
       ai: isBot ? createBrain(this.botDifficulty) : null,
       joinedAt: Date.now(),
     };
@@ -276,7 +284,10 @@ export class Room {
       p.invisible = false;
       p.candyFreeze = 0;
       p.candyImmune = 0;
+      p.powerType = null;
+      p.powerTimer = 0;
     }
+    this.orbCooldowns = new Array((this.map.orbs || []).length).fill(0);
     const starter = pick([...this.players.values()]);
     starter.it = true;
     this.pushEvent({ type: 'newIt', to: starter.id, reason: 'start' });
@@ -354,6 +365,9 @@ export class Room {
     const frozen = this.state === 'countdown' || this.state === 'results';
     if (this.state === 'playing') this.seekerFreezeTimer = Math.max(0, this.seekerFreezeTimer - dt);
     const seekerFrozen = this.seekerFreezeTimer > 0;
+    for (let i = 0; i < this.orbCooldowns.length; i++) {
+      if (this.orbCooldowns[i] > 0) this.orbCooldowns[i] = Math.max(0, this.orbCooldowns[i] - dt);
+    }
 
     // Bots decide first so they move on the same tick as the humans.
     if (this.players.size) {
@@ -383,15 +397,33 @@ export class Room {
       if (wasCandyFrozen && p.candyFreeze <= 0) p.candyImmune = C.CANDY_IMMUNITY;
       else p.candyImmune = Math.max(0, p.candyImmune - dt);
 
+      // Power orbs: whichever mini superpower was rolled on pickup wears off
+      // after ORB_POWER_TIME seconds.
+      p.powerTimer = Math.max(0, p.powerTimer - dt);
+      if (p.powerTimer <= 0) p.powerType = null;
+
       // Hide-and-seek: the tagger can't move for the first few seconds, so
       // everyone else gets a genuine head start to find a hiding spot.
       const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 ? 0 : p.inputBits;
-      const speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
-      const ev = stepBody(p.body, bits, map, dt, { speedMult });
+      let speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
+      let jumpMult = 1;
+      if (p.powerTimer > 0 && p.powerType === 'speed') speedMult *= C.ORB_SPEED_MULT;
+      if (p.powerTimer > 0 && p.powerType === 'jump') jumpMult *= C.ORB_JUMP_MULT;
+      const ev = stepBody(p.body, bits, map, dt, { speedMult, jumpMult });
 
       if (ev.candy && p.candyFreeze <= 0 && p.candyImmune <= 0 && this.state === 'playing') {
         p.candyFreeze = C.CANDY_FREEZE_TIME;
         this.pushEvent({ type: 'candy', id: p.id, x: p.body.x, y: p.body.y });
+      }
+
+      if (ev.orb >= 0 && this.state === 'playing' && this.orbCooldowns[ev.orb] <= 0) {
+        const power = pick(C.ORB_POWERS);
+        p.powerType = power;
+        p.powerTimer = C.ORB_POWER_TIME;
+        this.orbCooldowns[ev.orb] = C.ORB_RESPAWN_TIME;
+        this.pushEvent({
+          type: 'orb', id: p.id, orb: ev.orb, power, x: p.body.x, y: p.body.y,
+        });
       }
 
       if (ev.jumped) this.pushEvent({ type: 'jump', id: p.id, x: p.body.x, y: p.body.y });
@@ -458,6 +490,7 @@ export class Room {
 
     for (const p of this.players.values()) {
       if (p.id === tagger.id || p.respawn > 0 || p.immunity > 0) continue;
+      if (p.powerTimer > 0 && p.powerType === 'shield') continue;
       if (!bodiesTouch(tagger.body, p.body, C.TAG_REACH)) continue;
       this.applyTag(tagger, p, 'tag');
       return; // only one tag per tick
@@ -507,7 +540,8 @@ export class Room {
     tagger.shotCooldown = C.SHOT_COOLDOWN;
 
     const targets = [...this.players.values()]
-      .filter((p) => p.id !== tagger.id && p.respawn <= 0 && p.immunity <= 0)
+      .filter((p) => p.id !== tagger.id && p.respawn <= 0 && p.immunity <= 0
+        && !(p.powerTimer > 0 && p.powerType === 'shield'))
       .map((p) => ({ id: p.id, body: p.body }));
     const shot = resolveShot(tagger.body, map, targets);
 
@@ -523,14 +557,22 @@ export class Room {
   }
 
   /** Invisibility maps: the tagger cycles visible/invisible on a repeating
-   * timer, always starting visible right when they become "it". */
+   * timer, always starting visible right when they become "it". Also
+   * applies the 'invis' power-orb roll, which works the same way (hidden
+   * from everyone but yourself) for whoever is holding it, tagger or not. */
   updateInvisibility(map, dt) {
     for (const p of this.players.values()) {
-      if (!p.it || !map.invisibilityCycle) { p.invisCycle = 0; p.invisible = false; continue; }
-      p.invisCycle += dt;
-      const cycle = C.INVISIBLE_VISIBLE_TIME + C.INVISIBLE_HIDDEN_TIME;
-      if (p.invisCycle >= cycle) p.invisCycle -= cycle;
-      p.invisible = p.invisCycle >= C.INVISIBLE_VISIBLE_TIME;
+      let invisible = false;
+      if (p.it && map.invisibilityCycle) {
+        p.invisCycle += dt;
+        const cycle = C.INVISIBLE_VISIBLE_TIME + C.INVISIBLE_HIDDEN_TIME;
+        if (p.invisCycle >= cycle) p.invisCycle -= cycle;
+        invisible = p.invisCycle >= C.INVISIBLE_VISIBLE_TIME;
+      } else {
+        p.invisCycle = 0;
+      }
+      if (p.powerTimer > 0 && p.powerType === 'invis') invisible = true;
+      p.invisible = invisible;
     }
   }
 
@@ -575,6 +617,7 @@ export class Room {
       if (p.respawn > 0) flags |= 8;
       if (p.invisible) flags |= 16;
       if (p.candyFreeze > 0) flags |= 32;
+      if (p.powerTimer > 0 && p.powerType === 'shield') flags |= 64;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,
@@ -583,6 +626,8 @@ export class Room {
         Math.round(p.body.vy * 10) / 10,
         p.body.facing,
         flags,
+        p.powerTimer > 0 ? C.ORB_POWERS.indexOf(p.powerType) + 1 : 0,
+        Math.round(p.powerTimer * 10) / 10,
       ]);
     }
     return {
@@ -591,6 +636,7 @@ export class Room {
       state: this.state,
       timer: Math.max(0, Math.round(this.timer * 10) / 10),
       seekerFreeze: Math.round(this.seekerFreezeTimer * 10) / 10,
+      orbs: this.orbCooldowns.map((c) => Math.round(c * 10) / 10),
       players,
       ev: this.events,
     };
