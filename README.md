@@ -25,7 +25,9 @@ To play with friends on your network, they open `http://<your-ip>:3000` and use
 Open the site in your phone's browser, then add it to your home screen --
 **Safari:** Share &rarr; Add to Home Screen. **Chrome on Android:** &vellip;
 menu &rarr; Add to Home screen (or it may offer to install automatically). It
-launches full-screen with its own icon, no browser bar, like a real app.
+launches full-screen with its own icon, no browser bar, like a real app. The
+icon itself is drawn with the same in-game character renderer as everything
+else -- two characters mid-tag, not a generic logo.
 
 The game is a side-scroller and genuinely needs landscape to see enough of
 the map -- if you're in portrait, it shows a "rotate your device" screen
@@ -35,7 +37,11 @@ controls still work if a keyboard's attached.
 
 ## The game
 
-**Home** has three doors: **Play**, **Skins** and **Settings**.
+**Home** has three doors: **Play**, **Skins** and **Settings** -- plus a
+small looping animation in the top corner, two characters tagging each
+other back and forth, that swipes in each time you land back on the screen.
+Purely decorative (it reuses the same character renderer as actual
+gameplay), but it beats a static logo.
 
 **Play** offers:
 

@@ -158,6 +158,36 @@ body {
 
 /* ---------------------------------------------------------------- home */
 
+/* A little looping "two characters tagging each other" animation, tucked
+   into the top corner so it doesn't compete with the actual menu. Slides
+   (swipes) in from the edge each time the Home screen becomes active --
+   see the .is-swiping toggle in app.js. */
+.home-corner-demo {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 160px;
+  height: 100px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+}
+
+.home-corner-demo canvas { width: 100%; height: 100%; display: block; }
+
+.home-corner-demo.is-swiping {
+  animation: home-demo-swipe-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes home-demo-swipe-in {
+  from { transform: translateX(50px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (max-width: 520px) {
+  .home-corner-demo { width: 128px; height: 80px; top: 6px; right: 6px; }
+}
+
 .logo {
   margin: 6vh 0 0;
   text-align: center;

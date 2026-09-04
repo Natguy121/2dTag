@@ -14,6 +14,7 @@ import {
 } from './storage.js';
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
+import * as homeDemo from './homeDemo.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
 import { Game } from './game.js';
 
@@ -78,7 +79,18 @@ function showScreen(name) {
   if (name === 'join-server') refreshServers();
   if (name === 'skins') renderShop();
   if (name === 'settings') renderSettings();
-  if (name === 'home') drawProfilePreview();
+  if (name === 'home') {
+    drawProfilePreview();
+    homeDemo.start($('[data-home-demo-canvas]'));
+    // Retrigger the swipe-in animation every time Home comes back into view
+    // -- toggling the class with no reflow between wouldn't restart it.
+    const demo = $('[data-home-demo]');
+    demo.classList.remove('is-swiping');
+    void demo.offsetWidth;
+    demo.classList.add('is-swiping');
+  } else {
+    homeDemo.stop();
+  }
 }
 
 function toast(message, ms = 2600) {
@@ -1007,6 +1019,11 @@ drawProfilePreview();
 setVolume(profile.volume);
 music.setVolume(profile.musicVolume);
 net.connect();
+
+// Home is already the active screen in the markup before any showScreen()
+// call happens, so it needs its own kick-off here too.
+homeDemo.start($('[data-home-demo-canvas]'));
+$('[data-home-demo]').classList.add('is-swiping');
 
 // Cache the shell so it loads instantly on a repeat visit or a shaky
 // connection. Purely an optimization -- actual play still needs the live
