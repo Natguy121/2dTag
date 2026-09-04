@@ -614,7 +614,22 @@ body {
   gap: 10px;
 }
 
-.hud-top { display: flex; align-items: flex-start; gap: 14px; }
+/* World content (a glowing orb, a candy piece, a spring...) can end up
+   rendered right behind the top HUD row when the camera frames that part
+   of the map -- without this, it shows through the gaps between the timer/
+   it/power badges and looks like it's glued to the UI. A soft full-width
+   fade behind the whole row keeps it legible regardless of what's on the
+   canvas underneath, the same way a letterbox works in any HUD. */
+.hud-top-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(120px + env(safe-area-inset-top));
+  background: linear-gradient(to bottom, rgba(3, 2, 8, 0.92), rgba(3, 2, 8, 0.6) 55%, rgba(3, 2, 8, 0) 100%);
+}
+
+.hud-top { position: relative; display: flex; align-items: flex-start; gap: 14px; }
 
 .hud-timer {
   font-size: 34px;

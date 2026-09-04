@@ -500,6 +500,35 @@ function drawBackground(ctx, map, cam, view, time) {
       ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 140, 90, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+  } else if (theme.decor === 'ruins') {
+    // Faint sky glimpsed through a broken ceiling, plus cool motes and a
+    // couple of soft teal glow patches -- 'dust' recolored for a moonlit
+    // stone theme instead of warm lamplight, so it reads as ambient magic
+    // rather than a mismatched amber haze against a cyan/purple palette.
+    ctx.fillStyle = '#dffcff';
+    for (let i = 0; i < 36; i++) {
+      const sx = ((i * 151 + px * 0.4) % (view.w + 60)) - 30;
+      const sy = ((i * 83 + py * 0.4) % (view.h * 0.6 + 60)) - 30;
+      const tw = 0.3 + Math.abs(Math.sin(time * 1.4 + i)) * 0.4;
+      ctx.globalAlpha = 0.15 + tw * 0.25;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.fillStyle = '#9ff5e6';
+    for (let i = 0; i < 34; i++) {
+      const sx = ((i * 163 + px * 0.5 + Math.sin(time * 0.4 + i) * 26) % (view.w + 40)) - 20;
+      const sy = ((i * 131 + time * 7 + py * 0.5 + Math.sin(time * 0.6 + i * 1.7) * 18) % (view.h + 40)) - 20;
+      ctx.globalAlpha = 0.16 + Math.sin(time * 1.3 + i) * 0.08;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#7dffea';
+    for (const [gx, gy] of [[0.18, 0.28], [0.65, 0.16], [0.85, 0.48]]) {
+      ctx.globalAlpha = 0.06;
+      ctx.beginPath();
+      ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 150, 100, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else if (theme.decor === 'sprinkles') {
     // Colorful confetti-like sprinkles drifting down for the candy map.
     for (let i = 0; i < 60; i++) {

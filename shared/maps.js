@@ -737,7 +737,7 @@ export const MAPS = [
       hazard: '#ff4d6d',
       fog: 'rgba(60,200,190,0.14)',
       grid: 'rgba(120,255,230,0.08)',
-      decor: 'dust',
+      decor: 'ruins',
     },
     // Neon Arena's exact geometry -- already proven fully reachable by
     // reach.mjs, so reusing it here guarantees the same for these ruins
