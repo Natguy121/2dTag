@@ -146,6 +146,158 @@ function drawChameleonBody(ctx, bx, by, bw, bodyH, facing, vx, onGround, time, s
   ctx.globalAlpha = 1;
 }
 
+/**
+ * The Web Weaver skin: an original masked web-slinging hero (not a licensed
+ * character), and like Chameleon a genuinely different silhouette rather
+ * than a recolored blob -- two arms raised in a web-shooting pose, angular
+ * mask lenses instead of round eyes, a web pattern across the chest, and an
+ * animated strand of webbing pulsing out of each fist. Purely cosmetic --
+ * the "shooting webs" is a visual flourish, not a gameplay ability.
+ */
+function drawWebWeaverBody(ctx, bx, by, bw, bodyH, facing, vx, onGround, time, scale) {
+  const dir = facing >= 0 ? 1 : -1;
+  const suit = '#8a1220';
+  const suitDark = '#420a10';
+  const web = '#f0f0f0';
+  const trim = '#141414';
+  const cx = bx + bw * 0.5;
+
+  // Legs: the same run cycle every other skin uses, drawn first and
+  // extending past the torso's own height so they still show below it once
+  // the torso paints over their top sliver (matching the standard renderer).
+  const legW = bw * 0.26;
+  const runPhase = Math.sin(time * 16 + bx * 0.08);
+  const moving = onGround && Math.abs(vx) > 20;
+  const legSwing = moving ? runPhase * bw * 0.2 : 0;
+  const legDrop = onGround ? 0 : -bodyH * 0.08;
+  ctx.fillStyle = suitDark;
+  roundRect(ctx, bx + bw * 0.16 + legSwing, by + bodyH * 0.97 + legDrop, legW, bodyH * 0.22, 3);
+  ctx.fill();
+  roundRect(ctx, bx + bw * 0.58 - legSwing, by + bodyH * 0.97 + legDrop, legW, bodyH * 0.22, 3);
+  ctx.fill();
+
+  // Torso.
+  ctx.fillStyle = suit;
+  roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
+  ctx.fill();
+  ctx.save();
+  roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
+  ctx.clip();
+  ctx.fillStyle = suitDark;
+  ctx.globalAlpha = 0.35;
+  ctx.fillRect(facing > 0 ? bx : bx + bw * 0.62, by, bw * 0.38, bodyH);
+  ctx.restore();
+
+  // Web pattern radiating across the chest -- spokes plus concentric rings.
+  ctx.save();
+  roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
+  ctx.clip();
+  const webCx = cx;
+  const webCy = by + bodyH * 0.6;
+  ctx.strokeStyle = trim;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = Math.max(1, scale);
+  for (let a = 0; a < 6; a++) {
+    const ang = (a / 6) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(webCx, webCy);
+    ctx.lineTo(webCx + Math.cos(ang) * bw * 0.6, webCy + Math.sin(ang) * bw * 0.6);
+    ctx.stroke();
+  }
+  for (const r of [0.13, 0.25, 0.38]) {
+    ctx.beginPath();
+    ctx.arc(webCx, webCy, bw * r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Mask: angular white lens shapes instead of the usual round eyes, tilted
+  // outward, plus a center seam -- the single most identifying feature.
+  const eyeY = by + bodyH * 0.34;
+  for (const off of [-0.2, 0.2]) {
+    const ex = cx + bw * off;
+    const rot = off < 0 ? 0.4 : -0.4;
+    ctx.fillStyle = trim;
+    ctx.beginPath();
+    ctx.ellipse(ex, eyeY, bw * 0.15, bw * 0.1, rot, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = web;
+    ctx.beginPath();
+    ctx.ellipse(ex, eyeY, bw * 0.11, bw * 0.068, rot, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = trim;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = Math.max(1, 1.2 * scale);
+  ctx.beginPath();
+  ctx.moveTo(cx, by + bodyH * 0.08);
+  ctx.lineTo(cx, by + bodyH * 0.5);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Arms raised in a web-shooting pose, each firing an animated strand --
+  // the "shoot webs" flourish, and the reason this skin has a silhouette no
+  // rounded-rect blob could match: it's the only one with arms at all.
+  const shoulderY = by + bodyH * 0.5;
+  for (const side of [-1, 1]) {
+    const shoulderX = cx + side * bw * 0.47;
+    const elbowX = shoulderX + side * bw * 0.13;
+    const elbowY = shoulderY - bodyH * 0.07;
+    const fistX = elbowX + side * bw * 0.12;
+    const fistY = elbowY - bodyH * 0.13;
+
+    ctx.strokeStyle = suit;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = bw * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(shoulderX, shoulderY);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(fistX, fistY);
+    ctx.stroke();
+
+    ctx.fillStyle = suit;
+    ctx.beginPath();
+    ctx.arc(fistX, fistY, bw * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Web-shooter cuff at the wrist.
+    ctx.strokeStyle = web;
+    ctx.lineWidth = Math.max(1, 1.4 * scale);
+    ctx.beginPath();
+    ctx.arc(elbowX + side * bw * 0.05, elbowY - bodyH * 0.04, bw * 0.07, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Animated strand of webbing pulsing outward from the fist.
+    const pulse = (Math.sin(time * 3 + side * 1.7) + 1) / 2;
+    const strandLen = bw * (0.55 + pulse * 0.35);
+    const strandAng = side * -0.55;
+    const endX = fistX + Math.cos(strandAng) * strandLen;
+    const endY = fistY + Math.sin(strandAng) * strandLen;
+    const midX = fistX + Math.cos(strandAng) * strandLen * 0.5 + side * bw * 0.05 * Math.sin(time * 6 + side);
+    const midY = fistY + Math.sin(strandAng) * strandLen * 0.5;
+    ctx.strokeStyle = web;
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = Math.max(1, 1.4 * scale);
+    ctx.beginPath();
+    ctx.moveTo(fistX, fistY);
+    ctx.quadraticCurveTo(midX, midY, endX, endY);
+    ctx.stroke();
+    ctx.fillStyle = web;
+    ctx.beginPath();
+    ctx.arc(endX, endY, bw * 0.035, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Trim highlight along the top, matching the rest of the roster's finish.
+  ctx.strokeStyle = web;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = Math.max(1, 1.4 * scale);
+  roundRect(ctx, bx + 1, by + 1, bw - 2, bodyH - 2, bw * 0.28);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -212,6 +364,8 @@ export function drawCharacter(ctx, x, y, opts = {}) {
 
   if (skin.pattern === 'chameleon') {
     drawChameleonBody(ctx, bx, by, bw, bodyH, facing, vx, onGround, time, scale);
+  } else if (skin.pattern === 'webweaver') {
+    drawWebWeaverBody(ctx, bx, by, bw, bodyH, facing, vx, onGround, time, scale);
   } else {
     // Legs: a simple two-frame run cycle, tucked up while airborne.
     const legW = bw * 0.26;

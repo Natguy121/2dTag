@@ -152,6 +152,13 @@ export const SKINS = [
   // item in the shop, above even Prism.
   { id: 'chameleon',  name: 'Chameleon',   body: '#4a9e3f', dark: '#2c5e26', trim: '#eaffd0', eye: '#12210a', pattern: 'chameleon',
     unlock: { type: 'coins', price: 1500, label: 'Coin shop' } },
+
+  // Original masked web-slinging hero (not a licensed character), with its
+  // own silhouette the same way Chameleon has one -- see drawCharacter's
+  // 'webweaver' pattern branch in public/js/render.js. The new priciest
+  // item in the shop.
+  { id: 'webweaver',  name: 'Web Weaver',  body: '#8a1220', dark: '#420a10', trim: '#f0f0f0', eye: '#141414', pattern: 'webweaver',
+    unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 ];
 
 export const SKIN_BY_ID = Object.fromEntries(SKINS.map((s) => [s.id, s]));
