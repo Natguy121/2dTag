@@ -14,6 +14,138 @@ const FRANKENSTEIN_SKIN = {
   body: '#5fae4a', dark: '#2f6b24', trim: '#d8ffc2', eye: '#1a2b0a', pattern: 'solid',
 };
 
+/**
+ * The Chameleon skin: a genuinely different silhouette instead of the usual
+ * rounded-rect blob -- an egg-shaped body, a curled tail, a serrated dorsal
+ * crest and turret eyes on stalks, with skin color that slowly drifts
+ * through greens the way a real chameleon shifts color. Draws in place of
+ * the normal legs/body/pattern/face block in drawCharacter.
+ */
+function drawChameleonBody(ctx, bx, by, bw, bodyH, facing, vx, onGround, time, scale) {
+  const dir = facing >= 0 ? 1 : -1;
+  const hue = 96 + Math.sin(time * 0.4) * 22;
+  const body = `hsl(${hue}, 46%, 42%)`;
+  const dark = `hsl(${hue}, 46%, 25%)`;
+  const light = `hsl(${hue + 10}, 55%, 68%)`;
+  const belly = `hsl(${hue - 12}, 38%, 74%)`;
+  const cx = bx + bw * 0.5;
+  const bodyRx = bw * 0.32;
+  const bodyRy = bodyH * 0.35;
+  const bodyCy = by + bodyH * 0.5;
+
+  // Curled tail poking out past the body's edge -- the single most
+  // identifying chameleon feature, and the one thing a rounded-rect blob
+  // could never show. Drawn first so the body's fill cleanly covers its
+  // attachment point, leaving only the curl visible outside the silhouette.
+  const tailBaseX = cx - dir * bodyRx * 1.05;
+  const tailBaseY = by + bodyH * 0.6;
+  ctx.strokeStyle = body;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = bw * 0.11;
+  ctx.beginPath();
+  ctx.moveTo(tailBaseX, tailBaseY);
+  const turns = 1.5;
+  const steps = 20;
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const ang = -dir * t * turns * Math.PI * 2;
+    const r = bw * 0.26 * (1 - t * 0.78);
+    ctx.lineTo(
+      tailBaseX - dir * bw * 0.14 + Math.cos(ang) * r,
+      tailBaseY + bodyH * 0.14 + Math.sin(ang) * r * 0.85,
+    );
+  }
+  ctx.stroke();
+
+  // Main body: a tall egg shape, not a rounded rectangle.
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.ellipse(cx, bodyCy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pale belly patch underneath.
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, bodyCy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = belly;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.ellipse(cx, by + bodyH * 0.72, bodyRx * 0.8, bodyRy * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Gripping feet -- small rounded pads, drawn after the body so they show
+  // beneath it instead of being painted over.
+  const legSwing = onGround && Math.abs(vx) > 20 ? Math.sin(time * 16 + bx * 0.08) * bw * 0.16 : 0;
+  const legDrop = onGround ? 0 : -bodyH * 0.06;
+  ctx.fillStyle = dark;
+  for (const side of [-1, 1]) {
+    const fx = cx + side * bw * 0.2 + (side < 0 ? legSwing : -legSwing);
+    const fy = by + bodyH * 0.94 + legDrop;
+    ctx.beginPath();
+    ctx.ellipse(fx, fy, bw * 0.11, bw * 0.075, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Head: a rounded bump toward the front-top of the body.
+  const headCx = cx + dir * bw * 0.04;
+  const headCy = by + bodyH * 0.22;
+  const headRx = bw * 0.23;
+  const headRy = bodyH * 0.19;
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.ellipse(headCx, headCy, headRx, headRy, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Serrated dorsal crest running down the midline from crown to tail base,
+  // drawn last so it's never hidden under the head or body fills.
+  ctx.fillStyle = dark;
+  const crestStops = [0.03, 0.14, 0.27, 0.42, 0.58];
+  for (let i = 0; i < crestStops.length; i++) {
+    const sy = by + bodyH * crestStops[i];
+    const size = bw * (0.05 - i * 0.006);
+    ctx.beginPath();
+    ctx.moveTo(cx - size, sy + size * 1.5);
+    ctx.lineTo(cx, sy);
+    ctx.lineTo(cx + size, sy + size * 1.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Turret eyes on stalks, each capped with a round eyeball -- the other
+  // unmistakably-chameleon feature. The stalk uses the dark shade so it
+  // reads clearly against the head instead of blending into it.
+  for (const off of [-0.24, 0.24]) {
+    const ex = headCx + bw * off;
+    const ey = headCy - headRy * 0.5;
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(ex - bw * 0.075, ey + bw * 0.05);
+    ctx.lineTo(ex + bw * 0.075, ey + bw * 0.05);
+    ctx.lineTo(ex, ey - bw * 0.16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(ex, ey - bw * 0.17, bw * 0.075, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#12210a';
+    ctx.beginPath();
+    ctx.arc(ex + dir * bw * 0.025, ey - bw * 0.17, bw * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Trim highlight along the back, matching the rest of the roster's finish.
+  ctx.strokeStyle = light;
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = Math.max(1, 1.2 * scale);
+  ctx.beginPath();
+  ctx.ellipse(cx, bodyCy, bodyRx - 1, bodyRy - 1, 0, Math.PI * 1.05, Math.PI * 1.95);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -76,138 +208,143 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     ctx.restore();
   }
 
-  // Legs: a simple two-frame run cycle, tucked up while airborne.
-  const legW = bw * 0.26;
-  const runPhase = Math.sin(time * 16 + x * 0.08);
-  const moving = Math.abs(vx) > 20;
-  const legSwing = onGround && moving ? runPhase * bw * 0.2 : 0;
-  const legDrop = onGround ? 0 : -bh * 0.08;
-  ctx.fillStyle = skin.dark;
-  roundRect(ctx, bx + bw * 0.16 + legSwing, by + bh - bh * 0.16 + legDrop, legW, bh * 0.2, 3);
-  ctx.fill();
-  roundRect(ctx, bx + bw * 0.58 - legSwing, by + bh - bh * 0.16 + legDrop, legW, bh * 0.2, 3);
-  ctx.fill();
-
-  // Body.
   const bodyH = bh * 0.86;
-  if (skin.pattern === 'rainbow') {
-    const grad = ctx.createLinearGradient(bx, by, bx, by + bodyH);
-    const hueBase = (time * 90) % 360;
-    for (let i = 0; i <= 5; i++) grad.addColorStop(i / 5, `hsl(${(hueBase + i * 55) % 360}, 90%, 62%)`);
-    ctx.fillStyle = grad;
+
+  if (skin.pattern === 'chameleon') {
+    drawChameleonBody(ctx, bx, by, bw, bodyH, facing, vx, onGround, time, scale);
   } else {
-    ctx.fillStyle = skin.body;
-  }
-  roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
-  ctx.fill();
-
-  // Shading down the back half.
-  ctx.save();
-  roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
-  ctx.clip();
-  ctx.fillStyle = skin.dark;
-  ctx.globalAlpha *= 0.35;
-  ctx.fillRect(facing > 0 ? bx : bx + bw * 0.62, by, bw * 0.38, bodyH);
-  ctx.restore();
-
-  // Pattern.
-  ctx.save();
-  roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
-  ctx.clip();
-  if (skin.pattern === 'stripe') {
+    // Legs: a simple two-frame run cycle, tucked up while airborne.
+    const legW = bw * 0.26;
+    const runPhase = Math.sin(time * 16 + x * 0.08);
+    const moving = Math.abs(vx) > 20;
+    const legSwing = onGround && moving ? runPhase * bw * 0.2 : 0;
+    const legDrop = onGround ? 0 : -bh * 0.08;
     ctx.fillStyle = skin.dark;
-    ctx.globalAlpha *= 0.7;
-    ctx.fillRect(bx, by + bodyH * 0.42, bw, bodyH * 0.16);
-  } else if (skin.pattern === 'spots') {
-    ctx.fillStyle = skin.dark;
-    ctx.globalAlpha *= 0.6;
-    for (const [sx, sy, sr] of [[0.24, 0.3, 0.1], [0.68, 0.5, 0.13], [0.4, 0.72, 0.09]]) {
-      ctx.beginPath();
-      ctx.arc(bx + bw * sx, by + bodyH * sy, bw * sr, 0, Math.PI * 2);
-      ctx.fill();
+    roundRect(ctx, bx + bw * 0.16 + legSwing, by + bh - bh * 0.16 + legDrop, legW, bh * 0.2, 3);
+    ctx.fill();
+    roundRect(ctx, bx + bw * 0.58 - legSwing, by + bh - bh * 0.16 + legDrop, legW, bh * 0.2, 3);
+    ctx.fill();
+
+    // Body.
+    if (skin.pattern === 'rainbow') {
+      const grad = ctx.createLinearGradient(bx, by, bx, by + bodyH);
+      const hueBase = (time * 90) % 360;
+      for (let i = 0; i <= 5; i++) grad.addColorStop(i / 5, `hsl(${(hueBase + i * 55) % 360}, 90%, 62%)`);
+      ctx.fillStyle = grad;
+    } else {
+      ctx.fillStyle = skin.body;
     }
-  } else if (skin.pattern === 'robot') {
-    ctx.fillStyle = skin.dark;
-    ctx.globalAlpha *= 0.5;
-    ctx.fillRect(bx, by + bodyH * 0.62, bw, 2);
-    ctx.fillRect(bx, by + bodyH * 0.74, bw, 2);
-  } else if (skin.pattern === 'ghost') {
-    ctx.fillStyle = skin.trim;
-    ctx.globalAlpha *= 0.25;
-    ctx.beginPath();
-    ctx.arc(bx + bw * 0.5, by + bodyH * 0.8, bw * 0.34, 0, Math.PI * 2);
+    roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
     ctx.fill();
-  } else if (skin.pattern === 'rainbow') {
-    ctx.fillStyle = '#ffffff';
-    for (const [sx, sy, ph] of [[0.28, 0.32, 0], [0.66, 0.5, 2.1], [0.42, 0.7, 4.2]]) {
-      const tw = 0.35 + Math.max(0, Math.sin(time * 4 + ph)) * 0.5;
-      ctx.globalAlpha = tw;
-      ctx.beginPath();
-      ctx.arc(bx + bw * sx, by + bodyH * sy, bw * 0.045, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  ctx.restore();
 
-  // Face.
-  const eyeY = by + bodyH * 0.36;
-  const lookX = facing > 0 ? bw * 0.1 : -bw * 0.1;
-  if (skin.pattern === 'visor') {
-    ctx.fillStyle = skin.trim;
-    roundRect(ctx, bx + bw * 0.12, eyeY - bodyH * 0.08, bw * 0.76, bodyH * 0.22, 4);
-    ctx.fill();
-    ctx.fillStyle = skin.eye;
-    ctx.globalAlpha *= 0.55;
-    roundRect(ctx, bx + bw * 0.18 + lookX * 0.5, eyeY - bodyH * 0.04, bw * 0.3, bodyH * 0.12, 3);
-    ctx.fill();
-    ctx.globalAlpha = respawning ? 0.28 : 1;
-  } else {
-    for (const off of [-0.17, 0.17]) {
-      ctx.fillStyle = '#fff';
+    // Shading down the back half.
+    ctx.save();
+    roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
+    ctx.clip();
+    ctx.fillStyle = skin.dark;
+    ctx.globalAlpha *= 0.35;
+    ctx.fillRect(facing > 0 ? bx : bx + bw * 0.62, by, bw * 0.38, bodyH);
+    ctx.restore();
+
+    // Pattern.
+    ctx.save();
+    roundRect(ctx, bx, by, bw, bodyH, bw * 0.3);
+    ctx.clip();
+    if (skin.pattern === 'stripe') {
+      ctx.fillStyle = skin.dark;
+      ctx.globalAlpha *= 0.7;
+      ctx.fillRect(bx, by + bodyH * 0.42, bw, bodyH * 0.16);
+    } else if (skin.pattern === 'spots') {
+      ctx.fillStyle = skin.dark;
+      ctx.globalAlpha *= 0.6;
+      for (const [sx, sy, sr] of [[0.24, 0.3, 0.1], [0.68, 0.5, 0.13], [0.4, 0.72, 0.09]]) {
+        ctx.beginPath();
+        ctx.arc(bx + bw * sx, by + bodyH * sy, bw * sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (skin.pattern === 'robot') {
+      ctx.fillStyle = skin.dark;
+      ctx.globalAlpha *= 0.5;
+      ctx.fillRect(bx, by + bodyH * 0.62, bw, 2);
+      ctx.fillRect(bx, by + bodyH * 0.74, bw, 2);
+    } else if (skin.pattern === 'ghost') {
+      ctx.fillStyle = skin.trim;
+      ctx.globalAlpha *= 0.25;
       ctx.beginPath();
-      ctx.ellipse(bx + bw * (0.5 + off) + lookX * 0.35, eyeY, bw * 0.13, bw * 0.16, 0, 0, Math.PI * 2);
+      ctx.arc(bx + bw * 0.5, by + bodyH * 0.8, bw * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (skin.pattern === 'rainbow') {
+      ctx.fillStyle = '#ffffff';
+      for (const [sx, sy, ph] of [[0.28, 0.32, 0], [0.66, 0.5, 2.1], [0.42, 0.7, 4.2]]) {
+        const tw = 0.35 + Math.max(0, Math.sin(time * 4 + ph)) * 0.5;
+        ctx.globalAlpha = tw;
+        ctx.beginPath();
+        ctx.arc(bx + bw * sx, by + bodyH * sy, bw * 0.045, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // Face.
+    const eyeY = by + bodyH * 0.36;
+    const lookX = facing > 0 ? bw * 0.1 : -bw * 0.1;
+    if (skin.pattern === 'visor') {
+      ctx.fillStyle = skin.trim;
+      roundRect(ctx, bx + bw * 0.12, eyeY - bodyH * 0.08, bw * 0.76, bodyH * 0.22, 4);
       ctx.fill();
       ctx.fillStyle = skin.eye;
-      ctx.beginPath();
-      ctx.arc(bx + bw * (0.5 + off) + lookX * 0.6, eyeY + bw * 0.02, bw * 0.07, 0, Math.PI * 2);
+      ctx.globalAlpha *= 0.55;
+      roundRect(ctx, bx + bw * 0.18 + lookX * 0.5, eyeY - bodyH * 0.04, bw * 0.3, bodyH * 0.12, 3);
       ctx.fill();
+      ctx.globalAlpha = respawning ? 0.28 : 1;
+    } else {
+      for (const off of [-0.17, 0.17]) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(bx + bw * (0.5 + off) + lookX * 0.35, eyeY, bw * 0.13, bw * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = skin.eye;
+        ctx.beginPath();
+        ctx.arc(bx + bw * (0.5 + off) + lookX * 0.6, eyeY + bw * 0.02, bw * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
-  }
 
-  // Trim highlight along the top.
-  ctx.strokeStyle = skin.trim;
-  ctx.globalAlpha *= 0.5;
-  ctx.lineWidth = Math.max(1, 1.4 * scale);
-  roundRect(ctx, bx + 1, by + 1, bw - 2, bodyH - 2, bw * 0.28);
-  ctx.stroke();
-
-  if (frankenstein) {
-    // Neck bolts jutting from either side of the head.
-    ctx.globalAlpha = 1;
-    for (const side of [-1, 1]) {
-      const boltX = side < 0 ? bx - bw * 0.05 : bx + bw * 1.05;
-      const boltY = eyeY + bodyH * 0.24;
-      ctx.fillStyle = '#c7cdd6';
-      ctx.beginPath();
-      ctx.ellipse(boltX, boltY, bw * 0.09, bw * 0.06, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#5a6270';
-      ctx.lineWidth = Math.max(1, 1.2 * scale);
-      ctx.stroke();
-    }
-    // A stitched scar across the forehead.
-    ctx.strokeStyle = '#16290d';
-    ctx.lineWidth = Math.max(1.4, 1.8 * scale);
-    ctx.beginPath();
-    ctx.moveTo(bx + bw * 0.22, eyeY - bodyH * 0.17);
-    ctx.lineTo(bx + bw * 0.78, eyeY - bodyH * 0.17);
+    // Trim highlight along the top.
+    ctx.strokeStyle = skin.trim;
+    ctx.globalAlpha *= 0.5;
+    ctx.lineWidth = Math.max(1, 1.4 * scale);
+    roundRect(ctx, bx + 1, by + 1, bw - 2, bodyH - 2, bw * 0.28);
     ctx.stroke();
-    ctx.lineWidth = Math.max(1, 1.2 * scale);
-    for (let sx = 0.28; sx <= 0.74; sx += 0.115) {
+
+    if (frankenstein) {
+      // Neck bolts jutting from either side of the head.
+      ctx.globalAlpha = 1;
+      for (const side of [-1, 1]) {
+        const boltX = side < 0 ? bx - bw * 0.05 : bx + bw * 1.05;
+        const boltY = eyeY + bodyH * 0.24;
+        ctx.fillStyle = '#c7cdd6';
+        ctx.beginPath();
+        ctx.ellipse(boltX, boltY, bw * 0.09, bw * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#5a6270';
+        ctx.lineWidth = Math.max(1, 1.2 * scale);
+        ctx.stroke();
+      }
+      // A stitched scar across the forehead.
+      ctx.strokeStyle = '#16290d';
+      ctx.lineWidth = Math.max(1.4, 1.8 * scale);
       ctx.beginPath();
-      ctx.moveTo(bx + bw * sx, eyeY - bodyH * 0.22);
-      ctx.lineTo(bx + bw * sx, eyeY - bodyH * 0.12);
+      ctx.moveTo(bx + bw * 0.22, eyeY - bodyH * 0.17);
+      ctx.lineTo(bx + bw * 0.78, eyeY - bodyH * 0.17);
       ctx.stroke();
+      ctx.lineWidth = Math.max(1, 1.2 * scale);
+      for (let sx = 0.28; sx <= 0.74; sx += 0.115) {
+        ctx.beginPath();
+        ctx.moveTo(bx + bw * sx, eyeY - bodyH * 0.22);
+        ctx.lineTo(bx + bw * sx, eyeY - bodyH * 0.12);
+        ctx.stroke();
+      }
     }
   }
 

@@ -203,20 +203,25 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-71 characters, 21 unlocked from the start, purely cosmetic -- no skin is
+72 characters, 21 unlocked from the start, purely cosmetic -- no skin is
 faster or bigger than another, and the palette is deliberately wide and
 vivid (no black or near-black skin exists). The rest unlock two ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins
   earned rather than anything done in a single round.
-- **Coin shop** (32 skins, 120-600 coins): earned by playing rounds. Every
+- **Coin shop** (33 skins, 120-1500 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
   entire payout for everyone in the round, and Chair Chaos hands its last
-  player standing a flat 300-coin bonus on top of theirs. The flagship is
-  **Prism** at 600 coins, a shimmering rainbow finish.
+  player standing a flat 300-coin bonus on top of theirs. **Prism**, at 600
+  coins, is a shimmering rainbow finish; the true flagship above even that is
+  **Chameleon** at 1500 coins -- the one skin in the whole roster with an
+  actual different body shape instead of a recolored blob, complete with an
+  egg-shaped body, a curled tail, a serrated back ridge and turret eyes on
+  stalks, its color slowly drifting through greens the way a real chameleon
+  shifts color.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately

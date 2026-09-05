@@ -6,7 +6,7 @@
 //
 // Bump CACHE_NAME whenever the shell changes materially -- a new name means
 // old cached clients pick up the new files instead of stale ones lingering.
-const CACHE_NAME = '2dtag-shell-v10';
+const CACHE_NAME = '2dtag-shell-v11';
 
 const SHELL_FILES = [
   '/',

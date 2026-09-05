@@ -145,6 +145,13 @@ export const SKINS = [
     unlock: { type: 'coins', price: 360, label: 'Coin shop' } },
   { id: 'eclipse',    name: 'Eclipse',     body: '#8a3ffd', dark: '#5420a8', trim: '#e0d0ff', eye: '#ffd60a', pattern: 'ghost',
     unlock: { type: 'coins', price: 480, label: 'Coin shop' } },
+
+  // --- ultra-premium: a genuinely different silhouette, not just a
+  // recolored blob -- see drawCharacter's 'chameleon' pattern branch in
+  // public/js/render.js for the custom body/tail/eye shape. The priciest
+  // item in the shop, above even Prism.
+  { id: 'chameleon',  name: 'Chameleon',   body: '#4a9e3f', dark: '#2c5e26', trim: '#eaffd0', eye: '#12210a', pattern: 'chameleon',
+    unlock: { type: 'coins', price: 1500, label: 'Coin shop' } },
 ];
 
 export const SKIN_BY_ID = Object.fromEntries(SKINS.map((s) => [s.id, s]));
