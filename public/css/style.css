@@ -566,6 +566,40 @@ body {
 .swatch-pink { background: linear-gradient(135deg, #ff2d95, #ff8fc4); }
 .swatch-blue { background: linear-gradient(135deg, #2b8fff, #4fd8f0); }
 
+/* --------------------------------------------------------------- welcome */
+
+.welcome-menu { text-align: center; }
+.welcome-menu .screen-title { text-align: center; }
+.welcome-menu .tagline { margin-bottom: 6px; }
+
+.welcome-theme-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 4px 0 8px;
+}
+
+@media (max-width: 420px) {
+  .welcome-theme-picker { grid-template-columns: 1fr; }
+}
+
+.theme-swatch-hero {
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px 12px;
+  border-radius: 20px;
+  font-size: 15px;
+}
+
+.theme-swatch-hero .swatch-dot { width: 40px; height: 40px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+
+.theme-swatch-hero[aria-pressed="true"] {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 4px rgba(var(--accent-2-rgb), 0.2);
+  transform: translateY(-2px);
+}
+
 /* ---------------------------------------------------------- keybinding */
 
 .keybinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }

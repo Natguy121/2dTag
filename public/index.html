@@ -32,6 +32,37 @@ try {
 
 <div id="app">
 
+  <!-- ---------------------------------------------------------- WELCOME -->
+  <!-- Shown once, before Home, the very first time anyone opens the game
+       (see app.js's `if (!profile.onboarded)` check) -- picking a color
+       here just calls the same applyTheme() Settings uses, so it's not a
+       separate preference track, just an earlier chance to set the one
+       that already exists. -->
+  <section class="screen" data-screen="welcome">
+    <div class="menu welcome-menu">
+      <h1 class="logo"><span class="logo-2d">2D</span><span class="logo-tag">TAG</span></h1>
+      <h2 class="screen-title">Pick your colors</h2>
+      <p class="tagline">You can always change this later in Settings.</p>
+      <div class="theme-picker welcome-theme-picker" data-theme-picker>
+        <button type="button" class="theme-swatch theme-swatch-hero" data-theme-option="classic">
+          <span class="swatch-dot swatch-classic" aria-hidden="true"></span> Blue &amp; Orange
+        </button>
+        <button type="button" class="theme-swatch theme-swatch-hero" data-theme-option="blossom">
+          <span class="swatch-dot swatch-blossom" aria-hidden="true"></span> Pink &amp; Purple
+        </button>
+        <button type="button" class="theme-swatch theme-swatch-hero" data-theme-option="pink">
+          <span class="swatch-dot swatch-pink" aria-hidden="true"></span> Pink
+        </button>
+        <button type="button" class="theme-swatch theme-swatch-hero" data-theme-option="blue">
+          <span class="swatch-dot swatch-blue" aria-hidden="true"></span> Blue
+        </button>
+      </div>
+      <nav class="menu-buttons">
+        <button class="btn btn-primary btn-xl" data-action="onboard-done">Let's play!</button>
+      </nav>
+    </div>
+  </section>
+
   <!-- ------------------------------------------------------------- HOME -->
   <section class="screen is-active" data-screen="home">
     <div class="home-corner-demo" data-home-demo aria-hidden="true">
@@ -54,7 +85,7 @@ try {
           <button class="btn btn-small" data-go="settings">Change</button>
         </div>
       </div>
-      <p class="version">12 maps &middot; up to 10 players &middot; bots included</p>
+      <p class="version">15 maps &middot; up to 10 players &middot; bots included</p>
     </div>
   </section>
 

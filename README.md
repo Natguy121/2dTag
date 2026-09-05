@@ -37,6 +37,13 @@ controls still work if a keyboard's attached.
 
 ## The game
 
+The very first time anyone opens the game (tracked per browser, not per
+account -- there isn't one), a one-time **welcome screen** asks them to pick
+a color theme before dropping them at Home, so the game isn't stuck on
+whatever the default happens to be before they ever find Settings. Picking
+one there is the exact same choice as the Theme picker in Settings -- just
+an earlier chance to make it -- and it can be changed anytime afterward.
+
 **Home** has three doors: **Play**, **Skins** and **Settings** -- plus a
 small looping animation in the top corner, two characters tagging each
 other back and forth, that swipes in each time you land back on the screen.

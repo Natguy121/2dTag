@@ -33,6 +33,7 @@ const DEFAULTS = {
   claimedQuests: [],
   mapsPlayed: [],
   theme: 'classic', // 'classic' (blue & orange), 'blossom' (pink & purple), 'pink' or 'blue'
+  onboarded: false, // has seen the one-time "pick your colors" welcome screen
 };
 
 function randomName() {

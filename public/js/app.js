@@ -957,6 +957,13 @@ function wire() {
     });
   }
 
+  $('[data-action="onboard-done"]').addEventListener('click', () => {
+    sfx.click();
+    profile.onboarded = true;
+    save();
+    showScreen('home');
+  });
+
   $('[data-admin-form]').addEventListener('submit', (e) => {
     e.preventDefault();
     const input = $('[data-admin-password]');
@@ -1029,14 +1036,22 @@ function wire() {
 
 wire();
 drawProfilePreview();
+renderThemePicker();
 setVolume(profile.volume);
 music.setVolume(profile.musicVolume);
 net.connect();
 
-// Home is already the active screen in the markup before any showScreen()
-// call happens, so it needs its own kick-off here too.
-homeDemo.start($('[data-home-demo-canvas]'));
-$('[data-home-demo]').classList.add('is-swiping');
+if (!profile.onboarded) {
+  // First time anyone's opened this browser's copy of the game: a one-time
+  // "pick your colors" screen before Home, instead of dropping straight in
+  // with whatever the default theme happens to be.
+  showScreen('welcome');
+} else {
+  // Home is already the active screen in the markup before any showScreen()
+  // call happens, so it needs its own kick-off here too.
+  homeDemo.start($('[data-home-demo-canvas]'));
+  $('[data-home-demo]').classList.add('is-swiping');
+}
 
 // Cache the shell so it loads instantly on a repeat visit or a shaky
 // connection. Purely an optimization -- actual play still needs the live
