@@ -5,13 +5,25 @@ import * as C from '../shared/constants.js';
 import { getMap, MAPS } from '../shared/maps.js';
 import { BOT_NAMES, BOT_SKINS, DEFAULT_SKIN, SKIN_BY_ID } from '../shared/skins.js';
 import { BOT_TRAILS, DEFAULT_TRAIL, TRAIL_BY_ID } from '../shared/trails.js';
-import { createBody, placeAtSpawn, stepBody, bodiesTouch, decodeInput, resolveShot } from '../shared/physics.js';
+import {
+  createBody, placeAtSpawn, stepBody, bodiesTouch, decodeInput, resolveShot, overlaps,
+} from '../shared/physics.js';
 import { createBrain, think } from './bots.js';
 
 let nextPlayerId = 1;
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/** n distinct random indices in [0, total), ascending. */
+function pickIndices(total, n) {
+  const idxs = Array.from({ length: total }, (_, i) => i);
+  for (let i = idxs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
+  }
+  return idxs.slice(0, n).sort((a, b) => a - b);
 }
 
 // Power orb pickups (map.orbs) roll one of C.ORB_POWERS at random. 'speed'
@@ -63,6 +75,15 @@ export class Room {
     this.lobbyCheck = 0;
     this.seekerFreezeTimer = 0;
     this.orbCooldowns = []; // one entry per map.orbs, seconds until it can be grabbed again
+    // Musical Chairs (map.musicalChairs). chairStage is null off that map;
+    // otherwise 'moving' (music playing) or 'freeze' (find a chair now).
+    this.chairStage = null;
+    this.chairTimer = 0;
+    this.activeChairs = []; // indices into map.chairs currently sittable
+    this.chairEliminated = new Set();
+    this.chairEliminationOrder = []; // array of id-arrays, earliest elimination first
+    this.chairWinnerId = null;
+    this.chairAssignment = new Map(); // id -> chair index, a bot-steering hint only
     this.onEmpty = null;
   }
 
@@ -288,9 +309,20 @@ export class Room {
       p.powerTimer = 0;
     }
     this.orbCooldowns = new Array((this.map.orbs || []).length).fill(0);
-    const starter = pick([...this.players.values()]);
-    starter.it = true;
-    this.pushEvent({ type: 'newIt', to: starter.id, reason: 'start' });
+    this.chairStage = null;
+    this.chairTimer = 0;
+    this.activeChairs = [];
+    this.chairEliminated = new Set();
+    this.chairEliminationOrder = [];
+    this.chairWinnerId = null;
+    this.chairAssignment = new Map();
+    // Musical Chairs has no tagger at all -- nobody gets the speed bonus or
+    // the "X is IT" spotlight, since the whole rules set doesn't apply here.
+    if (!this.map.musicalChairs) {
+      const starter = pick([...this.players.values()]);
+      starter.it = true;
+      this.pushEvent({ type: 'newIt', to: starter.id, reason: 'start' });
+    }
     this.rosterDirty = true;
   }
 
@@ -300,13 +332,40 @@ export class Room {
     // Hide-and-seek maps freeze the tagger for a head start; everyone else is
     // free to move and scatter the instant the round begins.
     this.seekerFreezeTimer = this.map.seekerFreeze || 0;
+    if (this.map.musicalChairs) this.startMusicalChairs();
     this.rosterDirty = true;
     this.pushEvent({ type: 'go' });
+  }
+
+  /** Kick off a Musical Chairs round: chairs = players - 1 (the classic
+   * rule), a random subset of the map's chair slots picked to be active. A
+   * solo game (or nobody at all) has nothing to play, so it resolves
+   * immediately instead of sitting in a 'moving' phase with no one to
+   * eliminate. */
+  startMusicalChairs() {
+    const map = this.map;
+    const alive = [...this.players.values()].filter((p) => p.respawn <= 0);
+    const chairCount = Math.max(0, Math.min(map.chairs.length, alive.length - 1));
+    this.activeChairs = pickIndices(map.chairs.length, chairCount);
+    if (alive.length <= 1) {
+      this.chairWinnerId = alive[0]?.id ?? null;
+      this.chairStage = null;
+      this.endRound();
+      return;
+    }
+    this.chairStage = 'moving';
+    this.chairTimer = C.CHAIRS_MOVING_MIN + Math.random() * (C.CHAIRS_MOVING_MAX - C.CHAIRS_MOVING_MIN);
+    this.pushEvent({ type: 'chairsMoving', chairs: this.activeChairs });
   }
 
   endRound() {
     this.state = 'results';
     this.timer = C.POST_ROUND_TIME;
+    // Usually already null by the time a Musical Chairs game concludes
+    // itself (see resolveChairElimination()), but the round timer can also
+    // cut a game short mid-phase -- always land on a clean null so the
+    // client never renders a stale "find a chair!" over the results screen.
+    this.chairStage = null;
     const list = [...this.players.values()].map((p) => ({
       id: p.id,
       name: p.name,
@@ -317,19 +376,53 @@ export class Room {
       timesTagged: p.timesTagged,
       finishedIt: p.it,
     }));
-    // Least time spent as "it" wins; more tags made breaks a tie.
-    list.sort((a, b) => (a.itTime - b.itTime) || (b.tags - a.tags) || a.name.localeCompare(b.name));
-    const coinMult = this.map.coinBonus || 1;
-    list.forEach((entry, i) => {
-      entry.place = i + 1;
-      // Coins: a flat payout for finishing the round, more for tags made and
-      // for time spent NOT it, with a bonus for placing well. Skins are
-      // purely cosmetic, so this only ever buys a look, never an advantage.
-      // Some maps (map.coinBonus) multiply the whole payout further.
-      const evadeBonus = Math.round(Math.max(0, this.roundTime - entry.itTime) / 12);
-      const placeBonus = entry.place === 1 ? 20 : entry.place === 2 ? 10 : entry.place === 3 ? 5 : 0;
-      entry.coinsEarned = Math.round((8 + entry.tags * 4 + evadeBonus + placeBonus) * coinMult);
-    });
+
+    if (this.map.musicalChairs) {
+      // Rank by how long each player lasted. Whoever's still in when the
+      // game concludes (normally just the winner; everyone tied if the
+      // round timer cuts it short first) ranks best, then work backwards
+      // through elimination order -- most recently eliminated ranks next,
+      // and so on. A simultaneous final-two elimination (nobody grabs the
+      // last chair) means no one is "still in", so that last eliminated
+      // pair ties for 1st instead -- co-winners, not no winner.
+      const rank = new Map();
+      let place = 1;
+      const stillIn = [...this.players.values()].filter((p) => !this.chairEliminated.has(p.id));
+      for (const p of stillIn) rank.set(p.id, place);
+      place += stillIn.length;
+      for (let i = this.chairEliminationOrder.length - 1; i >= 0; i--) {
+        const group = this.chairEliminationOrder[i];
+        for (const id of group) rank.set(id, place);
+        place += group.length;
+      }
+      list.sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity)
+        || a.name.localeCompare(b.name));
+      list.forEach((entry) => {
+        // Assign place from the computed rank, not the sorted array index --
+        // a simultaneous elimination (or a round timer cutting the game
+        // short with several players still in) means real ties, and the
+        // array index alone would silently break them apart.
+        entry.place = rank.get(entry.id) ?? list.length;
+        const placeBonus = entry.place === 1 ? 20 : entry.place === 2 ? 10 : entry.place === 3 ? 5 : 0;
+        entry.coinsEarned = 8 + placeBonus + (entry.place === 1 ? C.CHAIRS_WINNER_BONUS : 0);
+      });
+    } else {
+      // Least time spent as "it" wins; more tags made breaks a tie.
+      list.sort((a, b) => (a.itTime - b.itTime) || (b.tags - a.tags) || a.name.localeCompare(b.name));
+      const coinMult = this.map.coinBonus || 1;
+      list.forEach((entry, i) => {
+        entry.place = i + 1;
+        // Coins: a flat payout for finishing the round, more for tags made
+        // and for time spent NOT it, with a bonus for placing well. Skins
+        // are purely cosmetic, so this only ever buys a look, never an
+        // advantage. Some maps (map.coinBonus) multiply the whole payout
+        // further.
+        const evadeBonus = Math.round(Math.max(0, this.roundTime - entry.itTime) / 12);
+        const placeBonus = entry.place === 1 ? 20 : entry.place === 2 ? 10 : entry.place === 3 ? 5 : 0;
+        entry.coinsEarned = Math.round((8 + entry.tags * 4 + evadeBonus + placeBonus) * coinMult);
+      });
+    }
+
     this.standings = list;
     this.rosterDirty = true;
     this.pushEvent({ type: 'roundEnd' });
@@ -348,6 +441,8 @@ export class Room {
       p.immunity = 0;
       p.respawn = 0;
     }
+    this.chairStage = null;
+    this.chairEliminated = new Set();
     this.syncBots();
     this.rosterDirty = true;
   }
@@ -374,7 +469,12 @@ export class Room {
       const all = [...this.players.values()];
       for (const p of this.players.values()) {
         if (!p.isBot) continue;
-        p.inputBits = frozen ? 0 : think(p, all, map, dt, this.state);
+        p.inputBits = frozen ? 0 : think(p, all, map, dt, this.state, {
+          stage: this.chairStage,
+          activeChairs: this.activeChairs,
+          eliminated: this.chairEliminated,
+          assignment: this.chairAssignment,
+        });
       }
     }
 
@@ -404,7 +504,10 @@ export class Room {
 
       // Hide-and-seek: the tagger can't move for the first few seconds, so
       // everyone else gets a genuine head start to find a hiding spot.
-      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 ? 0 : p.inputBits;
+      // Musical Chairs: an eliminated player is a spectator from here on --
+      // still simulated (gravity still applies) but can't steer anymore.
+      const chairedOut = map.musicalChairs && this.chairEliminated.has(p.id);
+      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 || chairedOut ? 0 : p.inputBits;
       let speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
       let jumpMult = 1;
       if (p.powerTimer > 0 && p.powerType === 'speed') speedMult *= C.ORB_SPEED_MULT;
@@ -456,10 +559,14 @@ export class Room {
     }
 
     if (this.state === 'playing') {
-      this.resolveTags();
-      this.resolveShots(map, dt);
-      this.resolveFreezeTouch();
-      this.updateInvisibility(map, dt);
+      if (map.musicalChairs) {
+        this.updateMusicalChairs(map, dt);
+      } else {
+        this.resolveTags();
+        this.resolveShots(map, dt);
+        this.resolveFreezeTouch();
+        this.updateInvisibility(map, dt);
+      }
     }
 
     // Timers.
@@ -609,6 +716,98 @@ export class Room {
     }
   }
 
+  /** Musical Chairs' per-tick clock: count down the current phase and
+   * transition once it runs out. The actual elimination check only happens
+   * at the end of the 'freeze' (grace) phase, in resolveChairElimination(). */
+  updateMusicalChairs(map, dt) {
+    if (this.chairStage === 'moving') {
+      this.chairTimer -= dt;
+      if (this.chairTimer <= 0) {
+        this.chairStage = 'freeze';
+        this.chairTimer = C.CHAIRS_GRACE_TIME;
+        // A projection of who'd grab which chair from right here, using
+        // positions at the exact moment the music stops -- purely a bot
+        // steering hint (see bots.js) so bots spread across the available
+        // chairs instead of every bot independently beelining for whichever
+        // one is nearest and pig-piling onto it. The real check below still
+        // goes entirely off where everyone actually ends up standing.
+        const alive = [...this.players.values()].filter((p) => !this.chairEliminated.has(p.id) && p.respawn <= 0);
+        this.chairAssignment = this.assignChairs(map, alive, false);
+        this.pushEvent({ type: 'chairsStop' });
+      }
+    } else if (this.chairStage === 'freeze') {
+      this.chairTimer -= dt;
+      if (this.chairTimer <= 0) this.resolveChairElimination(map);
+    }
+  }
+
+  /** Greedy nearest-first chair matching: each active chair goes to the one
+   * eligible player closest to it, one player per chair. With
+   * requireOverlap true (the real elimination check) a player has to
+   * actually be standing on the chair to be a candidate at all; false (the
+   * pre-freeze bot-steering projection above) just ranks everyone by raw
+   * distance since nobody's there yet. Returns a Map of id -> chair index. */
+  assignChairs(map, players, requireOverlap) {
+    const W = C.PLAYER_W;
+    const H = C.PLAYER_H;
+    const claims = [];
+    for (const p of players) {
+      for (const idx of this.activeChairs) {
+        const c = map.chairs[idx];
+        if (requireOverlap && !overlaps(p.body.x, p.body.y, W, H, c[0], c[1], c[2], c[3])) continue;
+        const dx = (p.body.x + W / 2) - (c[0] + c[2] / 2);
+        const dy = (p.body.y + H / 2) - (c[1] + c[3] / 2);
+        claims.push({ id: p.id, chair: idx, dist: Math.hypot(dx, dy) });
+      }
+    }
+    claims.sort((a, b) => a.dist - b.dist);
+    const taken = new Set();
+    const assigned = new Map();
+    for (const c of claims) {
+      if (taken.has(c.chair) || assigned.has(c.id)) continue;
+      taken.add(c.chair);
+      assigned.set(c.id, c.chair);
+    }
+    return assigned;
+  }
+
+  /** The music has stopped and the grace period is over: whoever isn't
+   * touching one of the active chairs is out. When two or more players
+   * overlap the same chair, only the closest one actually claims it --
+   * standing on the same seat as someone else doesn't save you. */
+  resolveChairElimination(map) {
+    const alive = [...this.players.values()].filter(
+      (p) => !this.chairEliminated.has(p.id) && p.respawn <= 0,
+    );
+    const safe = this.assignChairs(map, alive, true);
+    const out = alive.filter((p) => !safe.has(p.id));
+    if (out.length) {
+      this.chairEliminationOrder.push(out.map((p) => p.id));
+      for (const p of out) {
+        this.chairEliminated.add(p.id);
+        this.pushEvent({ type: 'chairsOut', id: p.id, x: p.body.x, y: p.body.y });
+      }
+      this.rosterDirty = true;
+    }
+
+    const remaining = alive.filter((p) => safe.has(p.id));
+    if (remaining.length <= 1) {
+      this.chairWinnerId = remaining[0]?.id ?? null;
+      this.chairStage = null;
+      this.endRound();
+      return;
+    }
+
+    // One fewer chair every round -- deactivate a random currently-active
+    // seat so it's never predictable which one disappears next.
+    const drop = this.activeChairs[Math.floor(Math.random() * this.activeChairs.length)];
+    this.activeChairs = this.activeChairs.filter((i) => i !== drop);
+    this.chairAssignment = new Map(); // stale now -- recomputed at the next freeze
+    this.chairStage = 'moving';
+    this.chairTimer = C.CHAIRS_MOVING_MIN + Math.random() * (C.CHAIRS_MOVING_MAX - C.CHAIRS_MOVING_MIN);
+    this.pushEvent({ type: 'chairsMoving', chairs: this.activeChairs });
+  }
+
   // -------------------------------------------------------------- snapshots
 
   rosterPayload() {
@@ -651,6 +850,7 @@ export class Room {
       if (p.invisible) flags |= 16;
       if (p.candyFreeze > 0) flags |= 32;
       if (p.powerTimer > 0 && p.powerType === 'shield') flags |= 64;
+      if (this.chairEliminated.has(p.id)) flags |= 128;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,
@@ -670,6 +870,12 @@ export class Room {
       timer: Math.max(0, Math.round(this.timer * 10) / 10),
       seekerFreeze: Math.round(this.seekerFreezeTimer * 10) / 10,
       orbs: this.orbCooldowns.map((c) => Math.round(c * 10) / 10),
+      chairs: this.map.musicalChairs ? {
+        stage: this.chairStage,
+        timer: Math.round(this.chairTimer * 10) / 10,
+        active: this.activeChairs,
+        remaining: [...this.players.values()].filter((p) => !this.chairEliminated.has(p.id)).length,
+      } : null,
       players,
       ev: this.events,
     };

@@ -17,6 +17,10 @@
 //             then that orb goes dark for ORB_RESPAWN_TIME seconds before
 //             it can be grabbed again. Purely a map decoration otherwise;
 //             the power/cooldown logic lives in server/room.js.
+//   chairs    [x, y, w, h]  a musical-chairs seat (maps with
+//             map.musicalChairs: true only). Purely a map decoration; the
+//             active/inactive rotation and elimination logic lives in
+//             server/room.js (see CHAIRS_* in constants.js).
 //   spawns    [centerX, feetY]  8 per map, one per player slot
 //
 // gravityScale / frictionScale / airScale / speedScale let a map bend the
@@ -41,6 +45,9 @@
 //                     this for chase/flee purposes; omitted = unlimited
 //   coinBonus         N     -- multiplies everyone's end-of-round coin
 //                     payout on this map; omitted = 1 (no change)
+//   musicalChairs     true  -- replaces tagging entirely: see map.chairs
+//                     above and CHAIRS_* in constants.js. No one is ever
+//                     "it" on this map.
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
@@ -778,6 +785,56 @@ export const MAPS = [
     spawns: [
       [150, 860], [400, 860], [640, 860], [980, 860],
       [1230, 860], [1450, 860], [700, 352], [900, 352],
+    ],
+  },
+
+  {
+    id: 'chairs',
+    name: 'Chair Chaos',
+    blurb: "Musical chairs -- when the music stops, find a chair or you're out. Last one standing wins 300 coins.",
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    musicalChairs: true,
+    theme: {
+      sky: ['#3a0ca3', '#7209b7', '#240046'],
+      solid: '#5a189a',
+      solidEdge: '#ffd60a',
+      platform: '#9d4edd',
+      accent: '#ffd60a',
+      hazard: '#ff4d6d',
+      fog: 'rgba(157,78,221,0.14)',
+      grid: 'rgba(255,214,10,0.08)',
+      decor: 'embers',
+    },
+    // A single open floor plus three low platforms -- no walls or pillars
+    // to block a fair scramble, since the whole point is reacting to the
+    // music, not fighting the geometry to reach a chair in time.
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+    ],
+    platforms: [
+      [200, 760, 220],
+      [700, 760, 220],
+      [1180, 760, 220],
+    ],
+    hazards: [],
+    springs: [],
+    // 10 seats, one per max player slot -- room.js keeps exactly
+    // (players remaining - 1) of these active at a time, deactivating one
+    // more after every round of eliminations.
+    chairs: [
+      [83, 826, 34, 34], [543, 826, 34, 34], [1033, 826, 34, 34], [1483, 826, 34, 34],
+      [225, 726, 34, 34], [345, 726, 34, 34],
+      [725, 726, 34, 34], [845, 726, 34, 34],
+      [1205, 726, 34, 34], [1325, 726, 34, 34],
+    ],
+    spawns: [
+      [150, 860], [500, 860], [850, 860], [1200, 860],
+      [1450, 860], [310, 760], [810, 760], [1290, 760],
     ],
   },
 ];

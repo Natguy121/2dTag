@@ -222,12 +222,12 @@ function updateHud(hud) {
   list.innerHTML = '';
   for (const row of hud.rows) {
     const li = document.createElement('li');
-    li.className = `${row.it ? 'is-it ' : ''}${row.isYou ? 'is-you' : ''}`;
+    li.className = `${row.it ? 'is-it ' : ''}${row.isYou ? 'is-you ' : ''}${row.eliminated ? 'is-out' : ''}`;
     const name = document.createElement('b');
     name.textContent = row.name + (row.isBot ? ' [bot]' : '');
     const score = document.createElement('span');
     score.className = 'sc';
-    score.textContent = `${row.itTime.toFixed(1)}s it`;
+    score.textContent = hud.musicalChairs ? (row.eliminated ? 'out' : 'in') : `${row.itTime.toFixed(1)}s it`;
     li.append(name, score);
     list.append(li);
   }
@@ -241,6 +241,7 @@ function showResults(standings, meId) {
   const overlay = $('[data-results-overlay]');
   if (!standings) { overlay.hidden = true; return; }
 
+  const chairs = !!game?.map?.musicalChairs;
   const list = $('[data-results-list]');
   list.innerHTML = '';
   for (const row of standings) {
@@ -255,7 +256,9 @@ function showResults(standings, meId) {
     const score = document.createElement('span');
     score.className = 'score';
     const coinsPart = row.coinsEarned ? ` · +${row.coinsEarned}c` : '';
-    score.textContent = `${row.itTime.toFixed(1)}s as it - ${row.tags} tag${row.tags === 1 ? '' : 's'}${coinsPart}`;
+    score.textContent = chairs
+      ? `${row.place === 1 ? 'Last one standing!' : 'Eliminated'}${coinsPart}`
+      : `${row.itTime.toFixed(1)}s as it - ${row.tags} tag${row.tags === 1 ? '' : 's'}${coinsPart}`;
     li.append(place, who, score);
     list.append(li);
   }
@@ -265,7 +268,7 @@ function showResults(standings, meId) {
   if (me) {
     const coinLine = typeof me.coinsEarned === 'number' ? ` +${me.coinsEarned} coins.` : '';
     sub.textContent = (me.place === 1
-      ? `You win! Only ${me.itTime.toFixed(1)}s spent as it.`
+      ? (chairs ? 'You won musical chairs!' : `You win! Only ${me.itTime.toFixed(1)}s spent as it.`)
       : `You placed ${ordinal(me.place)} of ${standings.length}.`) + coinLine;
     if (typeof me.coinsEarned === 'number') {
       addCoins(me.coinsEarned);

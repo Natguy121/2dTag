@@ -3,7 +3,7 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Fourteen maps, 1 to 10 players per game, hosted lobbies with share codes,
+Fifteen maps, 1 to 10 players per game, hosted lobbies with share codes,
 coins earned by playing or from quests, unlockable skins and trails, 20
 background music tracks, and bots that keep every server busy even when
 nobody else is around.
@@ -84,6 +84,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Candy Land** | Candy everywhere. Step on a piece and freeze in place for 3 seconds. |
 | **Upside Down** | Gravity flipped -- the floor is at the top. Pays double coins. |
 | **Surge Ruins** | Glowing orbs grant one of 9 random mini superpowers. |
+| **Chair Chaos** | Musical chairs -- when the music stops, find a chair or you're out. Last one standing wins 300 coins. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -100,7 +101,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Seven maps bend the base rules further, each in a different direction:
+Eight maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -159,6 +160,19 @@ Seven maps bend the base rules further, each in a different direction:
   pickup. A small on-screen ring and an icon over your head show which power
   you're holding and how long it has left; a matching badge in the HUD
   spells it out.
+- **Chair Chaos** throws out tagging entirely for a round of musical
+  chairs: music plays for a few seconds, then it stops and everyone --
+  tagger rules don't even apply here, nobody is ever "it" -- has to be
+  standing on one of the active chairs before the grace period runs out.
+  Chairs are always one fewer than the players still in, the classic rule,
+  so exactly one round's worth of players are guaranteed to miss out each
+  cycle (sometimes more, if several people are caught out of position at
+  once). Miss out and you're eliminated -- a faded, grayscale spectator for
+  the rest of the round, no longer able to move. One more chair disappears
+  after every round until a single player is left standing, who wins the
+  round on the spot and earns 300 bonus coins on top of the normal payout.
+  If two people miss the very last chair at the same moment, they tie for
+  the win and both get the bonus.
 
 ## Bots
 
@@ -184,8 +198,9 @@ vivid (no black or near-black skin exists). The rest unlock two ways:
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
-  entire payout for everyone in the round. The flagship is **Prism** at
-  600 coins, a shimmering rainbow finish.
+  entire payout for everyone in the round, and Chair Chaos hands its last
+  player standing a flat 300-coin bonus on top of theirs. The flagship is
+  **Prism** at 600 coins, a shimmering rainbow finish.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately

@@ -337,6 +337,45 @@ function drawOrb(ctx, o, time, seed, cooldown) {
   ctx.restore();
 }
 
+/** A musical-chairs seat. `active` chairs (currently sittable) glow in the
+ * map's own colors and bob gently; inactive ones (already removed from
+ * play this round) sit dim and gray so it's obvious not to bother. */
+function drawChair(ctx, c, active, theme, time, seed) {
+  const [x, y, w, h] = c;
+  const bob = active ? Math.sin(time * 2 + seed) * 1.5 : 0;
+  ctx.save();
+  ctx.translate(0, bob);
+
+  if (active) {
+    ctx.globalAlpha = 0.35;
+    ctx.filter = 'blur(4px)';
+    ctx.fillStyle = theme.accent;
+    ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+    ctx.filter = 'none';
+  }
+
+  ctx.globalAlpha = active ? 1 : 0.3;
+  // Backrest.
+  ctx.fillStyle = active ? theme.accent : '#5a5a66';
+  ctx.fillRect(x, y, w * 0.22, h);
+  // Seat.
+  ctx.fillStyle = active ? theme.platform : '#4a4a54';
+  ctx.fillRect(x, y + h * 0.6, w, h * 0.4);
+  // Legs.
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(x + 2, y + h - 2, 3, 5);
+  ctx.fillRect(x + w - 5, y + h - 2, 3, 5);
+
+  if (active) {
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
+  }
+
+  ctx.restore();
+}
+
 function drawPortalDoor(ctx, x, y, hue, time, phase) {
   const cx = x + PORTAL_W / 2;
   const cy = y + PORTAL_H / 2;
@@ -560,7 +599,7 @@ function drawBackground(ctx, map, cam, view, time) {
 }
 
 /** Draw the whole world. Camera transform is applied by the caller. */
-export function drawMap(ctx, map, time, orbState) {
+export function drawMap(ctx, map, time, orbState, activeChairs) {
   const theme = map.theme;
 
   // Depth wash over the play area. A flat fill reads as a hard-edged block
@@ -583,6 +622,9 @@ export function drawMap(ctx, map, time, orbState) {
   for (let i = 0; i < candies.length; i++) drawCandy(ctx, candies[i], time, i);
   const orbs = map.orbs || [];
   for (let i = 0; i < orbs.length; i++) drawOrb(ctx, orbs[i], time, i, orbState?.[i] || 0);
+  const chairs = map.chairs || [];
+  const activeSet = new Set(activeChairs || []);
+  for (let i = 0; i < chairs.length; i++) drawChair(ctx, chairs[i], activeSet.has(i), theme, time, i);
 }
 
 export { drawBackground };
@@ -698,6 +740,8 @@ export function drawMapPreview(canvas, map) {
     ctx.arc(o[0] + o[2] / 2, o[1] + o[3] / 2, o[2] * 0.55, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.fillStyle = theme.accent;
+  for (const c of map.chairs || []) ctx.fillRect(c[0], c[1], c[2], c[3]);
 
   ctx.restore();
 }

@@ -15,6 +15,7 @@ import * as net from './net.js';
 import * as input from './input.js';
 import { profile, bumpStat, trackMapPlayed } from './storage.js';
 import { sfx } from './audio.js';
+import * as music from './music.js';
 import {
   drawBackground, drawMap, drawCharacter, Particles, formatTime,
 } from './render.js';
@@ -49,6 +50,7 @@ export class Game {
     this.timer = 0;
     this.seekerFreeze = 0;
     this.orbState = []; // per-orb seconds until it respawns, from the last snapshot
+    this.chairs = null; // { stage, timer, active, remaining } on map.musicalChairs, else null
     this.resultsShown = false;
 
     this.body = createBody();
@@ -143,6 +145,7 @@ export class Game {
     this.timer = msg.timer;
     this.seekerFreeze = msg.seekerFreeze || 0;
     this.orbState = msg.orbs || [];
+    this.chairs = msg.chairs || null;
     this.applyState(msg.state);
 
     const byId = new Map();
@@ -402,6 +405,32 @@ export class Game {
         case 'go':
           sfx.go();
           this.showCenter('GO!', 0.8);
+          if (this.map.musicalChairs) music.setVolume(profile.musicVolume);
+          break;
+        case 'chairsMoving':
+          // The music's back on -- undo the duck from the last 'chairsStop'
+          // (or this is the very first cycle and it's already at the
+          // normal volume, a harmless no-op either way).
+          music.setVolume(profile.musicVolume);
+          break;
+        case 'chairsStop':
+          sfx.chairsStop();
+          music.setVolume(profile.musicVolume * 0.12);
+          this.showCenter('FIND A CHAIR!', C.CHAIRS_GRACE_TIME);
+          if (profile.shake) this.shake = Math.max(this.shake, 6);
+          break;
+        case 'chairsOut':
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 20, {
+              color: '#9d4edd', speed: 190, life: 0.6, size: 3.5, gravity: 300, spread: Math.PI * 2,
+            });
+          }
+          if (ev.id === this.youId) {
+            sfx.chairsOut();
+            this.showCenter("YOU'RE OUT!", 1.6);
+          } else {
+            sfx.chairsOutFar();
+          }
           break;
         default:
           break;
@@ -422,6 +451,10 @@ export class Game {
       bumpStat('games');
       if (this.map.moon) bumpStat('moonRounds');
       trackMapPlayed(this.map.id);
+      // Safety net: if the round timer cut a Musical Chairs game short
+      // mid-"find a chair!", the music was still ducked from that moment --
+      // don't let it stay quiet through the results screen and beyond.
+      if (this.map.musicalChairs) music.setVolume(profile.musicVolume);
     }
     if (to === 'lobby' && from === 'results') {
       this.hooks.onResults?.(null);
@@ -629,7 +662,7 @@ export class Game {
     ctx.scale(this.cam.scale, this.cam.scale);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    drawMap(ctx, this.map, this.time, this.orbState);
+    drawMap(ctx, this.map, this.time, this.orbState, this.chairs?.active);
 
     // Remote players first, local player on top.
     for (const [id, meta] of this.roster) {
@@ -709,6 +742,7 @@ export class Game {
     const onGround = !!(p.flags & 1);
     const invisible = !!(p.flags & 16);
     const candyFrozen = !!(p.flags & 32);
+    const eliminated = !!(p.flags & 128);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
@@ -757,6 +791,10 @@ export class Game {
 
     if (invisible) ctx.save();
     if (invisible) ctx.globalAlpha *= 0.35;
+    // Musical Chairs: out for the rest of the round -- a washed-out,
+    // grayscale spectator instead of a full-color competitor.
+    if (eliminated) ctx.save();
+    if (eliminated) { ctx.globalAlpha *= 0.45; ctx.filter = 'grayscale(1)'; }
 
     drawCharacter(ctx, x, y, {
       skinId: meta?.skin || 'runner',
@@ -770,6 +808,7 @@ export class Game {
       time: this.time,
     });
 
+    if (eliminated) ctx.restore();
     if (invisible) ctx.restore();
 
     if (candyFrozen) {
@@ -839,13 +878,13 @@ export class Game {
       ctx.font = '600 11px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      const label = meta.name + (meta.isBot ? ' [bot]' : '');
+      const label = meta.name + (meta.isBot ? ' [bot]' : '') + (eliminated ? ' (out)' : '');
       const tx = x + C.PLAYER_W / 2;
       const ty = y - (it ? 18 : 6);
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'rgba(0,0,0,0.65)';
       ctx.strokeText(label, tx, ty);
-      ctx.fillStyle = isSelf ? '#39f0d8' : (it ? '#ff9db0' : 'rgba(255,255,255,0.92)');
+      ctx.fillStyle = eliminated ? 'rgba(255,255,255,0.5)' : isSelf ? '#39f0d8' : (it ? '#ff9db0' : 'rgba(255,255,255,0.92)');
       ctx.fillText(label, tx, ty);
       ctx.restore();
     }
@@ -854,22 +893,39 @@ export class Game {
   // ------------------------------------------------------------------ HUD
 
   hudData() {
+    const lastSnap = this.snapshots[this.snapshots.length - 1];
     const rows = [];
     for (const [id, meta] of this.roster) {
+      const flags = lastSnap?.players.get(id)?.flags || 0;
       rows.push({
         id,
         name: meta.name,
         isBot: meta.isBot,
         it: meta.it,
         itTime: meta.itTime || 0,
+        eliminated: !!(flags & 128),
         isYou: id === this.youId,
       });
     }
-    rows.sort((a, b) => a.itTime - b.itTime);
-    const itPlayer = rows.find((r) => r.it);
-    let itName = itPlayer ? (itPlayer.isYou ? 'You are IT' : `${itPlayer.name} is IT`) : '';
-    if (itPlayer?.isYou && this.seekerFreeze > 0) {
-      itName = `Frozen ${Math.ceil(this.seekerFreeze)}s -- let them hide!`;
+
+    let itName = '';
+    if (this.map.musicalChairs) {
+      // Still in first, then eliminated -- there's no itTime to rank by here.
+      rows.sort((a, b) => (a.eliminated === b.eliminated ? 0 : a.eliminated ? 1 : -1));
+      if (this.chairs) {
+        const n = this.chairs.remaining;
+        const who = `${n} player${n === 1 ? '' : 's'} left`;
+        if (this.chairs.stage === 'freeze') itName = `FIND A CHAIR! -- ${who}`;
+        else if (this.chairs.stage === 'moving') itName = `Keep moving... ${who}`;
+        else itName = who;
+      }
+    } else {
+      rows.sort((a, b) => a.itTime - b.itTime);
+      const itPlayer = rows.find((r) => r.it);
+      itName = itPlayer ? (itPlayer.isYou ? 'You are IT' : `${itPlayer.name} is IT`) : '';
+      if (itPlayer?.isYou && this.seekerFreeze > 0) {
+        itName = `Frozen ${Math.ceil(this.seekerFreeze)}s -- let them hide!`;
+      }
     }
 
     const me = this.latestServerSelf();
@@ -881,6 +937,7 @@ export class Game {
       timeLabel: formatTime(this.timer),
       rows,
       itName,
+      musicalChairs: !!this.map.musicalChairs,
       power,
       powerLabel: power ? POWER_LABELS[power] : '',
       powerIcon: power ? POWER_ICONS[power] : '',

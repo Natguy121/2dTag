@@ -709,6 +709,7 @@ body {
 .hud-scores li b { font-weight: 700; }
 .hud-scores li.is-it { color: #ff9db0; }
 .hud-scores li.is-you b { color: var(--accent-2); }
+.hud-scores li.is-out { opacity: 0.45; text-decoration: line-through; }
 .hud-scores .sc { font-variant-numeric: tabular-nums; color: var(--muted); }
 
 .hud-debug {

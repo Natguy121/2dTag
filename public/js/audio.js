@@ -158,4 +158,23 @@ export const sfx = {
       freq: 2000, to: 1000, dur: 0.1, type: 'triangle', gain: 0.06, delay: 0.03,
     });
   },
+  // Musical Chairs: a harsh needle-scratch the instant the music cuts out.
+  chairsStop: () => {
+    noise({ dur: 0.18, gain: 0.18, freq: 1800 });
+    blip({
+      freq: 260, to: 70, dur: 0.35, type: 'sawtooth', gain: 0.2, delay: 0.04,
+    });
+  },
+  // A short sad buzzer for the local player missing a chair.
+  chairsOut: () => {
+    blip({ freq: 300, to: 90, dur: 0.4, type: 'sawtooth', gain: 0.2 });
+    blip({
+      freq: 200, to: 60, dur: 0.5, type: 'square', gain: 0.12, delay: 0.15,
+    });
+  },
+  // A quieter thud heard when someone ELSE misses a chair.
+  chairsOutFar: () => {
+    noise({ dur: 0.06, gain: 0.08, freq: 500 });
+    blip({ freq: 220, to: 130, dur: 0.12, type: 'triangle', gain: 0.08 });
+  },
 };

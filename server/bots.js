@@ -27,6 +27,7 @@ export function createBrain(difficulty = 'normal') {
     detour: 0,
     jumpHold: 0,
     roamX: null,
+    chairTarget: null, // [x, y] center of the chair to home in on, freeze phase only
   };
 }
 
@@ -82,8 +83,10 @@ function platformAbove(map, x, y, maxUp = 200) {
 /**
  * Decide this bot's input for the current tick.
  * `self` and `others` are room player objects; returns an input bitmask.
+ * `chairs` (Musical Chairs maps only) is { stage, activeChairs, eliminated }
+ * from the Room -- null/undefined everywhere else.
  */
-export function think(self, others, map, dt, state) {
+export function think(self, others, map, dt, state, chairs = null) {
   const brain = self.ai;
   const cfg = brain.cfg;
   const b = self.body;
@@ -92,8 +95,13 @@ export function think(self, others, map, dt, state) {
   brain.unstickTimer = Math.max(0, brain.unstickTimer - dt);
   brain.detour = Math.max(0, brain.detour - dt);
 
-  // Wedged against geometry? Force a hop and a direction flip.
-  if (b.onGround && Math.abs(b.x - brain.lastX) < 1.2) {
+  // Wedged against geometry? Force a hop and a direction flip -- unless
+  // we've simply arrived at our Musical Chairs seat and are deliberately
+  // holding still, which looks identical (onGround, not moving) but isn't
+  // stuck at all.
+  const parkedOnChair = brain.chairTarget
+    && Math.abs((b.x + C.PLAYER_W / 2) - brain.chairTarget[0]) < 6;
+  if (b.onGround && Math.abs(b.x - brain.lastX) < 1.2 && !parkedOnChair) {
     brain.stuck += dt;
     if (brain.stuck > 0.55) {
       brain.stuck = 0;
@@ -129,7 +137,46 @@ export function think(self, others, map, dt, state) {
     brain.wantJump = false;
     brain.wantDown = false;
 
-    if (state !== 'playing') {
+    if (map.musicalChairs) {
+      // --- musical chairs ----------------------------------------------
+      if (state !== 'playing' || chairs?.eliminated?.has(self.id)) {
+        // Lobby, or already out -- just mill about like a spectator.
+        if (Math.random() < 0.25) brain.dir = Math.random() < 0.5 ? -1 : 1;
+        brain.chairTarget = null;
+      } else if (chairs?.stage === 'freeze') {
+        // The music stopped. Head for the chair the room's assignment
+        // hint says is ours (a snapshot of who's closest to what, taken
+        // the instant the music stopped) -- without this every bot
+        // independently beelines for whichever chair looks nearest to
+        // *itself* and they all pile onto the same one, leaving several
+        // other empty chairs untouched. Only fall back to raw nearest-chair
+        // when there's no assignment (e.g. more players than chairs). The
+        // actual homing happens every tick below (see chairTarget), not
+        // just on this slower decision cadence, so a bot can stop dead on
+        // the seat instead of overshooting it before its next think.
+        const assignedIdx = chairs.assignment?.get(self.id);
+        let best = assignedIdx !== undefined ? map.chairs[assignedIdx] : null;
+        if (!best) {
+          let bestDist = Infinity;
+          for (const idx of chairs.activeChairs || []) {
+            const c = map.chairs[idx];
+            const ccx = c[0] + c[2] / 2;
+            const ccy = c[1] + c[3] / 2;
+            const d = Math.hypot(ccx - cx, (ccy - cy) * 1.4);
+            if (d < bestDist) { bestDist = d; best = c; }
+          }
+        }
+        brain.chairTarget = best ? [best[0] + best[2] / 2, best[1] + best[3] / 2] : null;
+      } else {
+        // Music's playing -- just roam so the room doesn't clump in place.
+        brain.chairTarget = null;
+        if (brain.roamX === null || Math.abs(brain.roamX - cx) < 120) {
+          brain.roamX = 80 + Math.random() * (map.width - 160);
+        }
+        brain.dir = brain.roamX > cx ? 1 : -1;
+        if (Math.random() < 0.15) brain.wantJump = true;
+      }
+    } else if (state !== 'playing') {
       // Idle milling about in the lobby.
       if (Math.random() < 0.25) brain.dir = Math.random() < 0.5 ? -1 : 1;
       brain.wantJump = Math.random() < 0.15;
@@ -186,6 +233,20 @@ export function think(self, others, map, dt, state) {
   }
 
   let dir = brain.dir;
+
+  // Musical Chairs homing runs every tick, not just on the slower think
+  // cadence above -- otherwise a bot barrels past its target at full speed
+  // for up to a whole think interval before re-checking, which is exactly
+  // how a chair sitting near a wall turns into "smash into the wall, then
+  // spend the rest of the grace period unstick-detouring the wrong way."
+  if (brain.chairTarget) {
+    const [tx, ty] = brain.chairTarget;
+    const ddx = tx - cx;
+    dir = brain.dir = Math.abs(ddx) < 6 ? 0 : (ddx > 0 ? 1 : -1);
+    if (ty < cy - 30) brain.wantJump = true;
+    else if (ty > cy + 40) brain.wantDown = true;
+  }
+
   if (brain.unstickTimer > 0) {
     // While unsticking, commit to the flipped direction and hop.
     brain.wantJump = true;

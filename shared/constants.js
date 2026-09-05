@@ -86,6 +86,18 @@ export const ORB_POWERS = [
   'speed', 'jump', 'shield', 'invis', 'gravity', 'doublejump', 'freeze', 'radar', 'reach',
 ];
 
+// Musical Chairs (maps with map.musicalChairs: true). No tagging at all on
+// this map -- instead, music plays for a random MOVING window, then everyone
+// must be touching an active chair before CHAIRS_GRACE_TIME runs out or
+// they're eliminated. Chairs are always (players remaining - 1), the classic
+// rule, so exactly one round's worth of players are guaranteed to miss out
+// each cycle; the last player left standing wins on the spot and earns
+// CHAIRS_WINNER_BONUS coins on top of the normal per-round payout.
+export const CHAIRS_MOVING_MIN = 4;
+export const CHAIRS_MOVING_MAX = 8;
+export const CHAIRS_GRACE_TIME = 2.8;
+export const CHAIRS_WINNER_BONUS = 300;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;
