@@ -96,6 +96,14 @@ export const sfx = {
   tagged: () => {
     blip({ freq: 200, to: 90, dur: 0.3, type: 'square', gain: 0.22 });
   },
+  // A jagged electric buzz layered on top of a tag on Frankenstein's Lab --
+  // the jolt that turns whoever's caught into the monster.
+  zap: () => {
+    blip({ freq: 90, to: 1000, dur: 0.05, type: 'square', gain: 0.16 });
+    blip({ freq: 750, to: 60, dur: 0.09, type: 'sawtooth', gain: 0.14, delay: 0.05 });
+    blip({ freq: 950, to: 120, dur: 0.06, type: 'square', gain: 0.12, delay: 0.12 });
+    noise({ dur: 0.22, gain: 0.13, freq: 3200 });
+  },
   hazard: () => blip({ freq: 160, to: 60, dur: 0.35, type: 'sawtooth', gain: 0.18 }),
   count: () => blip({ freq: 520, dur: 0.1, type: 'square', gain: 0.14 }),
   go: () => {

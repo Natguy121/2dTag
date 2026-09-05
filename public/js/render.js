@@ -7,6 +7,13 @@ import { getSkin } from '/shared/skins.js';
 
 // ------------------------------------------------------------- characters
 
+// Frankenstein's Lab: the fixed look everyone takes on while "it" there,
+// replacing their equipped skin entirely -- see drawCharacter's
+// `frankenstein` option.
+const FRANKENSTEIN_SKIN = {
+  body: '#5fae4a', dark: '#2f6b24', trim: '#d8ffc2', eye: '#1a2b0a', pattern: 'solid',
+};
+
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
@@ -34,9 +41,13 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     onGround = true,
     time = 0,
     scale = 1,
+    frankenstein = false,
   } = opts;
 
-  const skin = getSkin(skinId);
+  // Frankenstein's Lab: whoever is "it" fully transforms into the monster,
+  // overriding their equipped skin entirely -- a flat solid pattern keeps
+  // every other pattern branch below a no-op instead of needing special-casing.
+  const skin = frankenstein ? FRANKENSTEIN_SKIN : getSkin(skinId);
   const w = C.PLAYER_W * scale;
   const h = C.PLAYER_H * scale;
 
@@ -169,6 +180,36 @@ export function drawCharacter(ctx, x, y, opts = {}) {
   ctx.lineWidth = Math.max(1, 1.4 * scale);
   roundRect(ctx, bx + 1, by + 1, bw - 2, bodyH - 2, bw * 0.28);
   ctx.stroke();
+
+  if (frankenstein) {
+    // Neck bolts jutting from either side of the head.
+    ctx.globalAlpha = 1;
+    for (const side of [-1, 1]) {
+      const boltX = side < 0 ? bx - bw * 0.05 : bx + bw * 1.05;
+      const boltY = eyeY + bodyH * 0.24;
+      ctx.fillStyle = '#c7cdd6';
+      ctx.beginPath();
+      ctx.ellipse(boltX, boltY, bw * 0.09, bw * 0.06, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#5a6270';
+      ctx.lineWidth = Math.max(1, 1.2 * scale);
+      ctx.stroke();
+    }
+    // A stitched scar across the forehead.
+    ctx.strokeStyle = '#16290d';
+    ctx.lineWidth = Math.max(1.4, 1.8 * scale);
+    ctx.beginPath();
+    ctx.moveTo(bx + bw * 0.22, eyeY - bodyH * 0.17);
+    ctx.lineTo(bx + bw * 0.78, eyeY - bodyH * 0.17);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1, 1.2 * scale);
+    for (let sx = 0.28; sx <= 0.74; sx += 0.115) {
+      ctx.beginPath();
+      ctx.moveTo(bx + bw * sx, eyeY - bodyH * 0.22);
+      ctx.lineTo(bx + bw * sx, eyeY - bodyH * 0.12);
+      ctx.stroke();
+    }
+  }
 
   ctx.restore();
 
@@ -566,6 +607,33 @@ function drawBackground(ctx, map, cam, view, time) {
       ctx.globalAlpha = 0.06;
       ctx.beginPath();
       ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 150, 100, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (theme.decor === 'sparks') {
+    // A mad scientist's lab: stray arcs of electricity crackling on and off
+    // in the rafters, plus a couple of softly bubbling green chemical-jar
+    // glows low in the background.
+    for (let i = 0; i < 16; i++) {
+      const seed = i * 97.3;
+      const flick = Math.sin(time * (2.4 + (i % 5) * 0.7) + seed) > 0.75;
+      if (!flick) continue;
+      const sx = ((i * 173 + px * 0.4) % (view.w + 60)) - 30;
+      const sy = ((i * 61 + py * 0.4) % (view.h * 0.5 + 40)) - 20;
+      ctx.strokeStyle = i % 2 === 0 ? '#9dffb0' : '#c58bff';
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + 7, sy + 9);
+      ctx.lineTo(sx + 2, sy + 13);
+      ctx.lineTo(sx + 11, sy + 24);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#5dffa0';
+    for (const [gx, gy] of [[0.16, 0.62], [0.5, 0.72], [0.84, 0.6]]) {
+      ctx.globalAlpha = 0.08 + Math.sin(time * 1.1 + gx * 6) * 0.03;
+      ctx.beginPath();
+      ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 90, 130, 0, 0, Math.PI * 2);
       ctx.fill();
     }
   } else if (theme.decor === 'sprinkles') {

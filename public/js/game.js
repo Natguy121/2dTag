@@ -285,20 +285,30 @@ export class Game {
           if (profile.particles) {
             this.particles.spawn(pos.x, pos.y, 26, { color: '#ff4d6d', speed: 260, life: 0.6, size: 4, gravity: 700 });
             this.particles.spawn(pos.x, pos.y, 14, { color: '#ffd166', speed: 180, life: 0.5, size: 3, gravity: 500 });
+            if (this.map.frankenstein) {
+              this.particles.spawn(pos.x, pos.y, 18, {
+                color: '#5fae4a', speed: 200, life: 0.55, size: 3.5, gravity: 300, spread: Math.PI * 2,
+              });
+            }
           }
           if (profile.shake) this.shake = Math.max(this.shake, mine ? 14 : 7);
           if (ev.to === this.youId) {
             sfx.tagged();
+            if (this.map.frankenstein) sfx.zap();
             navigator.vibrate?.([30, 40, 60]);
-            this.showCenter("YOU'RE IT!", 1.1);
+            this.showCenter(this.map.frankenstein ? "YOU'RE THE MONSTER!" : "YOU'RE IT!", 1.1);
           } else if (ev.by === this.youId) {
             sfx.tag();
             bumpStat('tags');
             if (shot) bumpStat('shotHits');
             const name = this.roster.get(ev.to)?.name || 'them';
-            this.showCenter(shot ? `SHOT ${name.toUpperCase()}` : `TAGGED ${name.toUpperCase()}`, 0.9);
+            const label = this.map.frankenstein
+              ? `TURNED ${name.toUpperCase()} INTO THE MONSTER`
+              : (shot ? `SHOT ${name.toUpperCase()}` : `TAGGED ${name.toUpperCase()}`);
+            this.showCenter(label, 0.9);
           } else {
             sfx.tag();
+            if (this.map.frankenstein) sfx.zap();
           }
           break;
         }
@@ -827,6 +837,7 @@ export class Game {
       vy: p.vy,
       onGround,
       time: this.time,
+      frankenstein: this.map.frankenstein && it,
     });
 
     if (eliminated) ctx.restore();

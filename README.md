@@ -92,6 +92,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Upside Down** | Gravity flipped -- the floor is at the top. Pays double coins. |
 | **Surge Ruins** | Glowing orbs grant one of 9 random mini superpowers. |
 | **Chair Chaos** | Musical chairs -- when the music stops, find a chair or you're out. Last one standing wins 300 coins. |
+| **Frankenstein's Lab** | Get tagged and you become the monster -- green skin, neck bolts and all -- until you pass it on. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -108,7 +109,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Eight maps bend the base rules further, each in a different direction:
+Nine maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -180,6 +181,13 @@ Eight maps bend the base rules further, each in a different direction:
   round on the spot and earns 300 bonus coins on top of the normal payout.
   If two people miss the very last chair at the same moment, they tie for
   the win and both get the bonus.
+- **Frankenstein's Lab** keeps ordinary tag rules, but with a twist: whoever
+  is currently "it" is rendered as a lumbering green monster -- neck bolts,
+  a stitched forehead scar, the works -- instead of their own equipped skin,
+  with an electric zap sound and a burst of green sparks the instant they're
+  caught. Tag someone else and the transformation passes to them; you revert
+  straight back to your normal look. Purely cosmetic -- no speed, size or
+  hitbox change, just a very different look while you're it.
 
 ## Bots
 

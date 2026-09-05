@@ -48,6 +48,12 @@
 //   musicalChairs     true  -- replaces tagging entirely: see map.chairs
 //                     above and CHAIRS_* in constants.js. No one is ever
 //                     "it" on this map.
+//   frankenstein      true  -- whoever is currently "it" renders as a
+//                     Frankenstein monster (green skin, neck bolts, a
+//                     stitched scar) instead of their own skin, reverting
+//                     the moment they tag someone else -- purely cosmetic,
+//                     no rule changes. See drawCharacter's `frankenstein`
+//                     option in public/js/render.js.
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
@@ -835,6 +841,59 @@ export const MAPS = [
     spawns: [
       [150, 860], [500, 860], [850, 860], [1200, 860],
       [1450, 860], [310, 760], [810, 760], [1290, 760],
+    ],
+  },
+
+  {
+    id: 'franken',
+    name: "Frankenstein's Lab",
+    blurb: "Get tagged and you become the monster -- green skin, neck bolts and all -- until you pass it on.",
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    frankenstein: true,
+    theme: {
+      sky: ['#0a1f14', '#173d24', '#040a06'],
+      solid: '#1f4a2c',
+      solidEdge: '#7dffb0',
+      platform: '#2f6b45',
+      accent: '#c58bff',
+      hazard: '#ff4d6d',
+      fog: 'rgba(90,255,150,0.12)',
+      grid: 'rgba(150,255,180,0.08)',
+      decor: 'sparks',
+    },
+    // Neon Arena's exact geometry, already proven fully reachable by
+    // reach.mjs -- reused here the same way Surge Ruins and Upside Down
+    // reused it, so the lab needs no fresh reachability pass; only the
+    // theme and the frankenstein flag are new.
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      [430, 740, 40, 120],
+      [1130, 740, 40, 120],
+      [720, 690, 160, 40],
+    ],
+    platforms: [
+      [170, 726, 230],
+      [1200, 726, 230],
+      [545, 586, 200],
+      [855, 586, 200],
+      [290, 470, 240],
+      [1070, 470, 240],
+      [660, 352, 280],
+      [110, 316, 190],
+      [1300, 316, 190],
+      [400, 210, 200],
+      [1000, 210, 200],
+    ],
+    hazards: [],
+    springs: [[770, 846, 60]],
+    spawns: [
+      [150, 860], [400, 860], [640, 860], [980, 860],
+      [1230, 860], [1450, 860], [700, 352], [900, 352],
     ],
   },
 ];
