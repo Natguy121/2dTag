@@ -1,7 +1,11 @@
 // Skin catalogue. The server only ever stores/echoes a skin id; all of the
 // drawing happens on the client from this table. Skins are purely cosmetic --
 // nothing here changes movement, speed, or hitbox, so owning more of them is
-// never a gameplay advantage, just a look.
+// never a gameplay advantage, just a look. The one deliberate exception is
+// `swingAbility` below (Web Weaver only): stepBody's opts.canSwing is gated
+// on it, giving that one skin a real, functional web-swing move that every
+// other skin does not have -- see shared/physics.js's updateSwing() and the
+// README's note on it.
 //
 // unlock is either:
 //   null                                       -- available from the start
@@ -155,9 +159,11 @@ export const SKINS = [
 
   // Original masked web-slinging hero (not a licensed character), with its
   // own silhouette the same way Chameleon has one -- see drawCharacter's
-  // 'webweaver' pattern branch in public/js/render.js. The new priciest
-  // item in the shop.
+  // 'webweaver' pattern branch in public/js/render.js. The priciest item in
+  // the shop, and the only skin with swingAbility: true -- see the header
+  // comment above and shared/physics.js's updateSwing().
   { id: 'webweaver',  name: 'Web Weaver',  body: '#8a1220', dark: '#420a10', trim: '#f0f0f0', eye: '#141414', pattern: 'webweaver',
+    swingAbility: true,
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 ];
 

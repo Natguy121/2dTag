@@ -70,6 +70,7 @@ function showScreen(name) {
     game.start(youId);
     $('[data-touch]').hidden = !input.isTouchDevice();
     $('[data-shoot-btn]').hidden = !game.map.guns;
+    $('[data-swing-btn]').hidden = !getSkin(profile.skin)?.swingAbility;
     lockLandscape();
   } else if (game) {
     game.stop();
@@ -777,7 +778,10 @@ function renderSettings() {
   $('[data-admin-form]').hidden = isAdminSession;
 }
 
-const KEY_LABELS = { left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down', shoot: 'Shoot (gun maps)' };
+const KEY_LABELS = {
+  left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down',
+  shoot: 'Shoot (gun maps)', swing: 'Web-swing (Web Weaver skin)',
+};
 
 function renderKeybinds() {
   const wrap = $('[data-keybinds]');

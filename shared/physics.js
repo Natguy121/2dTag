@@ -10,11 +10,12 @@ export const IN_RIGHT = 2;
 export const IN_JUMP = 4;
 export const IN_DOWN = 8;
 export const IN_SHOOT = 16;
-export const INPUT_MASK = 31; // every bit above, OR'd together
+export const IN_SWING = 32;
+export const INPUT_MASK = 63; // every bit above, OR'd together
 
-export function encodeInput({ left, right, jump, down, shoot }) {
+export function encodeInput({ left, right, jump, down, shoot, swing }) {
   return (left ? IN_LEFT : 0) | (right ? IN_RIGHT : 0) | (jump ? IN_JUMP : 0)
-    | (down ? IN_DOWN : 0) | (shoot ? IN_SHOOT : 0);
+    | (down ? IN_DOWN : 0) | (shoot ? IN_SHOOT : 0) | (swing ? IN_SWING : 0);
 }
 
 export function decodeInput(bits) {
@@ -24,6 +25,7 @@ export function decodeInput(bits) {
     jump: !!(bits & IN_JUMP),
     down: !!(bits & IN_DOWN),
     shoot: !!(bits & IN_SHOOT),
+    swing: !!(bits & IN_SWING),
   };
 }
 
@@ -44,6 +46,13 @@ export function createBody(x = 0, y = 0) {
     jumped: false, // set for one step when a jump starts (drives sfx/particles)
     landed: false,
     extraJumpUsed: false, // the Double Jump power's air jump, refreshed on landing
+    // Web Weaver's exclusive swing ability (opts.canSwing) -- see updateSwing().
+    swinging: false,
+    swingAnchorX: 0,
+    swingAnchorY: 0,
+    swingAngle: 0,
+    swingAngVel: 0,
+    swingLen: 0,
   };
 }
 
@@ -59,11 +68,123 @@ export function placeAtSpawn(body, spawn) {
   body.springTimer = 0;
   body.portalTimer = 0;
   body.extraJumpUsed = false;
+  body.swinging = false;
+  body.swingAngVel = 0;
   return body;
 }
 
 function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function hitsSolid(x, y, solids) {
+  for (let i = 0; i < solids.length; i++) {
+    const s = solids[i];
+    if (overlaps(x, y, C.PLAYER_W, C.PLAYER_H, s[0], s[1], s[2], s[3])) return true;
+  }
+  return false;
+}
+
+/**
+ * The nearest ceiling-like surface roughly above (or, on a flipped-gravity
+ * map, below) a body, within C.SWING_MAX_LEN -- exactly the point Web
+ * Weaver's swing attaches to. Purely a function of static map geometry and
+ * the body's current x/y, so client prediction and the server always agree
+ * on the same anchor for the same position.
+ */
+export function findSwingAnchor(b, map, gravityDir) {
+  const cx = b.x + C.PLAYER_W / 2;
+  const upY = gravityDir > 0 ? b.y : b.y + C.PLAYER_H;
+  let bestY = null;
+  let bestDist = C.SWING_MAX_LEN;
+
+  const consider = (surfaceY) => {
+    const dist = gravityDir > 0 ? upY - surfaceY : surfaceY - upY;
+    if (dist >= C.SWING_MIN_LEN && dist < bestDist) { bestDist = dist; bestY = surfaceY; }
+  };
+
+  for (const s of map.solids) {
+    if (cx < s[0] || cx > s[0] + s[2]) continue;
+    consider(gravityDir > 0 ? s[1] + s[3] : s[1]);
+  }
+  for (const p of map.platforms) {
+    if (cx < p[0] || cx > p[0] + p[2]) continue;
+    consider(gravityDir > 0 ? p[1] + PLATFORM_H : p[1]);
+  }
+
+  return bestY === null ? null : { x: cx, y: bestY };
+}
+
+/**
+ * Web Weaver's exclusive movement ability (opts.canSwing, gated on the
+ * player's equipped skin -- see shared/skins.js's swingAbility flag). Hold
+ * the swing input near a ceiling to fire a web and swing from it pendulum-
+ * style; release (or let go of the key) to fling off with your current
+ * momentum. Every other skin never sets opts.canSwing, so this function is
+ * a no-op for them regardless of what the swing input bit says.
+ *
+ * Position while attached is set analytically from the current angle each
+ * tick (not integrated from velocity), so the rope never stretches or
+ * drifts; vx/vy are still derived every tick purely for animation and so a
+ * release hands off a physically consistent velocity to normal physics.
+ */
+function updateSwing(b, input, map, dt, opts, gravityDir, events) {
+  if (!opts.canSwing) {
+    b.swinging = false;
+    return;
+  }
+
+  if (b.swinging) {
+    if (!input.swing) {
+      b.swinging = false;
+      events.webRelease = true;
+      return;
+    }
+    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    let angAccel = -(C.GRAVITY / b.swingLen) * Math.sin(b.swingAngle) * gravityDir;
+    angAccel += dir * C.SWING_PUMP_ACCEL;
+    b.swingAngVel += angAccel * dt;
+    b.swingAngVel *= Math.max(0, 1 - C.SWING_DAMPING * dt);
+    b.swingAngVel = Math.max(-C.SWING_MAX_ANGVEL, Math.min(C.SWING_MAX_ANGVEL, b.swingAngVel));
+    b.swingAngle += b.swingAngVel * dt;
+
+    const newX = b.swingAnchorX + Math.sin(b.swingAngle) * b.swingLen - C.PLAYER_W / 2;
+    const newY = b.swingAnchorY + Math.cos(b.swingAngle) * b.swingLen * gravityDir - C.PLAYER_H / 2;
+    if (hitsSolid(newX, b.y, map.solids) || hitsSolid(b.x, newY, map.solids)) {
+      // A soft wall bump: stop the swing right where it is rather than
+      // clipping through -- normal collision takes over again next tick.
+      b.swinging = false;
+      events.webRelease = true;
+      return;
+    }
+    b.x = Math.max(0, Math.min(map.width - C.PLAYER_W, newX));
+    b.y = newY;
+    b.vx = b.swingAngVel * b.swingLen * Math.cos(b.swingAngle);
+    b.vy = -b.swingAngVel * b.swingLen * Math.sin(b.swingAngle) * gravityDir;
+    if (Math.abs(b.vx) > 10) b.facing = b.vx > 0 ? 1 : -1;
+    b.onGround = false;
+    return;
+  }
+
+  if (input.swing) {
+    const anchor = findSwingAnchor(b, map, gravityDir);
+    if (!anchor) return;
+    b.swinging = true;
+    b.swingAnchorX = anchor.x;
+    b.swingAnchorY = anchor.y;
+    const cx = b.x + C.PLAYER_W / 2;
+    const cy = b.y + C.PLAYER_H / 2;
+    const dx = cx - anchor.x;
+    const dy = (cy - anchor.y) * gravityDir;
+    b.swingLen = Math.max(C.SWING_MIN_LEN, Math.hypot(dx, dy));
+    b.swingAngle = Math.atan2(dx, dy);
+    // Preserve momentum into the swing: project current velocity onto the
+    // tangential direction so grabbing a web while running keeps you moving.
+    const tangentX = Math.cos(b.swingAngle);
+    const tangentY = -Math.sin(b.swingAngle) * gravityDir;
+    b.swingAngVel = (b.vx * tangentX + b.vy * tangentY) / b.swingLen;
+    events.webAttach = true;
+  }
 }
 
 /**
@@ -93,9 +214,16 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
 
   const events = {
     jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null, candy: false, orb: -1,
+    webAttach: false, webRelease: false,
   };
   b.jumped = false;
   b.landed = false;
+
+  // Web Weaver's swing is a fully separate movement mode: while attached,
+  // position comes from pendulum motion around a fixed anchor instead of
+  // everything below, which this skips entirely for the rest of the tick.
+  updateSwing(b, input, map, dt, opts, gravityDir, events);
+  if (b.swinging) return events;
 
   // --- horizontal intent -------------------------------------------------
   const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);

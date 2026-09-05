@@ -104,6 +104,13 @@ export const sfx = {
     blip({ freq: 950, to: 120, dur: 0.06, type: 'square', gain: 0.12, delay: 0.12 });
     noise({ dur: 0.22, gain: 0.13, freq: 3200 });
   },
+  // Web Weaver's swing: a quick "thwip" firing the web, a softer whoosh
+  // letting go of it.
+  webShoot: () => {
+    blip({ freq: 1600, to: 500, dur: 0.07, type: 'triangle', gain: 0.14 });
+    noise({ dur: 0.05, gain: 0.06, freq: 4000 });
+  },
+  webRelease: () => noise({ dur: 0.12, gain: 0.07, freq: 1200 }),
   hazard: () => blip({ freq: 160, to: 60, dur: 0.35, type: 'sawtooth', gain: 0.18 }),
   count: () => blip({ freq: 520, dur: 0.1, type: 'square', gain: 0.14 }),
   go: () => {

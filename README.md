@@ -203,9 +203,10 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-73 characters, 21 unlocked from the start, purely cosmetic -- no skin is
-faster or bigger than another, and the palette is deliberately wide and
-vivid (no black or near-black skin exists). The rest unlock two ways:
+73 characters, 21 unlocked from the start. With one deliberate exception
+(Web Weaver, below), no skin is faster or bigger than another, and the
+palette is deliberately wide and vivid (no black or near-black skin exists).
+The rest unlock two ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins
@@ -220,12 +221,18 @@ vivid (no black or near-black skin exists). The rest unlock two ways:
   coins is the first skin with an actual different body shape instead of a
   recolored blob -- an egg-shaped body, a curled tail, a serrated back ridge
   and turret eyes on stalks, its color slowly drifting through greens.
-  The true top-tier flagship is **Web Weaver** at 5000 coins: an original
-  masked web-slinging hero (not a licensed character) with its own
-  silhouette too -- two arms raised in a web-shooting pose, angular mask
-  lenses, a web pattern across the chest, and an animated strand of webbing
-  pulsing from each fist. Purely cosmetic like everything else here --
-  "shooting webs" is a visual flourish, not a gameplay ability.
+
+  The top-tier flagship is **Web Weaver** at 5000 coins: an original masked
+  web-slinging hero (not a licensed character) with its own silhouette too
+  -- two arms raised in a web-shooting pose, angular mask lenses, a web
+  pattern across the chest, and an idle animated strand of webbing pulsing
+  from each fist. Unlike every other skin, this one is **not** purely
+  cosmetic: hold **E** (rebindable, an on-screen web button appears on
+  touch) near a ceiling or platform above you to fire a real web, swing
+  from it pendulum-style, and let go to fling off with your momentum --
+  pump the swing by holding left/right while attached to build up speed.
+  It's a genuine movement ability exclusive to this one skin, a deliberate
+  break from "skins are purely cosmetic" for a 5000-coin showpiece.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately

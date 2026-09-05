@@ -112,6 +112,18 @@ export const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
 export const MAX_NAME_LENGTH = 14;
 export const IDLE_ROOM_TIMEOUT = 5 * 60 * 1000;
 
+// Web Weaver's exclusive swing ability (stepBody's opts.canSwing, gated on
+// the player's equipped skin -- see shared/skins.js's swingAbility flag).
+// Hold the swing key near a ceiling/platform above you to fire a web and
+// swing from it pendulum-style; release to fling off with your momentum.
+// This is the one deliberate exception to "skins are purely cosmetic" in
+// this game -- see the README's note on it.
+export const SWING_MAX_LEN = 460; // how far above/below a ceiling can be and still be grabbed
+export const SWING_MIN_LEN = 50; // too close to bother attaching to
+export const SWING_PUMP_ACCEL = 10; // rad/s^2 added by holding left/right while swinging
+export const SWING_DAMPING = 0.15; // fraction of angular velocity bled off per second
+export const SWING_MAX_ANGVEL = 6; // rad/s clamp, keeps pumping from snowballing forever
+
 // Camera / view. The camera covers at least this much of the world, so a wider
 // window sees more rather than zooming in. Tuned so characters stay readable
 // while you can still see a tagger coming from across the map.

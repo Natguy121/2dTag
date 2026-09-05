@@ -514,8 +514,12 @@ export class Room {
       if (p.powerTimer > 0 && p.powerType === 'jump') jumpMult *= C.ORB_JUMP_MULT;
       const gravityFlip = p.powerTimer > 0 && p.powerType === 'gravity';
       const canDoubleJump = p.powerTimer > 0 && p.powerType === 'doublejump';
+      // Web Weaver's swing: gated on the player's own equipped skin, not the
+      // map, so it works everywhere that skin is worn -- see updateSwing()
+      // in shared/physics.js and the swingAbility flag in shared/skins.js.
+      const canSwing = !!SKIN_BY_ID[p.skin]?.swingAbility;
       const ev = stepBody(p.body, bits, map, dt, {
-        speedMult, jumpMult, gravityFlip, canDoubleJump,
+        speedMult, jumpMult, gravityFlip, canDoubleJump, canSwing,
       });
 
       if (ev.candy && p.candyFreeze <= 0 && p.candyImmune <= 0 && this.state === 'playing') {
@@ -535,6 +539,12 @@ export class Room {
 
       if (ev.jumped) this.pushEvent({ type: 'jump', id: p.id, x: p.body.x, y: p.body.y });
       if (ev.spring) this.pushEvent({ type: 'spring', id: p.id, x: p.body.x, y: p.body.y });
+      if (ev.webAttach) {
+        this.pushEvent({
+          type: 'webAttach', id: p.id, x: p.body.swingAnchorX, y: p.body.swingAnchorY,
+        });
+      }
+      if (ev.webRelease) this.pushEvent({ type: 'webRelease', id: p.id, x: p.body.x, y: p.body.y });
       if (ev.portal) {
         this.pushEvent({
           type: 'portal', id: p.id,
@@ -851,6 +861,7 @@ export class Room {
       if (p.candyFreeze > 0) flags |= 32;
       if (p.powerTimer > 0 && p.powerType === 'shield') flags |= 64;
       if (this.chairEliminated.has(p.id)) flags |= 128;
+      if (p.body.swinging) flags |= 256;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,
@@ -861,6 +872,10 @@ export class Room {
         flags,
         p.powerTimer > 0 ? C.ORB_POWERS.indexOf(p.powerType) + 1 : 0,
         Math.round(p.powerTimer * 10) / 10,
+        // Web Weaver's swing anchor, only meaningful while flag 256 is set --
+        // lets every client (not just the swinger) draw the rope line.
+        p.body.swinging ? Math.round(p.body.swingAnchorX * 10) / 10 : 0,
+        p.body.swinging ? Math.round(p.body.swingAnchorY * 10) / 10 : 0,
       ]);
     }
     return {

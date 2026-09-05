@@ -10,6 +10,7 @@
 import * as C from '/shared/constants.js';
 import { getMap } from '/shared/maps.js';
 import { createBody, stepBody } from '/shared/physics.js';
+import { getSkin } from '/shared/skins.js';
 import { getTrail } from '/shared/trails.js';
 import * as net from './net.js';
 import * as input from './input.js';
@@ -154,6 +155,7 @@ export class Game {
     for (const p of msg.players) {
       byId.set(p[0], {
         x: p[1], y: p[2], vx: p[3], vy: p[4], facing: p[5], flags: p[6], power: p[7] || 0, powerT: p[8] || 0,
+        webX: p[9] || 0, webY: p[10] || 0,
       });
     }
     this.snapshots.push({ time: performance.now() / 1000, players: byId });
@@ -193,6 +195,7 @@ export class Game {
       stepBody(b, p.bits, this.map, C.DT, {
         speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
         gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
+        canSwing: this.localCanSwing(),
       });
     }
 
@@ -235,6 +238,14 @@ export class Game {
 
   localCanDoubleJump() {
     return this.localPower() === 'doublejump';
+  }
+
+  /** Web Weaver's exclusive swing ability -- purely a function of your own
+   * equipped skin, which the client already knows perfectly (it's your own
+   * choice), so this needs no server round trip unlike the power-based opts
+   * above. */
+  localCanSwing() {
+    return !!getSkin(profile.skin)?.swingAbility;
   }
 
   /** Radar power: while not "it", points at the current tagger; while "it",
@@ -345,6 +356,22 @@ export class Game {
             }
             sfx.portal();
           }
+          break;
+        case 'webAttach':
+          // The local player already got instant feedback in tickInput() the
+          // moment their own prediction attached -- this branch is only for
+          // seeing/hearing OTHER Web Weavers fire a web.
+          if (!mine) {
+            sfx.webShoot();
+            if (profile.particles) {
+              this.particles.spawn(ev.x, ev.y, 8, {
+                color: '#f0f0f0', speed: 90, life: 0.3, size: 2.5, gravity: 0, spread: Math.PI * 2,
+              });
+            }
+          }
+          break;
+        case 'webRelease':
+          if (!mine) sfx.webRelease();
           break;
         case 'hazard':
           if (profile.particles) {
@@ -549,6 +576,7 @@ export class Game {
       const ev = stepBody(this.body, bits, this.map, C.DT, {
         speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
         gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
+        canSwing: this.localCanSwing(),
       });
       // Local feedback fires immediately rather than waiting for the server.
       if (ev.jumped) sfx.jump();
@@ -571,6 +599,15 @@ export class Game {
           });
         }
       }
+      if (ev.webAttach) {
+        sfx.webShoot();
+        if (profile.particles) {
+          this.particles.spawn(this.body.swingAnchorX, this.body.swingAnchorY, 8, {
+            color: '#f0f0f0', speed: 90, life: 0.3, size: 2.5, gravity: 0, spread: Math.PI * 2,
+          });
+        }
+      }
+      if (ev.webRelease) sfx.webRelease();
     }
   }
 
@@ -633,6 +670,8 @@ export class Game {
       flags: b.flags,
       power: b.power,
       powerT: b.powerT,
+      webX: b.webX,
+      webY: b.webY,
     };
   }
 
@@ -708,7 +747,7 @@ export class Game {
       const pos = this.selfRenderPos();
       this.drawPlayer(ctx, pos.x, pos.y, {
         vx: this.body.vx, vy: this.body.vy, facing: this.body.facing, flags: self.flags,
-        power: self.power, powerT: self.powerT,
+        power: self.power, powerT: self.powerT, webX: self.webX, webY: self.webY,
       }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin, trail: profile.trail }, true);
     }
 
@@ -774,6 +813,7 @@ export class Game {
     const invisible = !!(p.flags & 16);
     const candyFrozen = !!(p.flags & 32);
     const eliminated = !!(p.flags & 128);
+    const swinging = !!(p.flags & 256);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
@@ -818,6 +858,26 @@ export class Game {
       this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H / 2, 1, {
         color: POWER_COLORS[power], speed: 55, life: 0.4, size: 2.5, gravity: -30, spread: Math.PI * 2,
       });
+    }
+
+    // The real web-swing rope: a taut line from hand to anchor, replacing
+    // Web Weaver's short idle strand the moment it's actually attached to
+    // something -- drawn behind the character, in world space, for anyone
+    // watching (not just the swinger).
+    if (swinging && !invisible) {
+      ctx.save();
+      ctx.strokeStyle = '#f0f0f0';
+      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + C.PLAYER_W / 2, y + C.PLAYER_H * 0.3);
+      ctx.lineTo(p.webX, p.webY);
+      ctx.stroke();
+      ctx.fillStyle = '#f0f0f0';
+      ctx.beginPath();
+      ctx.arc(p.webX, p.webY, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
     if (invisible) ctx.save();
