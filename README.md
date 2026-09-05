@@ -195,13 +195,14 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-46 characters, 13 unlocked from the start, purely cosmetic -- no skin is
+71 characters, 21 unlocked from the start, purely cosmetic -- no skin is
 faster or bigger than another, and the palette is deliberately wide and
 vivid (no black or near-black skin exists). The rest unlock two ways:
 
-- **Play stats** (12 skins): from a quick one like 10 rounds played up to a
-  grind like 60 tags.
-- **Coin shop** (21 skins, 120-600 coins): earned by playing rounds. Every
+- **Play stats** (18 skins): from a quick one like 10 rounds played up to a
+  grind like 80 tags, including a couple gated on total lifetime coins
+  earned rather than anything done in a single round.
+- **Coin shop** (32 skins, 120-600 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
@@ -211,7 +212,7 @@ vivid (no black or near-black skin exists). The rest unlock two ways:
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately
-from your skin so the two mix and match. 17 options (including "None"), same
+from your skin so the two mix and match. 27 options (including "None"), same
 wide, no-black palette as the skins: some free, some unlocked by stats, the
 rest bought with coins (120-400).
 

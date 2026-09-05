@@ -41,6 +41,27 @@ export const TRAILS = [
     unlock: { type: 'coins', price: 180, label: 'Coin shop' } },
   { id: 'sunburst',   name: 'Sunburst',         colors: ['#ff2fb0', '#ffab1f', '#1fd8c9'],
     unlock: { type: 'coins', price: 320, label: 'Coin shop' } },
+
+  // --- batch 2: much more trails --------------------------------------------
+  { id: 'seafoam',    name: 'Seafoam Trail',    colors: ['#6ff2c0', '#e0fff2'], unlock: null },
+  { id: 'coral',      name: 'Coral Trail',      colors: ['#ff7b6b', '#ffe0d6'], unlock: null },
+  { id: 'cerulean',   name: 'Cerulean Trail',   colors: ['#2f9bff', '#d6ecff'], unlock: null },
+
+  { id: 'inferno',    name: 'Inferno',          colors: ['#ff2d1f', '#ff8a3d'],
+    unlock: { type: 'stat', stat: 'tags', value: 35, label: 'Tag 35 players' } },
+  { id: 'champion',   name: 'Champion Trail',   colors: ['#ffd700', '#fff6c2'],
+    unlock: { type: 'stat', stat: 'wins', value: 8, label: 'Win 8 rounds' } },
+  { id: 'frostbite',  name: 'Frostbite',        colors: ['#8ab4ff', '#e6f0ff'],
+    unlock: { type: 'stat', stat: 'games', value: 50, label: 'Finish 50 rounds' } },
+
+  { id: 'wildfire',   name: 'Wildfire',         colors: ['#ff4d1f', '#ffd166', '#ff8a3d'],
+    unlock: { type: 'coins', price: 180, label: 'Coin shop' } },
+  { id: 'orchid',     name: 'Orchid Trail',     colors: ['#c85fd6', '#f5d6ff'],
+    unlock: { type: 'coins', price: 160, label: 'Coin shop' } },
+  { id: 'aurora',     name: 'Aurora Trail',     colors: ['#4ff0a8', '#39f0d8', '#d0ffea'],
+    unlock: { type: 'coins', price: 260, label: 'Coin shop' } },
+  { id: 'galaxy',     name: 'Galaxy',           colors: ['#8a3ffd', '#ff17c9', '#4ff0a8'],
+    unlock: { type: 'coins', price: 380, label: 'Coin shop' } },
 ];
 
 export const TRAIL_BY_ID = Object.fromEntries(TRAILS.map((t) => [t.id, t]));
