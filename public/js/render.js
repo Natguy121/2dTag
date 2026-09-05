@@ -598,6 +598,36 @@ function drawBackground(ctx, map, cam, view, time) {
   ctx.restore();
 }
 
+const RAINBOW_BANDS = ['#ff3b3b', '#ff9f1c', '#ffe066', '#4dd67d', '#3ba7ff', '#5b6bff', '#c25bff'];
+
+/**
+ * A big rainbow arcing across the sky as a round begins -- sweeps in from
+ * the left over `reveal` (0 -> 1 across the countdown) and is faded out by
+ * `alpha` once play starts. Screen-space, drawn before the world transform
+ * so it sits behind the map and players like distant sky, not a HUD element.
+ */
+export function drawRoundStartRainbow(ctx, view, reveal, alpha) {
+  const sweep = Math.PI * Math.max(0, Math.min(1, reveal));
+  if (sweep <= 0 || alpha <= 0) return;
+
+  const cx = view.w / 2;
+  const cy = view.h + view.h * 0.15;
+  const outerR = view.h * 1.05;
+  const thickness = view.h * 0.032;
+
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.8;
+  ctx.lineCap = 'butt';
+  for (let i = 0; i < RAINBOW_BANDS.length; i++) {
+    ctx.beginPath();
+    ctx.strokeStyle = RAINBOW_BANDS[i];
+    ctx.lineWidth = thickness * 0.9;
+    ctx.arc(cx, cy, outerR - i * thickness, Math.PI, Math.PI + sweep);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** Draw the whole world. Camera transform is applied by the caller. */
 export function drawMap(ctx, map, time, orbState, activeChairs) {
   const theme = map.theme;

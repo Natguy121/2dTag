@@ -17,7 +17,7 @@ import { profile, bumpStat, trackMapPlayed } from './storage.js';
 import { sfx } from './audio.js';
 import * as music from './music.js';
 import {
-  drawBackground, drawMap, drawCharacter, Particles, formatTime,
+  drawBackground, drawMap, drawCharacter, drawRoundStartRainbow, Particles, formatTime,
 } from './render.js';
 
 const INTERP_DELAY = 0.1; // seconds of buffer for remote players
@@ -70,6 +70,8 @@ export class Game {
     this.centerMessage = null;
     this.centerUntil = 0;
     this.lastCountdownSecond = null;
+    this.rainbowReveal = 0; // 0..1, how much of the round-start rainbow has arced in
+    this.rainbowAlpha = 0; // 0..1, fades it back out once play begins
 
     this.accumulator = 0;
     this.lastFrame = 0;
@@ -512,6 +514,7 @@ export class Game {
       this.hooks.onCenter?.(null);
     }
     this.updateCountdownMessage();
+    this.updateRoundStartRainbow(dt);
 
     this.draw(dt);
   }
@@ -568,6 +571,21 @@ export class Game {
       this.lastCountdownSecond = secs;
       sfx.count();
       this.showCenter(String(secs), 1);
+    }
+  }
+
+  /** A rainbow arcs into the sky while the round counts down, then fades
+   * back out once players can move -- a bit of flourish at the start of
+   * every round, purely decorative. */
+  updateRoundStartRainbow(dt) {
+    if (this.state === 'countdown') {
+      this.rainbowReveal = Math.max(0, Math.min(1, 1 - this.timer / C.COUNTDOWN_TIME));
+      this.rainbowAlpha = 1;
+    } else if (this.state === 'playing') {
+      this.rainbowAlpha = Math.max(0, this.rainbowAlpha - dt / 0.8);
+    } else {
+      this.rainbowAlpha = 0;
+      this.rainbowReveal = 0;
     }
   }
 
@@ -653,6 +671,9 @@ export class Game {
     ctx.clearRect(0, 0, this.viewW, this.viewH);
 
     drawBackground(ctx, this.map, this.cam, { w: this.viewW, h: this.viewH }, this.time);
+    if (this.rainbowAlpha > 0) {
+      drawRoundStartRainbow(ctx, { w: this.viewW, h: this.viewH }, this.rainbowReveal, this.rainbowAlpha);
+    }
 
     const shakeX = this.shake ? (Math.random() - 0.5) * this.shake : 0;
     const shakeY = this.shake ? (Math.random() - 0.5) * this.shake : 0;
