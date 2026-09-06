@@ -14,6 +14,12 @@ const FRANKENSTEIN_SKIN = {
   body: '#5fae4a', dark: '#2f6b24', trim: '#d8ffc2', eye: '#1a2b0a', pattern: 'solid',
 };
 
+// Ironboy's push: how long the punch-out animation plays, in seconds --
+// drawCharacter's `pushT` option (elapsed seconds since the push fired) is
+// only ever drawn below this. Exported so game.js can compare against the
+// same number instead of a second hardcoded copy drifting out of sync.
+export const PUSH_ANIM_DURATION = 0.3;
+
 /**
  * The Chameleon skin: a genuinely different silhouette instead of the usual
  * rounded-rect blob -- an egg-shaped body, a curled tail, a serrated dorsal
@@ -326,6 +332,7 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     time = 0,
     scale = 1,
     frankenstein = false,
+    pushT = null,
   } = opts;
 
   // Frankenstein's Lab: whoever is "it" fully transforms into the monster,
@@ -502,6 +509,34 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     ctx.lineWidth = Math.max(1, 1.4 * scale);
     roundRect(ctx, bx + 1, by + 1, bw - 2, bodyH - 2, bw * 0.28);
     ctx.stroke();
+
+    // Ironboy's push: a quick punch-out of the arm in the facing direction
+    // -- a fast jab out, then a slower retract -- so the shove reads as
+    // something Ironboy actually did with their hand, not an invisible
+    // force. Drawn outside the body's own clip region since the arm and
+    // glowing fist extend well past the silhouette.
+    if (pushT != null) {
+      const k = Math.max(0, Math.min(1, pushT / PUSH_ANIM_DURATION));
+      const reach = k < 0.4 ? k / 0.4 : Math.max(0, 1 - (k - 0.4) / 0.6);
+      const armLen = bw * 0.9 * reach;
+      const armY = by + bodyH * 0.55;
+      const armX = facing >= 0 ? bx + bw : bx;
+      const tipX = armX + facing * armLen;
+      ctx.save();
+      ctx.strokeStyle = skin.trim;
+      ctx.lineWidth = Math.max(2, bw * 0.16);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(armX, armY);
+      ctx.lineTo(tipX, armY);
+      ctx.stroke();
+      ctx.fillStyle = skin.eye;
+      ctx.globalAlpha *= 0.5 + reach * 0.4;
+      ctx.beginPath();
+      ctx.arc(tipX, armY, bw * 0.17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     if (frankenstein) {
       // Neck bolts jutting from either side of the head.

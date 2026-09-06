@@ -19,6 +19,7 @@ import { sfx } from './audio.js';
 import * as music from './music.js';
 import {
   drawBackground, drawMap, drawWalls, drawCharacter, drawRoundStartRainbow, drawWaterLevel, Particles, formatTime,
+  PUSH_ANIM_DURATION,
 } from './render.js';
 
 const INTERP_DELAY = 0.1; // seconds of buffer for remote players
@@ -54,6 +55,7 @@ export class Game {
     this.chairs = null; // { stage, timer, active, remaining } on map.musicalChairs, else null
     this.waves = null; // { stage, timer, index, nextLevel, remaining } on map.waveSurvival, else null
     this.wallState = []; // [x, y, w, h] player-placed walls (map.wallBuilder), from the last snapshot
+    this.pushAnims = new Map(); // id -> this.time when their push last fired, for the punch-out animation
     this.resultsShown = false;
 
     this.body = createBody();
@@ -398,7 +400,9 @@ export class Game {
           break;
         case 'push':
           // No client-side prediction here either -- push only ever affects
-          // OTHER players' velocity, never the pusher's own body.
+          // OTHER players' velocity, never the pusher's own body. The punch
+          // animation itself is driven off this timestamp in drawPlayer().
+          this.pushAnims.set(ev.by, this.time);
           if (profile.particles) {
             this.particles.spawn(ev.x, ev.y, 22, {
               color: '#ffd34d', speed: 260, life: 0.45, size: 4, gravity: 0, spread: Math.PI * 2,
@@ -797,7 +801,7 @@ export class Game {
       if (id === this.youId) continue;
       const p = this.interpolated(id);
       if (!p) continue;
-      this.drawPlayer(ctx, p.x, p.y, p, meta);
+      this.drawPlayer(ctx, p.x, p.y, p, meta, false, id);
     }
 
     const self = this.latestServerSelf();
@@ -806,7 +810,7 @@ export class Game {
       this.drawPlayer(ctx, pos.x, pos.y, {
         vx: this.body.vx, vy: this.body.vy, facing: this.body.facing, flags: self.flags,
         power: self.power, powerT: self.powerT, webX: self.webX, webY: self.webY,
-      }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin, trail: profile.trail }, true);
+      }, this.roster.get(this.youId) || { name: profile.name, skin: profile.skin, trail: profile.trail }, true, this.youId);
     }
 
     this.drawShotBeams(ctx);
@@ -863,7 +867,7 @@ export class Game {
     }
   }
 
-  drawPlayer(ctx, x, y, p, meta, isSelf = false) {
+  drawPlayer(ctx, x, y, p, meta, isSelf = false, id = null) {
     const it = !!(p.flags & 2);
     const immune = !!(p.flags & 4);
     const respawning = !!(p.flags & 8);
@@ -945,6 +949,9 @@ export class Game {
     if (eliminated) ctx.save();
     if (eliminated) { ctx.globalAlpha *= 0.45; ctx.filter = 'grayscale(1)'; }
 
+    const pushFiredAt = id != null ? this.pushAnims.get(id) : undefined;
+    const pushT = pushFiredAt != null ? this.time - pushFiredAt : null;
+
     drawCharacter(ctx, x, y, {
       skinId: meta?.skin || 'runner',
       facing: p.facing,
@@ -956,6 +963,7 @@ export class Game {
       onGround,
       time: this.time,
       frankenstein: this.map.frankenstein && it,
+      pushT: pushT != null && pushT < PUSH_ANIM_DURATION ? pushT : null,
     });
 
     if (eliminated) ctx.restore();
