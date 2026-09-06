@@ -1,11 +1,12 @@
 // Skin catalogue. The server only ever stores/echoes a skin id; all of the
 // drawing happens on the client from this table. Skins are purely cosmetic --
 // nothing here changes movement, speed, or hitbox, so owning more of them is
-// never a gameplay advantage, just a look. The one deliberate exception is
-// `swingAbility` below (Web Weaver only): stepBody's opts.canSwing is gated
-// on it, giving that one skin a real, functional web-swing move that every
-// other skin does not have -- see shared/physics.js's updateSwing() and the
-// README's note on it.
+// never a gameplay advantage, just a look. There are two deliberate
+// exceptions: `swingAbility` (Web Weaver only) gates stepBody's
+// opts.canSwing, giving that one skin a real web-swing move -- see
+// shared/physics.js's updateSwing() -- and `pushAbility` (Ironboy only) gates
+// server/room.js's resolvePush(), letting that one skin shove every other
+// player away on a cooldown. See the README's note on both.
 //
 // unlock is either:
 //   null                                       -- available from the start
@@ -164,6 +165,15 @@ export const SKINS = [
   // comment above and shared/physics.js's updateSwing().
   { id: 'webweaver',  name: 'Web Weaver',  body: '#8a1220', dark: '#420a10', trim: '#f0f0f0', eye: '#141414', pattern: 'webweaver',
     swingAbility: true,
+    unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
+
+  // Original armored hero skin (not a licensed character), built on the
+  // standard body since a boxy plated suit already fits it -- see
+  // drawCharacter's 'ironboy' pattern branch in public/js/render.js for the
+  // chest arc-reactor glow and gold faceplate. The only other skin with a
+  // real gameplay ability: pushAbility gates server/room.js's resolvePush().
+  { id: 'ironboy',    name: 'Ironboy',     body: '#c81e2d', dark: '#5c0d14', trim: '#ffd34d', eye: '#8be9ff', pattern: 'ironboy',
+    pushAbility: true,
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 ];
 

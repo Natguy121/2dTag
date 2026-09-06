@@ -143,6 +143,8 @@ export class Room {
       prevShoot: false,
       wallsPlaced: 0,
       prevBuild: false,
+      pushCooldown: 0,
+      prevPush: false,
       invisCycle: 0,
       invisible: false,
       candyFreeze: 0,
@@ -315,6 +317,8 @@ export class Room {
       p.prevShoot = false;
       p.wallsPlaced = 0;
       p.prevBuild = false;
+      p.pushCooldown = 0;
+      p.prevPush = false;
       p.invisCycle = 0;
       p.invisible = false;
       p.candyFreeze = 0;
@@ -657,6 +661,7 @@ export class Room {
         this.resolveFreezeTouch();
         this.updateInvisibility(map, dt);
       }
+      this.resolvePush(map, dt);
     }
 
     // Timers.
@@ -811,6 +816,59 @@ export class Room {
       p.wallsPlaced += 1;
       this.pushEvent({
         type: 'wallPlaced', id: p.id, x, y, w: C.WALL_W, h: C.WALL_H,
+      });
+    }
+  }
+
+  /** Ironboy's exclusive push ability (gated on the player's equipped skin --
+   * see shared/skins.js's pushAbility flag), works on every map exactly
+   * like Web Weaver's swing. Tapping (not holding) the push input sends
+   * every other eligible player within PUSH_RANGE flying away from wherever
+   * Ironboy is standing, on a cooldown. */
+  resolvePush(map, dt) {
+    for (const p of this.players.values()) {
+      p.pushCooldown = Math.max(0, p.pushCooldown - dt);
+    }
+
+    for (const p of this.players.values()) {
+      if (!SKIN_BY_ID[p.skin]?.pushAbility || p.respawn > 0) continue;
+      if (map.musicalChairs && this.chairEliminated.has(p.id)) continue;
+      if (map.waveSurvival && this.waveEliminated.has(p.id)) continue;
+
+      const input = decodeInput(p.inputBits);
+      const pressed = input.push && !p.prevPush;
+      p.prevPush = input.push;
+      if (!pressed || p.pushCooldown > 0) continue;
+      p.pushCooldown = C.PUSH_COOLDOWN;
+
+      const cx = p.body.x + C.PLAYER_W / 2;
+      const cy = p.body.y + C.PLAYER_H / 2;
+      const hitIds = [];
+      for (const t of this.players.values()) {
+        if (t.id === p.id || t.respawn > 0) continue;
+        if (map.musicalChairs && this.chairEliminated.has(t.id)) continue;
+        if (map.waveSurvival && this.waveEliminated.has(t.id)) continue;
+        if (t.powerTimer > 0 && t.powerType === 'shield') continue;
+        if (t.candyFreeze > 0) continue;
+
+        const tcx = t.body.x + C.PLAYER_W / 2;
+        const tcy = t.body.y + C.PLAYER_H / 2;
+        const dx = tcx - cx;
+        const dy = tcy - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > C.PUSH_RANGE) continue;
+
+        const nx = dist > 4 ? dx / dist : p.body.facing;
+        const ny = dist > 4 ? dy / dist : 0;
+        t.body.vx = nx * C.PUSH_FORCE;
+        t.body.vy = ny * C.PUSH_FORCE - C.PUSH_UPKICK;
+        // A shove breaks an active web line rather than fighting it --
+        // normal physics (and gravity) take back over next tick.
+        t.body.swinging = false;
+        hitIds.push(t.id);
+      }
+      this.pushEvent({
+        type: 'push', by: p.id, x: cx, y: cy, targets: hitIds,
       });
     }
   }

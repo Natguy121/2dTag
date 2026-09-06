@@ -436,6 +436,25 @@ export function drawCharacter(ctx, x, y, opts = {}) {
         ctx.arc(bx + bw * sx, by + bodyH * sy, bw * 0.045, 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (skin.pattern === 'ironboy') {
+      // Gold chest plating with a pulsing arc-reactor core.
+      ctx.fillStyle = skin.trim;
+      ctx.globalAlpha *= 0.85;
+      roundRect(ctx, bx + bw * 0.1, by + bodyH * 0.1, bw * 0.8, bodyH * 0.2, 3);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      const pulse = 0.6 + Math.sin(time * 5) * 0.3;
+      ctx.fillStyle = skin.eye;
+      ctx.globalAlpha *= pulse;
+      ctx.beginPath();
+      ctx.arc(bx + bw * 0.5, by + bodyH * 0.42, bw * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = skin.trim;
+      ctx.lineWidth = Math.max(1, 1.2 * scale);
+      ctx.beginPath();
+      ctx.arc(bx + bw * 0.5, by + bodyH * 0.42, bw * 0.14, 0, Math.PI * 2);
+      ctx.stroke();
     }
     ctx.restore();
 
@@ -450,6 +469,19 @@ export function drawCharacter(ctx, x, y, opts = {}) {
       ctx.globalAlpha *= 0.55;
       roundRect(ctx, bx + bw * 0.18 + lookX * 0.5, eyeY - bodyH * 0.04, bw * 0.3, bodyH * 0.12, 3);
       ctx.fill();
+      ctx.globalAlpha = respawning ? 0.28 : 1;
+    } else if (skin.pattern === 'ironboy') {
+      // A full gold faceplate helmet with glowing eye slits instead of a
+      // cartoon face -- reads as an armored mask even at small scale.
+      ctx.fillStyle = skin.trim;
+      roundRect(ctx, bx + bw * 0.1, eyeY - bodyH * 0.14, bw * 0.8, bodyH * 0.3, 5);
+      ctx.fill();
+      ctx.fillStyle = skin.eye;
+      ctx.globalAlpha *= 0.9;
+      for (const off of [-0.19, 0.19]) {
+        roundRect(ctx, bx + bw * (0.5 + off) - bw * 0.09 + lookX * 0.4, eyeY - bodyH * 0.03, bw * 0.18, bodyH * 0.09, 2);
+        ctx.fill();
+      }
       ctx.globalAlpha = respawning ? 0.28 : 1;
     } else {
       for (const off of [-0.17, 0.17]) {

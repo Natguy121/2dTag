@@ -396,6 +396,21 @@ export class Game {
             });
           }
           break;
+        case 'push':
+          // No client-side prediction here either -- push only ever affects
+          // OTHER players' velocity, never the pusher's own body.
+          if (profile.particles) {
+            this.particles.spawn(ev.x, ev.y, 22, {
+              color: '#ffd34d', speed: 260, life: 0.45, size: 4, gravity: 0, spread: Math.PI * 2,
+            });
+          }
+          if (ev.targets?.includes(this.youId)) {
+            sfx.pushed();
+            if (profile.shake) this.shake = Math.max(this.shake, 8);
+          } else {
+            sfx.push();
+          }
+          break;
         case 'hazard':
           if (profile.particles) {
             this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H, 20, {

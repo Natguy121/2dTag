@@ -11,6 +11,7 @@ export const DEFAULT_KEYS = {
   shoot: 'KeyF',
   swing: 'KeyE',
   build: 'KeyQ',
+  push: 'KeyQ',
 };
 
 const DEFAULTS = {

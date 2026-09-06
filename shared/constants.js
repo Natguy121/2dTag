@@ -119,6 +119,17 @@ export const WALL_W = 32;
 export const WALL_H = 130;
 export const WALL_GAP = 6; // clearance from the placer so it never spawns overlapping them
 
+// Ironboy's exclusive push ability (gated on the player's equipped skin --
+// see shared/skins.js's pushAbility flag, and server/room.js's
+// resolvePush()). Tapping the push input sends every other player within
+// PUSH_RANGE flying away, on a cooldown. Works on every map, exactly like
+// Web Weaver's swing -- the second deliberate exception to "skins are
+// purely cosmetic" in this game.
+export const PUSH_RANGE = 140;
+export const PUSH_FORCE = 820; // knockback speed along the push direction
+export const PUSH_UPKICK = 260; // extra upward pop so a push reads as a shove, not a shove sideways
+export const PUSH_COOLDOWN = 1.4;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

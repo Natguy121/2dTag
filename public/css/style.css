@@ -872,6 +872,8 @@ body {
 .touch-swing:active, .touch-swing.is-down { background: rgba(240, 240, 240, 0.7); }
 .touch-build { font-size: 26px; background: rgba(255, 140, 26, 0.28); border-color: rgba(255, 212, 0, 0.5); }
 .touch-build:active, .touch-build.is-down { background: rgba(255, 140, 26, 0.75); }
+.touch-push { font-size: 26px; background: rgba(200, 30, 45, 0.28); border-color: rgba(255, 211, 77, 0.5); }
+.touch-push:active, .touch-push.is-down { background: rgba(200, 30, 45, 0.75); }
 
 /* ----------------------------------------------------- rotate prompt */
 

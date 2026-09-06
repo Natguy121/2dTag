@@ -72,6 +72,7 @@ function showScreen(name) {
     $('[data-shoot-btn]').hidden = !game.map.guns;
     $('[data-swing-btn]').hidden = !getSkin(profile.skin)?.swingAbility;
     $('[data-build-btn]').hidden = !game.map.wallBuilder;
+    $('[data-push-btn]').hidden = !getSkin(profile.skin)?.pushAbility;
     lockLandscape();
   } else if (game) {
     game.stop();
@@ -791,7 +792,7 @@ function renderSettings() {
 const KEY_LABELS = {
   left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down',
   shoot: 'Shoot (gun maps)', swing: 'Web-swing (Web Weaver skin)',
-  build: 'Build wall (Blocky Blastu)',
+  build: 'Build wall (Blocky Blastu)', push: 'Push (Ironboy skin)',
 };
 
 function renderKeybinds() {

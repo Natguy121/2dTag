@@ -226,15 +226,15 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-73 characters, 21 unlocked from the start. With one deliberate exception
-(Web Weaver, below), no skin is faster or bigger than another, and the
-palette is deliberately wide and vivid (no black or near-black skin exists).
-The rest unlock two ways:
+74 characters, 21 unlocked from the start. With two deliberate exceptions
+(Web Weaver and Ironboy, below), no skin is faster or bigger than another,
+and the palette is deliberately wide and vivid (no black or near-black skin
+exists). The rest unlock two ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins
   earned rather than anything done in a single round.
-- **Coin shop** (34 skins, 120-5000 coins): earned by playing rounds. Every
+- **Coin shop** (35 skins, 120-5000 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
@@ -256,6 +256,15 @@ The rest unlock two ways:
   pump the swing by holding left/right while attached to build up speed.
   It's a genuine movement ability exclusive to this one skin, a deliberate
   break from "skins are purely cosmetic" for a 5000-coin showpiece.
+
+  Also at 5000 coins is **Ironboy**: an original armored hero (not a
+  licensed character) with gold chest plating, a pulsing arc-reactor glow
+  and a gold faceplate helmet with glowing eye slits. Its own exclusive
+  ability -- tap **Q** (rebindable, an on-screen button on touch) to send
+  every other player within reach flying away from you, on a cooldown.
+  Works on any map, tagger or not, evader or not -- a shove to buy space,
+  break a chase, or knock someone off a chair or a Tidal Tower platform at
+  exactly the wrong moment.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately

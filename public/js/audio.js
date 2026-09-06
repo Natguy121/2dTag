@@ -214,4 +214,14 @@ export const sfx = {
     noise({ dur: 0.15, gain: 0.09, freq: 700 });
     blip({ freq: 350, to: 120, dur: 0.18, type: 'sine', gain: 0.08 });
   },
+  // Ironboy: a heavy repulsor whoosh when the push ability fires.
+  push: () => {
+    noise({ dur: 0.12, gain: 0.12, freq: 2200 });
+    blip({ freq: 200, to: 500, dur: 0.18, type: 'sine', gain: 0.16 });
+  },
+  // A heavier impact thud for whoever actually gets sent flying.
+  pushed: () => {
+    blip({ freq: 150, to: 50, dur: 0.3, type: 'square', gain: 0.2 });
+    noise({ dur: 0.1, gain: 0.1, freq: 400 });
+  },
 };
