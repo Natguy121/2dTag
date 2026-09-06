@@ -98,6 +98,14 @@ export const CHAIRS_MOVING_MAX = 8;
 export const CHAIRS_GRACE_TIME = 2.8;
 export const CHAIRS_WINNER_BONUS = 300;
 
+// Wall Builder (maps with map.wallBuilder: true, e.g. Blocky Blastu).
+// Anyone who isn't "it" can drop a solid wall beside themselves, facing
+// direction, up to map.wallLimit (or WALL_DEFAULT_LIMIT) times a round.
+export const WALL_DEFAULT_LIMIT = 3;
+export const WALL_W = 32;
+export const WALL_H = 130;
+export const WALL_GAP = 6; // clearance from the placer so it never spawns overlapping them
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

@@ -93,6 +93,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Surge Ruins** | Glowing orbs grant one of 9 random mini superpowers. |
 | **Chair Chaos** | Musical chairs -- when the music stops, find a chair or you're out. Last one standing wins 300 coins. |
 | **Frankenstein's Lab** | Get tagged and you become the monster -- green skin, neck bolts and all -- until you pass it on. |
+| **Blocky Blastu** | Anyone not it can drop up to 3 walls to block the tagger's path -- build smart. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -109,7 +110,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Nine maps bend the base rules further, each in a different direction:
+Ten maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -188,6 +189,15 @@ Nine maps bend the base rules further, each in a different direction:
   caught. Tag someone else and the transformation passes to them; you revert
   straight back to your normal look. Purely cosmetic -- no speed, size or
   hitbox change, just a very different look while you're it.
+- **Blocky Blastu** hands everyone a defensive tool: whoever isn't currently
+  "it" can tap **Q** (rebindable, an on-screen brick button on touch) to
+  drop a solid wall right beside themselves, facing direction, blocking the
+  tagger's path -- up to 3 each per round.
+  Walls are permanent for the rest of the round, solid for everyone
+  (tagger, bots, other builders) the instant they land, and tall enough
+  that clearing one takes a real jump. The tagger can't build one
+  themselves -- it's purely an evader's tool, so use your three charges
+  wisely.
 
 ## Bots
 

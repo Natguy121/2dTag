@@ -54,6 +54,15 @@
 //                     the moment they tag someone else -- purely cosmetic,
 //                     no rule changes. See drawCharacter's `frankenstein`
 //                     option in public/js/render.js.
+//   wallBuilder       true  -- any player who isn't currently "it" can drop
+//                     a solid wall right next to themselves (facing
+//                     direction) to block the tagger's path, up to
+//                     wallLimit each (see below). Placed walls are solid
+//                     for everyone -- tagger, bots, other builders -- for
+//                     the rest of the round. See server/room.js's
+//                     resolveWalls() and WALL_* in constants.js.
+//   wallLimit         N     -- how many walls each player may place on a
+//                     wallBuilder map; omitted = WALL_DEFAULT_LIMIT.
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
@@ -868,6 +877,60 @@ export const MAPS = [
     // reach.mjs -- reused here the same way Surge Ruins and Upside Down
     // reused it, so the lab needs no fresh reachability pass; only the
     // theme and the frankenstein flag are new.
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      [430, 740, 40, 120],
+      [1130, 740, 40, 120],
+      [720, 690, 160, 40],
+    ],
+    platforms: [
+      [170, 726, 230],
+      [1200, 726, 230],
+      [545, 586, 200],
+      [855, 586, 200],
+      [290, 470, 240],
+      [1070, 470, 240],
+      [660, 352, 280],
+      [110, 316, 190],
+      [1300, 316, 190],
+      [400, 210, 200],
+      [1000, 210, 200],
+    ],
+    hazards: [],
+    springs: [[770, 846, 60]],
+    spawns: [
+      [150, 860], [400, 860], [640, 860], [980, 860],
+      [1230, 860], [1450, 860], [700, 352], [900, 352],
+    ],
+  },
+
+  {
+    id: 'blocky',
+    name: 'Blocky Blastu',
+    blurb: "Anyone not it can drop up to 3 walls to block the tagger's path -- build smart.",
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    wallBuilder: true,
+    wallLimit: 3,
+    theme: {
+      sky: ['#0a1428', '#142850', '#050a14'],
+      solid: '#1f3a5f',
+      solidEdge: '#ffd400',
+      platform: '#2f5580',
+      accent: '#ff8c1a',
+      hazard: '#ff4d6d',
+      fog: 'rgba(255,140,26,0.1)',
+      grid: 'rgba(255,212,0,0.08)',
+      decor: 'blocks',
+    },
+    // Neon Arena's exact geometry, already proven fully reachable by
+    // reach.mjs -- reused here the same way Surge Ruins, Upside Down and
+    // Frankenstein's Lab reused it, so this map needs no fresh reachability
+    // pass; only the theme and the wallBuilder/wallLimit flags are new.
     solids: [
       [0, 860, 1600, 40],
       [0, 0, 24, 900],

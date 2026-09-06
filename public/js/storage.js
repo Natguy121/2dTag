@@ -10,6 +10,7 @@ export const DEFAULT_KEYS = {
   down: 'ArrowDown',
   shoot: 'KeyF',
   swing: 'KeyE',
+  build: 'KeyQ',
 };
 
 const DEFAULTS = {

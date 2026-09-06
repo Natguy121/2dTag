@@ -84,6 +84,7 @@ export class Room {
     this.chairEliminationOrder = []; // array of id-arrays, earliest elimination first
     this.chairWinnerId = null;
     this.chairAssignment = new Map(); // id -> chair index, a bot-steering hint only
+    this.walls = []; // player-placed [x, y, w, h] solids (map.wallBuilder), for the rest of the round
     this.onEmpty = null;
   }
 
@@ -131,6 +132,8 @@ export class Room {
       ping: 0,
       shotCooldown: 0,
       prevShoot: false,
+      wallsPlaced: 0,
+      prevBuild: false,
       invisCycle: 0,
       invisible: false,
       candyFreeze: 0,
@@ -301,6 +304,8 @@ export class Room {
       p.inputBits = 0;
       p.shotCooldown = 0;
       p.prevShoot = false;
+      p.wallsPlaced = 0;
+      p.prevBuild = false;
       p.invisCycle = 0;
       p.invisible = false;
       p.candyFreeze = 0;
@@ -309,6 +314,7 @@ export class Room {
       p.powerTimer = 0;
     }
     this.orbCooldowns = new Array((this.map.orbs || []).length).fill(0);
+    this.walls = [];
     this.chairStage = null;
     this.chairTimer = 0;
     this.activeChairs = [];
@@ -456,7 +462,12 @@ export class Room {
 
   step(dt) {
     this.tick++;
-    const map = this.map;
+    // Player-placed walls (map.wallBuilder) are merged into a fresh solids
+    // array here, once, rather than mutating the shared static map object --
+    // every call below (bot AI, every player's own stepBody, shots, swing
+    // anchors) reads this same `map`, so a wall is solid for all of them
+    // with no further plumbing.
+    const map = this.walls.length ? { ...this.map, solids: [...this.map.solids, ...this.walls] } : this.map;
     const frozen = this.state === 'countdown' || this.state === 'results';
     if (this.state === 'playing') this.seekerFreezeTimer = Math.max(0, this.seekerFreezeTimer - dt);
     const seekerFrozen = this.seekerFreezeTimer > 0;
@@ -574,6 +585,7 @@ export class Room {
       } else {
         this.resolveTags();
         this.resolveShots(map, dt);
+        this.resolveWalls(map);
         this.resolveFreezeTouch();
         this.updateInvisibility(map, dt);
       }
@@ -703,6 +715,35 @@ export class Room {
     if (shot.hitId) {
       const target = this.players.get(shot.hitId);
       if (target) this.applyTag(tagger, target, 'shotTag');
+    }
+  }
+
+  /** Wall Builder maps: anyone who isn't currently "it" can drop a solid
+   * wall right beside themselves, in their facing direction, to block the
+   * tagger's path -- up to map.wallLimit each for the rest of the round.
+   * Tapping (not holding) the build input, the same rising-edge pattern as
+   * the gun's shoot input. The wall itself is merged into every player's
+   * (and every bot's) collision map back in step() -- this method only
+   * ever appends to this.walls, never touches solids directly. */
+  resolveWalls(map) {
+    if (!map.wallBuilder) return;
+    const limit = map.wallLimit ?? C.WALL_DEFAULT_LIMIT;
+
+    for (const p of this.players.values()) {
+      const input = decodeInput(p.inputBits);
+      const pressed = input.build && !p.prevBuild;
+      p.prevBuild = input.build;
+      if (!pressed || p.it || p.respawn > 0 || p.wallsPlaced >= limit) continue;
+
+      const x = p.body.facing >= 0
+        ? p.body.x + C.PLAYER_W + C.WALL_GAP
+        : p.body.x - C.WALL_W - C.WALL_GAP;
+      const y = p.body.y + C.PLAYER_H - C.WALL_H;
+      this.walls.push([x, y, C.WALL_W, C.WALL_H]);
+      p.wallsPlaced += 1;
+      this.pushEvent({
+        type: 'wallPlaced', id: p.id, x, y, w: C.WALL_W, h: C.WALL_H,
+      });
     }
   }
 
@@ -876,6 +917,9 @@ export class Room {
         // lets every client (not just the swinger) draw the rope line.
         p.body.swinging ? Math.round(p.body.swingAnchorX * 10) / 10 : 0,
         p.body.swinging ? Math.round(p.body.swingAnchorY * 10) / 10 : 0,
+        // Wall Builder maps only -- how many of this player's wall charges
+        // are already spent, so their own HUD can show what's left.
+        p.wallsPlaced,
       ]);
     }
     return {
@@ -891,6 +935,7 @@ export class Room {
         active: this.activeChairs,
         remaining: [...this.players.values()].filter((p) => !this.chairEliminated.has(p.id)).length,
       } : null,
+      walls: this.walls,
       players,
       ev: this.events,
     };

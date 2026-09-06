@@ -111,6 +111,11 @@ export const sfx = {
     noise({ dur: 0.05, gain: 0.06, freq: 4000 });
   },
   webRelease: () => noise({ dur: 0.12, gain: 0.07, freq: 1200 }),
+  // Blocky Blastu: a chunky construction "thunk" as a wall slams down.
+  buildWall: () => {
+    blip({ freq: 180, to: 70, dur: 0.14, type: 'square', gain: 0.2 });
+    noise({ dur: 0.09, gain: 0.1, freq: 800 });
+  },
   hazard: () => blip({ freq: 160, to: 60, dur: 0.35, type: 'sawtooth', gain: 0.18 }),
   count: () => blip({ freq: 520, dur: 0.1, type: 'square', gain: 0.14 }),
   go: () => {

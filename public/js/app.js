@@ -71,6 +71,7 @@ function showScreen(name) {
     $('[data-touch]').hidden = !input.isTouchDevice();
     $('[data-shoot-btn]').hidden = !game.map.guns;
     $('[data-swing-btn]').hidden = !getSkin(profile.skin)?.swingAbility;
+    $('[data-build-btn]').hidden = !game.map.wallBuilder;
     lockLandscape();
   } else if (game) {
     game.stop();
@@ -217,6 +218,12 @@ function updateHud(hud) {
     $('[data-hud-power-label]').textContent = hud.powerLabel;
     const pct = Math.max(0, Math.min(100, (hud.powerT / C.ORB_POWER_TIME) * 100));
     $('[data-hud-power-fill]').style.width = `${pct}%`;
+  }
+
+  const wallsEl = $('[data-hud-walls]');
+  wallsEl.hidden = !hud.buildWalls || hud.state !== 'playing';
+  if (hud.buildWalls) {
+    wallsEl.textContent = `Walls left: ${Math.max(0, hud.wallLimit - hud.wallsPlaced)}/${hud.wallLimit}`;
   }
 
   const list = $('[data-hud-scores]');
@@ -781,6 +788,7 @@ function renderSettings() {
 const KEY_LABELS = {
   left: 'Move left', right: 'Move right', jump: 'Jump', down: 'Drop down',
   shoot: 'Shoot (gun maps)', swing: 'Web-swing (Web Weaver skin)',
+  build: 'Build wall (Blocky Blastu)',
 };
 
 function renderKeybinds() {

@@ -18,7 +18,7 @@ import { profile, bumpStat, trackMapPlayed } from './storage.js';
 import { sfx } from './audio.js';
 import * as music from './music.js';
 import {
-  drawBackground, drawMap, drawCharacter, drawRoundStartRainbow, Particles, formatTime,
+  drawBackground, drawMap, drawWalls, drawCharacter, drawRoundStartRainbow, Particles, formatTime,
 } from './render.js';
 
 const INTERP_DELAY = 0.1; // seconds of buffer for remote players
@@ -52,6 +52,7 @@ export class Game {
     this.seekerFreeze = 0;
     this.orbState = []; // per-orb seconds until it respawns, from the last snapshot
     this.chairs = null; // { stage, timer, active, remaining } on map.musicalChairs, else null
+    this.wallState = []; // [x, y, w, h] player-placed walls (map.wallBuilder), from the last snapshot
     this.resultsShown = false;
 
     this.body = createBody();
@@ -149,13 +150,14 @@ export class Game {
     this.seekerFreeze = msg.seekerFreeze || 0;
     this.orbState = msg.orbs || [];
     this.chairs = msg.chairs || null;
+    this.wallState = msg.walls || [];
     this.applyState(msg.state);
 
     const byId = new Map();
     for (const p of msg.players) {
       byId.set(p[0], {
         x: p[1], y: p[2], vx: p[3], vy: p[4], facing: p[5], flags: p[6], power: p[7] || 0, powerT: p[8] || 0,
-        webX: p[9] || 0, webY: p[10] || 0,
+        webX: p[9] || 0, webY: p[10] || 0, wallsPlaced: p[11] || 0,
       });
     }
     this.snapshots.push({ time: performance.now() / 1000, players: byId });
@@ -192,7 +194,7 @@ export class Game {
     // Replay everything the server has not acknowledged yet.
     this.pending = this.pending.filter((p) => p.seq > ack);
     for (const p of this.pending) {
-      stepBody(b, p.bits, this.map, C.DT, {
+      stepBody(b, p.bits, this.collisionMap(), C.DT, {
         speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
         gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
         canSwing: this.localCanSwing(),
@@ -246,6 +248,15 @@ export class Game {
    * above. */
   localCanSwing() {
     return !!getSkin(profile.skin)?.swingAbility;
+  }
+
+  /** The map merged with any player-placed walls from the latest snapshot
+   * (Wall Builder maps) -- used in place of `this.map` for local prediction
+   * so you never visually clip through a wall someone else just placed. A
+   * new object each time (never mutates the shared static map). */
+  collisionMap() {
+    if (!this.wallState.length) return this.map;
+    return { ...this.map, solids: [...this.map.solids, ...this.wallState] };
   }
 
   /** Radar power: while not "it", points at the current tagger; while "it",
@@ -372,6 +383,16 @@ export class Game {
           break;
         case 'webRelease':
           if (!mine) sfx.webRelease();
+          break;
+        case 'wallPlaced':
+          // No client-side prediction for this one (like the gun's shot) --
+          // this event is the first time even the placer hears/sees it land.
+          sfx.buildWall();
+          if (profile.particles) {
+            this.particles.spawn(ev.x + ev.w / 2, ev.y + ev.h / 2, 14, {
+              color: this.map.theme.accent, speed: 160, life: 0.4, size: 3, gravity: 300, spread: Math.PI * 2,
+            });
+          }
           break;
         case 'hazard':
           if (profile.particles) {
@@ -573,7 +594,7 @@ export class Game {
     // next snapshot yanks it back.
     const iceFrozen = self ? !!(self.flags & 32) : false;
     if (!frozen && !respawning && !iceFrozen) {
-      const ev = stepBody(this.body, bits, this.map, C.DT, {
+      const ev = stepBody(this.body, bits, this.collisionMap(), C.DT, {
         speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
         gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
         canSwing: this.localCanSwing(),
@@ -733,6 +754,7 @@ export class Game {
     ctx.translate(-this.cam.x, -this.cam.y);
 
     drawMap(ctx, this.map, this.time, this.orbState, this.chairs?.active);
+    if (this.wallState.length) drawWalls(ctx, this.wallState, this.map.theme);
 
     // Remote players first, local player on top.
     for (const [id, meta] of this.roster) {
@@ -1034,6 +1056,9 @@ export class Game {
       powerLabel: power ? POWER_LABELS[power] : '',
       powerIcon: power ? POWER_ICONS[power] : '',
       powerT: me ? me.powerT : 0,
+      buildWalls: !!this.map.wallBuilder,
+      wallLimit: this.map.wallLimit ?? 3,
+      wallsPlaced: me ? me.wallsPlaced : 0,
       fps: this.fps,
       ping: net.state.ping,
     };

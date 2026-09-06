@@ -549,6 +549,40 @@ function drawPlatform(ctx, p, theme) {
   ctx.globalAlpha = 1;
 }
 
+/**
+ * Player-placed walls (map.wallBuilder, e.g. Blocky Blastu) -- drawn
+ * distinctly from the map's own static geometry with diagonal hazard
+ * stripes, since these appear suddenly mid-round and need to read as "new
+ * obstacle" at a glance rather than blend into the background.
+ */
+export function drawWalls(ctx, walls, theme) {
+  for (const w of walls) {
+    const [x, y, ww, hh] = w;
+    ctx.save();
+    roundRect(ctx, x, y, ww, hh, 4);
+    ctx.clip();
+    ctx.fillStyle = '#1a1a24';
+    ctx.fillRect(x, y, ww, hh);
+    ctx.strokeStyle = theme.accent;
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 8;
+    for (let i = -hh; i < ww + hh; i += 16) {
+      ctx.beginPath();
+      ctx.moveTo(x + i, y + hh);
+      ctx.lineTo(x + i + hh, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = theme.solidEdge;
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 3;
+    roundRect(ctx, x + 1.5, y + 1.5, ww - 3, hh - 3, 4);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
 function drawSpring(ctx, s, theme, time) {
   const [x, y, w] = s;
   const bounce = Math.abs(Math.sin(time * 3)) * 2;
@@ -926,6 +960,31 @@ function drawBackground(ctx, map, cam, view, time) {
       ctx.beginPath();
       ctx.ellipse(view.w * gx + px * 0.2, view.h * gy + py * 0.2, 90, 130, 0, 0, Math.PI * 2);
       ctx.fill();
+    }
+  } else if (theme.decor === 'blocks') {
+    // Blocky Blastu: drifting blueprint-style squares in the construction
+    // yellow/orange of the map's own walls, plus a faint schematic grid.
+    ctx.strokeStyle = 'rgba(255,212,0,0.14)';
+    ctx.lineWidth = 1;
+    const grid = 70;
+    for (let gx = -(px % grid); gx < view.w; gx += grid) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, view.h); ctx.stroke();
+    }
+    for (let gy = -(py % grid); gy < view.h; gy += grid) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(view.w, gy); ctx.stroke();
+    }
+    for (let i = 0; i < 14; i++) {
+      const sx = ((i * 191 + px * 0.3 + Math.sin(time * 0.3 + i) * 14) % (view.w + 80)) - 40;
+      const sy = ((i * 127 + time * 10 + py * 0.3) % (view.h + 80)) - 40;
+      const size = 14 + (i % 4) * 6;
+      ctx.strokeStyle = i % 2 === 0 ? '#ffd400' : '#ff8c1a';
+      ctx.globalAlpha = 0.22;
+      ctx.lineWidth = 2;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(time * 0.15 + i);
+      ctx.strokeRect(-size / 2, -size / 2, size, size);
+      ctx.restore();
     }
   } else if (theme.decor === 'sprinkles') {
     // Colorful confetti-like sprinkles drifting down for the candy map.
