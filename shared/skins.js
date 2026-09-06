@@ -21,6 +21,13 @@
 //   null                                       -- available from the start
 //   { type: 'stat', stat, value, label }        -- unlocked by a play stat
 //   { type: 'coins', price, label }             -- bought with earned coins
+//   { type: 'completion', label }               -- the completionist surprise
+//                                                  (below) -- see public/js
+//                                                  /app.js's checkCompletion-
+//                                                  Surprise(), which is the
+//                                                  only thing that ever
+//                                                  grants it, once every
+//                                                  other skin is owned.
 
 export const SKINS = [
   { id: 'runner',  name: 'Runner',     body: '#4cc9f0', dark: '#2a86a8', trim: '#e8faff', eye: '#08131a', pattern: 'solid',  unlock: null },
@@ -197,6 +204,16 @@ export const SKINS = [
   { id: 'huge',       name: 'Huge',        body: '#5a9c3f', dark: '#2f5e26', trim: '#dfffb8', eye: '#ffe14d', pattern: 'huge',
     transformAbility: true,
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
+
+  // The completionist surprise: reuses the 'rainbow' pattern's animated
+  // hue-cycling body (same as Prism) with its own gold/white finish so it
+  // still reads as a distinct, one-of-a-kind trophy rather than a second
+  // Prism. Never for sale, never gated on a stat -- see the unlock header
+  // comment above and public/js/app.js's checkCompletionSurprise(). Hidden
+  // from the shop grid entirely until earned, so finding out it exists at
+  // all is part of the surprise.
+  { id: 'legend',     name: 'Legend',      body: '#ffffff', dark: '#c9c9c9', trim: '#ffd700', eye: '#ffffff', pattern: 'rainbow',
+    unlock: { type: 'completion', label: 'Collect every other skin' } },
 ];
 
 export const SKIN_BY_ID = Object.fromEntries(SKINS.map((s) => [s.id, s]));
@@ -213,7 +230,7 @@ export function getSkin(id) {
  */
 export function isUnlocked(skin, stats, owned) {
   if (!skin.unlock) return true;
-  if (skin.unlock.type === 'coins') {
+  if (skin.unlock.type === 'coins' || skin.unlock.type === 'completion') {
     return owned instanceof Set ? owned.has(skin.id) : !!owned?.includes?.(skin.id);
   }
   return (stats?.[skin.unlock.stat] || 0) >= skin.unlock.value;
@@ -229,6 +246,7 @@ export const RARITIES = {
   epic: { label: 'Epic', color: '#a06bff' },
   legendary: { label: 'Legendary', color: '#ffd166' },
   mythic: { label: 'Mythic', color: '#ff4d6d' },
+  secret: { label: 'Secret', color: '#ffd700' },
 };
 
 // How much a stat-gated skin's own requirement asks of you, per stat --
@@ -240,6 +258,10 @@ const STAT_EPIC_AT = {
 
 /** @param skin an entry from SKINS -- see RARITIES above for the possible results. */
 export function getRarity(skin) {
+  // The completionist surprise isn't for sale or for lucky blocks to hand
+  // out (no lucky block tier is ever called 'secret') -- it's earned
+  // exactly one way.
+  if (skin.unlock?.type === 'completion') return 'secret';
   // The exclusive-ability skins are a cut above everything else money can buy.
   if (skin.swingAbility || skin.pushAbility || skin.flyAbility || skin.transformAbility) return 'mythic';
   if (!skin.unlock) return 'common';

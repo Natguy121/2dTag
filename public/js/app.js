@@ -7,12 +7,12 @@ import {
   SKINS, getSkin, isUnlocked, getRarity, RARITIES,
 } from '/shared/skins.js';
 import { TRAILS, isTrailUnlocked } from '/shared/trails.js';
-import { QUESTS } from '/shared/quests.js';
+import { DIFFICULTIES } from '/shared/quests.js';
 import * as net from './net.js';
 import * as input from './input.js';
 import {
   profile, save, resetStats, resetKeys, keyLabel, bumpStat, addCoins, buySkin, buyTrail,
-  claimQuest, DEFAULT_KEYS,
+  claimQuest, spendLuckyBlock, grantSkin, currentStatValue, DEFAULT_KEYS,
 } from './storage.js';
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
@@ -537,17 +537,29 @@ function equipTrail(trailId) {
 }
 
 function renderSkins() {
+  // Before drawing anything: has every collectible skin just become owned?
+  // May grant 'legend' and pop the celebration overlay right here, in which
+  // case the grid built below already shows it as unlocked.
+  checkCompletionSurprise();
+
   const grid = $('[data-skin-grid]');
   grid.innerHTML = '';
   let unlockedCount = 0;
+  const ownsLegend = profile.ownedSkins.includes('legend');
+  const collectibleTotal = SKINS.length - 1; // 'legend' is a bonus, not part of the count
 
   for (const skin of SKINS) {
+    // The completionist surprise stays entirely out of the grid -- not even
+    // as a locked "???" card -- until it's actually been earned, so finding
+    // out it exists at all is part of the surprise.
+    if (skin.id === 'legend' && !ownsLegend) continue;
+
     // Admins can preview and wear anything, but it's a live bypass, not a
     // purchase -- nothing is added to ownedSkins, so it re-locks the moment
     // admin status drops.
     const owns = isUnlocked(skin, profile.stats, profile.ownedSkins);
     const unlocked = owns || isAdminSession;
-    if (unlocked) unlockedCount++;
+    if (unlocked && skin.id !== 'legend') unlockedCount++;
 
     const card = document.createElement('button');
     card.type = 'button';
@@ -600,8 +612,8 @@ function renderSkins() {
 
   const coinNote = ` · ${profile.coins || 0} coins`;
   $('[data-skin-progress]').textContent = isAdminSession
-    ? `${unlockedCount} of ${SKINS.length} unlocked (admin: everything unlocked for preview)${coinNote}`
-    : `${unlockedCount} of ${SKINS.length} unlocked. Play to earn coins and stats for the rest.${coinNote}`;
+    ? `${unlockedCount} of ${collectibleTotal} unlocked (admin: everything unlocked for preview)${coinNote}`
+    : `${unlockedCount} of ${collectibleTotal} unlocked. Play to earn coins and stats for the rest.${coinNote}`;
 }
 
 /** Refresh every tab of the Skins screen -- used whenever something that can
@@ -611,6 +623,7 @@ function renderShop() {
   renderSkins();
   renderTrails();
   renderQuests();
+  renderLuckyBlocks();
 }
 
 function setShopTab(tab) {
@@ -621,6 +634,8 @@ function setShopTab(tab) {
   $('[data-trail-grid]').hidden = tab !== 'trails';
   $('[data-quest-progress]').hidden = tab !== 'quests';
   $('[data-quest-list]').hidden = tab !== 'quests';
+  $('[data-block-progress]').hidden = tab !== 'blocks';
+  $('[data-block-grid]').hidden = tab !== 'blocks';
 }
 
 function renderTrails() {
@@ -691,53 +706,67 @@ function renderTrails() {
     : `${unlockedCount} of ${TRAILS.length} unlocked. Play to earn coins and stats for the rest.${coinNote}`;
 }
 
-function questProgress(quest) {
-  if (quest.stat === 'mapsPlayed') return (profile.mapsPlayed || []).length;
-  return profile.stats[quest.stat] || 0;
-}
-
 function renderQuests() {
   const list = $('[data-quest-list]');
   list.innerHTML = '';
-  let claimedCount = 0;
 
-  for (const quest of QUESTS) {
-    const have = questProgress(quest);
+  for (const quest of profile.quests) {
+    const have = Math.max(0, currentStatValue(quest.stat) - quest.baseline);
     const done = have >= quest.goal;
-    const claimed = profile.claimedQuests.includes(quest.id);
-    if (claimed) claimedCount++;
+    const d = DIFFICULTIES[quest.difficulty];
+    const blockRarity = RARITIES[quest.reward.blockTier];
 
     const row = document.createElement('div');
-    row.className = `quest-row${claimed ? ' is-claimed' : done ? ' is-ready' : ''}`;
+    row.className = `quest-row${done ? ' is-ready' : ''}`;
 
     const info = document.createElement('div');
     info.className = 'quest-info';
-    const name = document.createElement('div');
+
+    const head = document.createElement('div');
+    head.className = 'quest-head';
+    const name = document.createElement('span');
     name.className = 'quest-name';
     name.textContent = quest.name;
+    const difficulty = document.createElement('span');
+    difficulty.className = 'quest-difficulty';
+    difficulty.style.setProperty('--difficulty-color', d.color);
+    difficulty.textContent = d.label;
+    head.append(name, difficulty);
+
     const desc = document.createElement('div');
     desc.className = 'quest-desc';
     desc.textContent = `${quest.label} (${Math.min(have, quest.goal)}/${quest.goal})`;
-    info.append(name, desc);
+
+    const reward = document.createElement('div');
+    reward.className = 'quest-reward';
+    const coinPart = document.createElement('span');
+    coinPart.textContent = `+${quest.reward.coins} coins · `;
+    const blockPart = document.createElement('span');
+    blockPart.className = 'quest-block';
+    blockPart.style.setProperty('--rarity-color', blockRarity.color);
+    blockPart.textContent = `1 ${blockRarity.label} lucky block`;
+    reward.append(coinPart, blockPart);
+
+    info.append(head, desc, reward);
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn btn-small';
-    if (claimed) {
-      btn.textContent = 'Claimed';
-      btn.disabled = true;
-    } else if (done) {
-      btn.textContent = `Claim +${quest.reward}`;
+    if (done) {
+      btn.textContent = 'Claim';
       btn.classList.add('btn-primary');
       btn.addEventListener('click', () => {
-        if (claimQuest(quest.id, quest.reward)) {
+        const paid = claimQuest(quest.id);
+        if (paid) {
           sfx.win();
+          toast(`+${paid.coins} coins · +1 ${blockRarity.label} lucky block`);
           renderQuests();
+          renderLuckyBlocks();
           drawProfilePreview();
         }
       });
     } else {
-      btn.textContent = `+${quest.reward} coins`;
+      btn.textContent = 'In progress';
       btn.disabled = true;
     }
 
@@ -746,7 +775,102 @@ function renderQuests() {
   }
 
   $('[data-quest-progress]').textContent =
-    `${claimedCount} of ${QUESTS.length} quests claimed · ${profile.coins || 0} coins`;
+    `${profile.quests.length} quests active -- finish one and another takes its place · ${profile.coins || 0} coins`;
+}
+
+// Lucky blocks only ever come from quest rewards (shared/quests.js), which
+// never hand out Common (everyone already owns every free skin) or Mythic
+// (kept exclusive to real play/purchase) -- see that file's DIFFICULTIES.
+const BLOCK_TIERS = ['uncommon', 'rare', 'epic', 'legendary'];
+// What a block converts to instead, once every skin of its rarity is
+// already owned -- so a block is never a dead click at that point.
+const BLOCK_FALLBACK_COINS = {
+  uncommon: 40, rare: 90, epic: 180, legendary: 350,
+};
+
+/** Open one lucky block: a random not-yet-owned skin of its rarity, or a
+ * coin payout if there's nothing left to win at that tier. */
+function openLuckyBlock(tier) {
+  if (!spendLuckyBlock(tier)) return;
+  const candidates = SKINS.filter((s) => s.id !== 'legend' && getRarity(s) === tier
+    && !isUnlocked(s, profile.stats, profile.ownedSkins));
+
+  if (candidates.length) {
+    const won = candidates[Math.floor(Math.random() * candidates.length)];
+    grantSkin(won.id);
+    sfx.win();
+    toast(`${RARITIES[tier].label} lucky block: you got ${won.name}!`);
+  } else {
+    const consolation = BLOCK_FALLBACK_COINS[tier] || 40;
+    addCoins(consolation);
+    sfx.click();
+    toast(`Already have every ${RARITIES[tier].label} skin -- +${consolation} coins instead.`);
+  }
+  renderShop();
+  drawProfilePreview();
+}
+
+function renderLuckyBlocks() {
+  const grid = $('[data-block-grid]');
+  grid.innerHTML = '';
+
+  for (const tier of BLOCK_TIERS) {
+    const count = profile.luckyBlocks[tier] || 0;
+    const rarity = RARITIES[tier];
+
+    const card = document.createElement('div');
+    card.className = 'block-card';
+    card.style.setProperty('--rarity-color', rarity.color);
+
+    const icon = document.createElement('div');
+    icon.className = 'block-icon';
+    icon.textContent = '\u{1F381}';
+
+    const label = document.createElement('div');
+    label.className = 'block-label';
+    label.textContent = `${rarity.label}`;
+
+    const have = document.createElement('div');
+    have.className = 'block-count';
+    have.textContent = `x${count}`;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-small btn-primary';
+    btn.textContent = 'Open';
+    btn.disabled = count <= 0;
+    btn.addEventListener('click', () => openLuckyBlock(tier));
+
+    card.append(icon, label, have, btn);
+    grid.append(card);
+  }
+
+  const total = BLOCK_TIERS.reduce((sum, t) => sum + (profile.luckyBlocks[t] || 0), 0);
+  $('[data-block-progress]').textContent = total
+    ? `${total} lucky block${total === 1 ? '' : 's'} waiting to be opened.`
+    : 'Complete quests to earn lucky blocks -- open one for a shot at a random skin of that rarity.';
+}
+
+/** The completionist surprise: own every collectible skin (everything
+ * except 'legend' itself) as a genuine player -- never as an admin preview
+ * -- and 'legend' is granted on the spot with a one-time celebration. Runs
+ * every time the Skins tab renders, so it fires whether the last skin came
+ * from a purchase, a stat quietly crossing its threshold after a round, or
+ * a lucky block win. */
+function checkCompletionSurprise() {
+  if (isAdminSession || profile.ownedSkins.includes('legend')) return;
+  const collectible = SKINS.filter((s) => s.id !== 'legend');
+  const gotThemAll = collectible.every((s) => isUnlocked(s, profile.stats, profile.ownedSkins));
+  if (!gotThemAll) return;
+  grantSkin('legend');
+  showCompletionSurprise();
+}
+
+function showCompletionSurprise() {
+  sfx.win();
+  const overlay = $('[data-completion-overlay]');
+  overlay.hidden = false;
+  requestAnimationFrame(() => drawSkinPreview($('[data-completion-preview]'), 'legend'));
 }
 
 function drawProfilePreview() {
@@ -1041,6 +1165,12 @@ function wire() {
     renderStats();
     renderShop();
     toast('Progress reset.');
+  });
+  $('[data-action="completion-ok"]').addEventListener('click', () => {
+    sfx.click();
+    $('[data-completion-overlay]').hidden = true;
+    renderShop();
+    drawProfilePreview();
   });
 
   // Unlock audio (sfx + background music) on the first interaction anywhere

@@ -294,15 +294,32 @@ Progress (stats, coins, owned skins/trails) lives in `localStorage`, matching
 everything else client-side in this app -- nobody's coin balance is a real
 account, just like nobody's win count was before this.
 
+Collect all 75 of them (every stat and coin-shop skin -- not counting the
+completionist surprise below) as a genuine player, not an admin preview, and
+a one-time celebration pops with a 76th skin, **Legend**, unlocked no other
+way. It never appears in the shop grid at all until you've actually earned
+it, so finding out it exists is part of the reward.
+
 ## Quests
 
-The **Quests** tab (next to Skins and Trails on the Skins screen) is a
-second way to earn coins beyond just playing rounds: 12 one-time milestones
--- win your first round, tag 50 players, land 10 shots on Crossfire Yard,
-play on 5 different maps, and so on -- each paying a coin bounty once you
-hit its goal. Progress ticks up automatically from the same stats that gate
-skin and trail unlocks; claiming is a separate tap so finishing one is its
-own moment instead of a number quietly changing in the background.
+The **Quests** tab (next to Skins and Trails on the Skins screen) always
+has 8 quests active at once, each with a **difficulty** (Easy, Medium, Hard,
+or Extreme) shown right on the card along with what it pays -- coins, and
+one lucky block, both scaling with how hard the difficulty is. Unlike a
+fixed milestone list, a quest here always targets a delta from wherever
+your stats are *right now* ("tag 8 more players," "win 20 more rounds"),
+so claiming one immediately generates a fresh quest to take its slot --
+there's always something to work on, and a veteran account never runs out
+the way a lifetime-threshold list eventually would.
+
+### Lucky blocks
+
+The **Lucky Blocks** tab holds whatever quests have paid out: Uncommon,
+Rare, Epic, and Legendary blocks (Common is never awarded -- every free
+skin is already owned by everyone -- and Mythic stays exclusive to real
+play/purchase). Opening one hands you a random not-yet-owned skin of that
+exact rarity; once you already own every skin at a tier, that tier's block
+just converts to a coin payout instead, so it's never a dead click.
 
 ## Music
 

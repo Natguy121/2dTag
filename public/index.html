@@ -245,6 +245,7 @@ try {
         <button type="button" class="tab-btn is-active" data-shop-tab="skins">Skins</button>
         <button type="button" class="tab-btn" data-shop-tab="trails">Trails</button>
         <button type="button" class="tab-btn" data-shop-tab="quests">Quests</button>
+        <button type="button" class="tab-btn" data-shop-tab="blocks">Lucky Blocks</button>
       </div>
 
       <p class="hint" data-skin-progress></p>
@@ -255,6 +256,9 @@ try {
 
       <p class="hint" data-quest-progress hidden></p>
       <div class="quest-list" data-quest-list hidden></div>
+
+      <p class="hint" data-block-progress hidden></p>
+      <div class="block-grid" data-block-grid hidden></div>
     </div>
   </section>
 
@@ -403,6 +407,19 @@ try {
   <!-- Connection banner, shown over everything -->
   <div class="net-banner" data-net-banner hidden></div>
   <div class="toast" data-toast hidden></div>
+
+  <!-- The completionist surprise: own every skin and this pops once, ever -->
+  <div class="overlay completion-overlay" data-completion-overlay hidden>
+    <div class="completion-card">
+      <div class="completion-title">🎉 Collection Complete!</div>
+      <p class="completion-body">
+        You've unlocked every skin in the game. As a reward, meet
+        <b>Legend</b> -- yours, and only ever yours.
+      </p>
+      <canvas class="completion-preview" width="124" height="148" data-completion-preview></canvas>
+      <button type="button" class="btn btn-primary" data-action="completion-ok">Nice!</button>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="/js/app.js"></script>

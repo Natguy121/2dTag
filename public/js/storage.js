@@ -1,7 +1,11 @@
 // Local profile, settings and unlock progress. All of it lives in
 // localStorage, which can throw or be unavailable, so every access is guarded.
 
+import { generateQuest } from '/shared/quests.js';
+import { MAPS } from '/shared/maps.js';
+
 const KEY = 'twodtag.profile.v1';
+const ACTIVE_QUEST_COUNT = 8;
 
 export const DEFAULT_KEYS = {
   left: 'ArrowLeft',
@@ -34,7 +38,10 @@ const DEFAULTS = {
   coins: 0,
   ownedSkins: [],
   ownedTrails: [],
-  claimedQuests: [],
+  quests: [], // filled up to ACTIVE_QUEST_COUNT below, right after load
+  luckyBlocks: {
+    uncommon: 0, rare: 0, epic: 0, legendary: 0,
+  },
   mapsPlayed: [],
   theme: 'classic', // 'classic' (blue & orange), 'blossom' (pink & purple), 'pink' or 'blue'
   onboarded: false, // has seen the one-time "pick your colors" welcome screen
@@ -65,7 +72,8 @@ export const profile = {
   stats: { ...DEFAULTS.stats, ...(stored.stats || {}) },
   ownedSkins: Array.isArray(stored.ownedSkins) ? stored.ownedSkins : [],
   ownedTrails: Array.isArray(stored.ownedTrails) ? stored.ownedTrails : [],
-  claimedQuests: Array.isArray(stored.claimedQuests) ? stored.claimedQuests : [],
+  quests: Array.isArray(stored.quests) ? stored.quests : [],
+  luckyBlocks: { ...DEFAULTS.luckyBlocks, ...(stored.luckyBlocks || {}) },
   mapsPlayed: Array.isArray(stored.mapsPlayed) ? stored.mapsPlayed : [],
 };
 
@@ -79,6 +87,26 @@ export function save() {
   }
 }
 
+/** A quest's own live progress -- see shared/quests.js's generateQuest(). */
+export function currentStatValue(stat) {
+  if (stat === 'mapsPlayed') return (profile.mapsPlayed || []).length;
+  return profile.stats[stat] || 0;
+}
+
+/** Top a rotating quest list back up to ACTIVE_QUEST_COUNT, never asking
+ * two live quests for the same stat at once. */
+function fillQuests() {
+  while (profile.quests.length < ACTIVE_QUEST_COUNT) {
+    const used = profile.quests.map((q) => q.templateIndex);
+    profile.quests.push(generateQuest(currentStatValue, used, MAPS.length));
+  }
+}
+
+if (profile.quests.length < ACTIVE_QUEST_COUNT) {
+  fillQuests();
+  save();
+}
+
 export function bumpStat(key, by = 1) {
   profile.stats[key] = (profile.stats[key] || 0) + by;
   save();
@@ -86,6 +114,11 @@ export function bumpStat(key, by = 1) {
 
 export function resetStats() {
   profile.stats = { ...DEFAULTS.stats };
+  // Every live quest's baseline was captured against the stats just wiped,
+  // so it no longer means what it says -- start a completely fresh set
+  // rather than leave one asking for an already-impossible delta.
+  profile.quests = [];
+  fillQuests();
   save();
 }
 
@@ -114,12 +147,39 @@ export function buyTrail(trailId, price) {
   return true;
 }
 
-/** Mark a completed quest claimed and hand out its coins. Returns false if
- * it was already claimed (so the caller doesn't pay out twice). */
-export function claimQuest(id, reward) {
-  if (profile.claimedQuests.includes(id)) return false;
-  profile.claimedQuests = [...profile.claimedQuests, id];
-  addCoins(reward);
+/** Claim a completed quest: pay out its coins and lucky block, drop it from
+ * the active list, and immediately generate a fresh one to fill the slot --
+ * see shared/quests.js's generateQuest(). Returns the reward paid out, or
+ * null if that quest isn't active or isn't actually done yet (so the caller
+ * never pays out twice, or early). */
+export function claimQuest(id) {
+  const quest = profile.quests.find((q) => q.id === id);
+  if (!quest) return null;
+  if (currentStatValue(quest.stat) - quest.baseline < quest.goal) return null;
+
+  profile.quests = profile.quests.filter((q) => q.id !== id);
+  fillQuests();
+  profile.coins = Math.max(0, (profile.coins || 0) + quest.reward.coins);
+  profile.luckyBlocks[quest.reward.blockTier] = (profile.luckyBlocks[quest.reward.blockTier] || 0) + 1;
+  save();
+  return quest.reward;
+}
+
+/** Spend one lucky block of a tier. Returns false if you don't have one. */
+export function spendLuckyBlock(tier) {
+  if ((profile.luckyBlocks[tier] || 0) <= 0) return false;
+  profile.luckyBlocks[tier] -= 1;
+  save();
+  return true;
+}
+
+/** Hand over a skin outright -- a lucky block payout, or the completionist
+ * surprise -- the same effect buySkin() has after paying, just free.
+ * Returns false if it's already owned (so the caller doesn't re-grant/
+ * re-celebrate one you already have). */
+export function grantSkin(skinId) {
+  if (profile.ownedSkins.includes(skinId)) return false;
+  profile.ownedSkins = [...profile.ownedSkins, skinId];
   save();
   return true;
 }

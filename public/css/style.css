@@ -560,10 +560,48 @@ body {
   border-radius: var(--radius);
 }
 
+.quest-head { display: flex; align-items: center; gap: 8px; }
 .quest-name { font-weight: 800; font-size: 14px; }
 .quest-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.quest-reward { font-size: 12px; margin-top: 4px; color: var(--muted); }
 .quest-row.is-ready { border-color: var(--gold); }
-.quest-row.is-claimed { opacity: 0.55; }
+
+.quest-difficulty {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--difficulty-color);
+  background: color-mix(in srgb, var(--difficulty-color) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--difficulty-color) 55%, transparent);
+}
+
+.quest-block {
+  font-weight: 700;
+  color: var(--rarity-color);
+}
+
+/* --------------------------------------------------------- lucky blocks */
+
+.block-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+
+.block-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  background: var(--panel);
+  border: 2px solid color-mix(in srgb, var(--rarity-color) 45%, var(--panel-edge));
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.block-icon { font-size: 36px; line-height: 1; }
+.block-label { font-weight: 800; font-size: 13px; color: var(--rarity-color); }
+.block-count { color: var(--muted); font-size: 12px; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .stat { padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; }
@@ -831,6 +869,36 @@ body {
   justify-content: center;
   padding: 20px;
   backdrop-filter: blur(3px);
+}
+
+.completion-overlay { z-index: 30; }
+
+.completion-card {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+  border: 2px solid transparent;
+  background-image: linear-gradient(var(--panel), var(--panel)),
+    linear-gradient(120deg, #ff4d6d, #ffd166, #4cc9f0, #a06bff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: completion-pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.completion-title { font-size: 24px; font-weight: 900; }
+.completion-body { color: var(--muted); margin: 0; font-size: 14px; line-height: 1.5; }
+.completion-preview { width: 80px; height: 96px; }
+
+@keyframes completion-pop {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .results-card {
