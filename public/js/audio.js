@@ -250,4 +250,17 @@ export const sfx = {
   transformEnd: () => {
     blip({ freq: 220, to: 80, dur: 0.4, type: 'sawtooth', gain: 0.12 });
   },
+  // Mini Man: a quick descending sci-fi zap as they shrink down.
+  shrinkStart: () => {
+    blip({ freq: 1400, to: 200, dur: 0.25, type: 'sine', gain: 0.16 });
+    noise({ dur: 0.12, gain: 0.08, freq: 2600 });
+  },
+  // A quieter version heard when someone ELSE shrinks.
+  shrinkStartFar: () => {
+    blip({ freq: 1000, to: 300, dur: 0.18, type: 'sine', gain: 0.08 });
+  },
+  // A rising zap back to normal size.
+  shrinkEnd: () => {
+    blip({ freq: 300, to: 1200, dur: 0.22, type: 'sine', gain: 0.12 });
+  },
 };

@@ -71,6 +71,7 @@ export class Game {
     this.shotBeams = []; // {x1, y1, x2, y2, age, life, hit} -- Crossfire Yard laser flashes
     this.shake = 0;
     this.cam = { x: 0, y: 0, scale: 1, ready: false };
+    this.camZoom = 1; // Mini Man's shrink zooms this in -- see updateCamera()
     this.time = 0;
     this.centerMessage = null;
     this.centerUntil = 0;
@@ -430,6 +431,24 @@ export class Game {
           break;
         case 'transformEnd':
           if (mine) sfx.transformEnd();
+          break;
+        case 'shrinkStart':
+          // Same "no client-side prediction, purely a render/speed effect"
+          // treatment as transformStart above.
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 18, {
+              color: '#4fd8ff', speed: 160, life: 0.4, size: 3, gravity: 0, spread: Math.PI * 2,
+            });
+          }
+          if (mine) {
+            sfx.shrinkStart();
+            this.showCenter('TINY!', 1.2);
+          } else {
+            sfx.shrinkStartFar();
+          }
+          break;
+        case 'shrinkEnd':
+          if (mine) sfx.shrinkEnd();
           break;
         case 'wallPlaced':
           // No client-side prediction for this one (like the gun's shot) --
@@ -796,7 +815,18 @@ export class Game {
   }
 
   updateCamera(dt) {
-    const scale = Math.max(this.viewW / C.VIEW_W, this.viewH / C.VIEW_H);
+    const baseScale = Math.max(this.viewW / C.VIEW_W, this.viewH / C.VIEW_H);
+
+    // Mini Man's shrink: zoom the local camera in while shrunk, smoothed
+    // like everything else here, so a tiny character never means a
+    // hard-to-see or hard-to-control one.
+    const self = this.latestServerSelf();
+    const shrunk = self ? !!(self.flags & 2048) : false;
+    const targetZoom = shrunk ? C.SHRINK_ZOOM : 1;
+    const zk = 1 - Math.pow(0.002, dt);
+    this.camZoom += (targetZoom - this.camZoom) * zk;
+
+    const scale = baseScale * this.camZoom;
     this.cam.scale = scale;
     const visW = this.viewW / scale;
     const visH = this.viewH / scale;
@@ -930,6 +960,7 @@ export class Game {
     const swinging = !!(p.flags & 256);
     const flying = !!(p.flags & 512);
     const huge = !!(p.flags & 1024);
+    const shrunk = !!(p.flags & 2048);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
@@ -1038,6 +1069,17 @@ export class Game {
       ctx.scale(C.HUGE_SCALE, C.HUGE_SCALE);
       ctx.translate(-feetX, -feetY);
     }
+    if (shrunk) {
+      // Same feet-anchored trick as Huge above, just shrinking instead of
+      // growing -- Mini Man stays planted on the ground, not floating at
+      // its old full-size center.
+      const feetX = x + C.PLAYER_W / 2;
+      const feetY = y + C.PLAYER_H;
+      ctx.save();
+      ctx.translate(feetX, feetY);
+      ctx.scale(C.SHRINK_SCALE, C.SHRINK_SCALE);
+      ctx.translate(-feetX, -feetY);
+    }
 
     drawCharacter(ctx, x, y, {
       skinId: meta?.skin || 'runner',
@@ -1053,9 +1095,11 @@ export class Game {
       pushT: pushT != null && pushT < PUSH_ANIM_DURATION ? pushT : null,
       flying,
       huge,
+      shrink: shrunk,
     });
 
     if (huge) ctx.restore();
+    if (shrunk) ctx.restore();
 
     if (eliminated) ctx.restore();
     if (invisible) ctx.restore();

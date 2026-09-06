@@ -226,20 +226,20 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-75 characters, 21 unlocked from the start. With two deliberate exceptions
-(Web Weaver and Ironboy, below), no skin is faster or bigger than another,
-and the palette is deliberately wide and vivid (no black or near-black skin
-exists) -- **Huge**, below, only ever looks bigger, it never actually is.
-Every card in the shop carries a rarity badge too -- Common, Uncommon,
-Rare, Epic, Legendary, or Mythic for the three ability skins -- derived
-straight from how a skin unlocks (free, a stat grind, or a coin price)
-rather than a separate hand-set value, so it can never drift out of sync
-with the actual unlock rule. The rest unlock two ways:
+76 characters, 21 unlocked from the start. With three deliberate exceptions
+(Web Weaver, Ironboy, and Mini Man, below), no skin is faster or bigger than
+another, and the palette is deliberately wide and vivid (no black or
+near-black skin exists) -- **Huge**, below, only ever looks bigger, it never
+actually is. Every card in the shop carries a rarity badge too -- Common,
+Uncommon, Rare, Epic, Legendary, or Mythic for the four ability skins --
+derived straight from how a skin unlocks (free, a stat grind, or a coin
+price) rather than a separate hand-set value, so it can never drift out of
+sync with the actual unlock rule. The rest unlock two ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins
   earned rather than anything done in a single round.
-- **Coin shop** (36 skins, 120-5000 coins): earned by playing rounds. Every
+- **Coin shop** (37 skins, 120-7000 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
@@ -250,7 +250,7 @@ with the actual unlock rule. The rest unlock two ways:
   recolored blob -- an egg-shaped body, a curled tail, a serrated back ridge
   and turret eyes on stalks, its color slowly drifting through greens.
 
-  The top-tier flagship is **Web Weaver** at 5000 coins: an original masked
+  The first flagship is **Web Weaver** at 5000 coins: an original masked
   web-slinging hero (not a licensed character) with its own silhouette too
   -- two arms raised in a web-shooting pose, angular mask lenses, a web
   pattern across the chest, and an idle animated strand of webbing pulsing
@@ -275,14 +275,24 @@ with the actual unlock rule. The rest unlock two ways:
   a normal jump, for up to 3 seconds, then a 3-second cooldown before you
   can take off again -- jump behaves completely normally in between.
 
-  Rounding out the flagship tier at 5000 coins is **Huge**: an original
-  green bruiser (not a licensed character) with a permanent scowl and
-  visible ab/chest muscle. Tap **Q** (rebindable, an on-screen button on
-  touch) to transform: for 8 seconds you tower 3x your normal size, eyes
-  glowing and teeth bared, wrapped in a pulsing green rage aura -- then a
-  matching 8-second cooldown before you can transform again. Unlike
-  Ironboy's abilities, this one really is purely cosmetic: no speed,
-  hitbox, or power change, just the biggest entrance in the game.
+  Also at 5000 coins is **Huge**: an original green bruiser (not a
+  licensed character) with a permanent scowl and visible ab/chest muscle.
+  Tap **Q** (rebindable, an on-screen button on touch) to transform: for 8
+  seconds you tower 3x your normal size, eyes glowing and teeth bared,
+  wrapped in a pulsing green rage aura -- then a matching 8-second cooldown
+  before you can transform again. Unlike Ironboy's abilities, this one
+  really is purely cosmetic: no speed, hitbox, or power change, just the
+  biggest entrance in the game.
+
+  The single priciest skin in the shop, at 7000 coins, is **Mini Man**: an
+  original shrinking-tech hero (not a licensed character) in a sleek dark
+  suit with a glowing cyan visor. Tap **Q** (rebindable, an on-screen
+  button on touch) to shrink: for 8 seconds you're 4x smaller and move 2x
+  as fast, ringed by a shrinking swirl of cyan motes, while your own
+  camera zooms in to keep a tiny character just as easy to see and control
+  -- then a matching 8-second cooldown before you can shrink again. Like
+  Web Weaver and Ironboy, this is a genuine gameplay exception, not just a
+  look: the speed boost is real.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately
@@ -294,9 +304,9 @@ Progress (stats, coins, owned skins/trails) lives in `localStorage`, matching
 everything else client-side in this app -- nobody's coin balance is a real
 account, just like nobody's win count was before this.
 
-Collect all 75 of them (every stat and coin-shop skin -- not counting the
+Collect all 76 of them (every stat and coin-shop skin -- not counting the
 completionist surprise below) as a genuine player, not an admin preview, and
-a one-time celebration pops with a 76th skin, **Legend**, unlocked no other
+a one-time celebration pops with a 77th skin, **Legend**, unlocked no other
 way. It never appears in the shop grid at all until you've actually earned
 it, so finding out it exists is part of the reward.
 

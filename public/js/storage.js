@@ -17,6 +17,7 @@ export const DEFAULT_KEYS = {
   build: 'KeyQ',
   push: 'KeyQ',
   transform: 'KeyQ',
+  shrink: 'KeyQ',
 };
 
 const DEFAULTS = {

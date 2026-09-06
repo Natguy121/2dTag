@@ -335,6 +335,7 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     pushT = null,
     flying = false,
     huge = false,
+    shrink = false,
   } = opts;
 
   // Frankenstein's Lab: whoever is "it" fully transforms into the monster,
@@ -380,6 +381,24 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     ctx.filter = 'blur(9px)';
     roundRect(ctx, bx - 10, by - 10, bw + 20, bh + 20, 14);
     ctx.fill();
+    ctx.restore();
+  }
+
+  if (shrink) {
+    // Mini Man's shrink: a ring of cyan motes drawn shrinking inward, the
+    // opposite motion of Huge's outward glow above -- the actual size
+    // change itself is the caller's canvas scale around this whole call.
+    ctx.save();
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2 + time * 3;
+      const t = (time * 2 + i / 6) % 1;
+      const r = bw * (0.9 - t * 0.6);
+      ctx.globalAlpha = (1 - t) * 0.7;
+      ctx.fillStyle = skin.eye;
+      ctx.beginPath();
+      ctx.arc(bx + bw / 2 + Math.cos(angle) * r, by + bh / 2 + Math.sin(angle) * r, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 

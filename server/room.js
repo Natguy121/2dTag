@@ -149,6 +149,10 @@ export class Room {
       transformTimer: 0,
       transformCooldown: 0,
       prevTransform: false,
+      shrunk: false,
+      shrinkTimer: 0,
+      shrinkCooldown: 0,
+      prevShrink: false,
       invisCycle: 0,
       invisible: false,
       candyFreeze: 0,
@@ -327,6 +331,10 @@ export class Room {
       p.transformTimer = 0;
       p.transformCooldown = 0;
       p.prevTransform = false;
+      p.shrunk = false;
+      p.shrinkTimer = 0;
+      p.shrinkCooldown = 0;
+      p.prevShrink = false;
       p.invisCycle = 0;
       p.invisible = false;
       p.candyFreeze = 0;
@@ -601,6 +609,9 @@ export class Room {
       let jumpMult = 1;
       if (p.powerTimer > 0 && p.powerType === 'speed') speedMult *= C.ORB_SPEED_MULT;
       if (p.powerTimer > 0 && p.powerType === 'jump') jumpMult *= C.ORB_JUMP_MULT;
+      // Mini Man's shrink: a genuine speed boost while shrunk, not just a
+      // smaller look -- see resolveShrink() and the shrinkAbility flag.
+      if (p.shrunk) speedMult *= C.SHRINK_SPEED_MULT;
       const gravityFlip = p.powerTimer > 0 && p.powerType === 'gravity';
       const canDoubleJump = p.powerTimer > 0 && p.powerType === 'doublejump';
       // Web Weaver's swing: gated on the player's own equipped skin, not the
@@ -677,6 +688,7 @@ export class Room {
       }
       this.resolvePush(map, dt);
       this.resolveTransform(map, dt);
+      this.resolveShrink(map, dt);
     }
 
     // Timers.
@@ -925,6 +937,43 @@ export class Room {
     }
   }
 
+  /** Mini Man's exclusive shrink ability (gated on the player's equipped
+   * skin -- see shared/skins.js's shrinkAbility flag), works on every map
+   * just like the swing/push/fly/transform abilities above. Tapping (not
+   * holding) the shrink input makes them SHRINK_SCALE their size for
+   * SHRINK_DURATION seconds, then SHRINK_COOLDOWN seconds before it can
+   * trigger again. The speed boost itself lives in step()'s speedMult
+   * (real physics); this method only ever flips p.shrunk for that and for
+   * snapshot()/the client's render scale and camera zoom to pick up. */
+  resolveShrink(map, dt) {
+    for (const p of this.players.values()) {
+      if (!SKIN_BY_ID[p.skin]?.shrinkAbility) continue;
+      const eliminated = (map.musicalChairs && this.chairEliminated.has(p.id))
+        || (map.waveSurvival && this.waveEliminated.has(p.id));
+
+      const input = decodeInput(p.inputBits);
+      const pressed = input.shrink && !p.prevShrink;
+      p.prevShrink = input.shrink;
+
+      if (p.shrunk) {
+        p.shrinkTimer -= dt;
+        if (p.shrinkTimer <= 0 || eliminated) {
+          p.shrunk = false;
+          p.shrinkCooldown = C.SHRINK_COOLDOWN;
+          this.pushEvent({ type: 'shrinkEnd', id: p.id, x: p.body.x, y: p.body.y });
+        }
+        continue;
+      }
+
+      p.shrinkCooldown = Math.max(0, p.shrinkCooldown - dt);
+      if (!pressed || p.respawn > 0 || eliminated || p.shrinkCooldown > 0) continue;
+
+      p.shrunk = true;
+      p.shrinkTimer = C.SHRINK_DURATION;
+      this.pushEvent({ type: 'shrinkStart', id: p.id, x: p.body.x, y: p.body.y });
+    }
+  }
+
   /** Invisibility maps: the tagger cycles visible/invisible on a repeating
    * timer, always starting visible right when they become "it". Also
    * applies the 'invis' power-orb roll, which works the same way (hidden
@@ -1132,6 +1181,7 @@ export class Room {
       if (p.body.swinging) flags |= 256;
       if (p.body.flying) flags |= 512;
       if (p.transformed) flags |= 1024;
+      if (p.shrunk) flags |= 2048;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,

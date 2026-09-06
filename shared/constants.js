@@ -155,6 +155,22 @@ export const TRANSFORM_DURATION = 8;
 export const TRANSFORM_COOLDOWN = 8;
 export const HUGE_SCALE = 3;
 
+// Mini Man's exclusive shrink ability (gated on the player's equipped skin --
+// see shared/skins.js's shrinkAbility flag, and Room.resolveShrink() in
+// server/room.js). Tapping the shrink input makes them SHRINK_SCALE their
+// normal size and SHRINK_SPEED_MULT times as fast for SHRINK_DURATION
+// seconds, then SHRINK_COOLDOWN seconds before it can trigger again. Unlike
+// Huge's transformation, this one is a real (if minor) gameplay exception --
+// a genuinely faster, smaller-looking target -- so it's alongside the
+// swing/push/fly exceptions, not the cosmetic-only ones. The client also
+// zooms its own camera in while shrunk (SHRINK_ZOOM) so a tiny character
+// stays just as easy to see and control.
+export const SHRINK_DURATION = 8;
+export const SHRINK_COOLDOWN = 8;
+export const SHRINK_SCALE = 0.25; // 4x smaller
+export const SHRINK_SPEED_MULT = 2;
+export const SHRINK_ZOOM = 1.7;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

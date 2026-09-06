@@ -1,17 +1,18 @@
 // Skin catalogue. The server only ever stores/echoes a skin id; all of the
 // drawing happens on the client from this table. Skins are purely cosmetic --
 // nothing here changes movement, speed, or hitbox, so owning more of them is
-// never a gameplay advantage, just a look. There are three deliberate
-// exceptions, all on Ironboy and Web Weaver: `swingAbility` (Web Weaver only)
-// gates stepBody's opts.canSwing, giving that one skin a real web-swing move
-// -- see shared/physics.js's updateSwing(); `pushAbility` (Ironboy only)
-// gates server/room.js's resolvePush(), letting that one skin shove every
-// other player away on a cooldown; and `flyAbility` (Ironboy only) gates
-// stepBody's opts.canFly, letting Ironboy hold jump to fly for a few seconds
-// on a cooldown instead of jumping normally. See the README's note on all
-// three.
+// never a gameplay advantage, just a look. There are four deliberate
+// exceptions: `swingAbility` (Web Weaver only) gates stepBody's
+// opts.canSwing, giving that one skin a real web-swing move -- see
+// shared/physics.js's updateSwing(); `pushAbility` (Ironboy only) gates
+// server/room.js's resolvePush(), letting that one skin shove every other
+// player away on a cooldown; `flyAbility` (Ironboy only) gates stepBody's
+// opts.canFly, letting Ironboy hold jump to fly for a few seconds on a
+// cooldown instead of jumping normally; and `shrinkAbility` (Mini Man only)
+// gates Room.resolveShrink(), a real speed boost while shrunk -- see
+// shared/constants.js's SHRINK_*. See the README's note on all four.
 //
-// `transformAbility` (Huge only) is a fourth flag, but NOT a cosmetic
+// `transformAbility` (Huge only) is a fifth flag, but NOT a cosmetic
 // exception -- Room.resolveTransform() only ever changes how Huge is
 // rendered (HUGE_SCALE times bigger, a fiercer look) for TRANSFORM_DURATION
 // seconds, never movement, speed or hitbox, same promise every other skin
@@ -205,6 +206,17 @@ export const SKINS = [
     transformAbility: true,
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 
+  // Original shrinking-tech hero skin (not a licensed character) -- a sleek
+  // dark suit with a glowing cyan visor, using the existing 'visor' pattern
+  // for the resting look. Its shrinkAbility triggers Room.resolveShrink():
+  // SHRINK_SCALE the normal size and SHRINK_SPEED_MULT times as fast for
+  // SHRINK_DURATION seconds, plus a client-side camera zoom-in (see
+  // game.js's updateCamera()) so playing tiny never means playing blind.
+  // The priciest skin in the shop.
+  { id: 'miniman',    name: 'Mini Man',    body: '#1c2340', dark: '#0d1224', trim: '#4fd8ff', eye: '#4fd8ff', pattern: 'visor',
+    shrinkAbility: true,
+    unlock: { type: 'coins', price: 7000, label: 'Coin shop' } },
+
   // The completionist surprise: reuses the 'rainbow' pattern's animated
   // hue-cycling body (same as Prism) with its own gold/white finish so it
   // still reads as a distinct, one-of-a-kind trophy rather than a second
@@ -263,7 +275,9 @@ export function getRarity(skin) {
   // exactly one way.
   if (skin.unlock?.type === 'completion') return 'secret';
   // The exclusive-ability skins are a cut above everything else money can buy.
-  if (skin.swingAbility || skin.pushAbility || skin.flyAbility || skin.transformAbility) return 'mythic';
+  if (skin.swingAbility || skin.pushAbility || skin.flyAbility || skin.transformAbility || skin.shrinkAbility) {
+    return 'mythic';
+  }
   if (!skin.unlock) return 'common';
   if (skin.unlock.type === 'stat') {
     return skin.unlock.value >= (STAT_EPIC_AT[skin.unlock.stat] ?? Infinity) ? 'epic' : 'rare';
