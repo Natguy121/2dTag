@@ -201,7 +201,7 @@ export class Game {
       stepBody(b, p.bits, this.collisionMap(), C.DT, {
         speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
         gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
-        canSwing: this.localCanSwing(),
+        canSwing: this.localCanSwing(), canFly: this.localCanFly(),
       });
     }
 
@@ -252,6 +252,12 @@ export class Game {
    * above. */
   localCanSwing() {
     return !!getSkin(profile.skin)?.swingAbility;
+  }
+
+  /** Ironboy's exclusive flight ability -- same reasoning as localCanSwing()
+   * above: purely a function of your own equipped skin. */
+  localCanFly() {
+    return !!getSkin(profile.skin)?.flyAbility;
   }
 
   /** The map merged with any player-placed walls from the latest snapshot
@@ -387,6 +393,22 @@ export class Game {
           break;
         case 'webRelease':
           if (!mine) sfx.webRelease();
+          break;
+        case 'flyStart':
+          // Same "local player already got instant feedback" split as
+          // webAttach above -- this is only for seeing/hearing OTHER
+          // Ironboys take off.
+          if (!mine) {
+            sfx.flyStart();
+            if (profile.particles) {
+              this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H, 10, {
+                color: '#8be9ff', speed: 120, life: 0.35, size: 3, gravity: 200, angle: Math.PI / 2, spread: 1.4,
+              });
+            }
+          }
+          break;
+        case 'flyEnd':
+          if (!mine) sfx.flyEnd();
           break;
         case 'wallPlaced':
           // No client-side prediction for this one (like the gun's shot) --
@@ -636,7 +658,7 @@ export class Game {
       const ev = stepBody(this.body, bits, this.collisionMap(), C.DT, {
         speedMult: this.localSpeedMult(), jumpMult: this.localJumpMult(),
         gravityFlip: this.localGravityFlip(), canDoubleJump: this.localCanDoubleJump(),
-        canSwing: this.localCanSwing(),
+        canSwing: this.localCanSwing(), canFly: this.localCanFly(),
       });
       // Local feedback fires immediately rather than waiting for the server.
       if (ev.jumped) sfx.jump();
@@ -668,6 +690,15 @@ export class Game {
         }
       }
       if (ev.webRelease) sfx.webRelease();
+      if (ev.flyStart) {
+        sfx.flyStart();
+        if (profile.particles) {
+          this.particles.spawn(this.body.x + C.PLAYER_W / 2, this.body.y + C.PLAYER_H, 10, {
+            color: '#8be9ff', speed: 120, life: 0.35, size: 3, gravity: 200, angle: Math.PI / 2, spread: 1.4,
+          });
+        }
+      }
+      if (ev.flyEnd) sfx.flyEnd();
     }
   }
 
@@ -876,12 +907,23 @@ export class Game {
     const candyFrozen = !!(p.flags & 32);
     const eliminated = !!(p.flags & 128);
     const swinging = !!(p.flags & 256);
+    const flying = !!(p.flags & 512);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
     // sprite, no trail, no name, nothing that gives their position away. You
     // still see your own outline (faded) so you always know your own state.
     if (invisible && !isSelf) return;
+
+    // Ironboy's flight: a steady exhaust trickle from the feet for as long
+    // as the flag is set, visible to everyone, not just the flyer -- but
+    // never for an invisible flyer, or it would give their position away
+    // exactly like the trails and aura below already take care not to.
+    if (flying && !invisible && profile.particles && Math.random() < 0.6) {
+      this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H, 2, {
+        color: '#8be9ff', speed: 90, life: 0.3, size: 3, gravity: 250, angle: Math.PI / 2, spread: 1.2,
+      });
+    }
 
     // Tagger leaves a faint red warning trail so you can see them coming --
     // always on, unrelated to anyone's equipped cosmetic trail below.
@@ -964,6 +1006,7 @@ export class Game {
       time: this.time,
       frankenstein: this.map.frankenstein && it,
       pushT: pushT != null && pushT < PUSH_ANIM_DURATION ? pushT : null,
+      flying,
     });
 
     if (eliminated) ctx.restore();

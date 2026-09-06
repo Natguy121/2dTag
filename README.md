@@ -259,12 +259,16 @@ exists). The rest unlock two ways:
 
   Also at 5000 coins is **Ironboy**: an original armored hero (not a
   licensed character) with gold chest plating, a pulsing arc-reactor glow
-  and a gold faceplate helmet with glowing eye slits. Its own exclusive
-  ability -- tap **Q** (rebindable, an on-screen button on touch) to send
-  every other player within reach flying away from you, on a cooldown.
-  Works on any map, tagger or not, evader or not -- a shove to buy space,
-  break a chase, or knock someone off a chair or a Tidal Tower platform at
-  exactly the wrong moment.
+  and a gold faceplate helmet with glowing eye slits. Two exclusive
+  abilities of its own. Tap **Q** (rebindable, an on-screen button on
+  touch) to send every other player within reach flying away from you,
+  with a quick punch-out arm animation showing the shove itself, on a
+  cooldown. Works on any map, tagger or not, evader or not -- a shove to
+  buy space, break a chase, or knock someone off a chair or a Tidal Tower
+  platform at exactly the wrong moment. And hold **Space** to fly: a
+  steady climb (twin repulsor jets flaring beneath your feet) in place of
+  a normal jump, for up to 3 seconds, then a 3-second cooldown before you
+  can take off again -- jump behaves completely normally in between.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately

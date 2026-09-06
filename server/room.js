@@ -599,8 +599,12 @@ export class Room {
       // map, so it works everywhere that skin is worn -- see updateSwing()
       // in shared/physics.js and the swingAbility flag in shared/skins.js.
       const canSwing = !!SKIN_BY_ID[p.skin]?.swingAbility;
+      // Ironboy's flight: same "gated on the equipped skin, not the map"
+      // philosophy as the swing above -- see stepBody()'s opts.canFly and
+      // the flyAbility flag in shared/skins.js.
+      const canFly = !!SKIN_BY_ID[p.skin]?.flyAbility;
       const ev = stepBody(p.body, bits, map, dt, {
-        speedMult, jumpMult, gravityFlip, canDoubleJump, canSwing,
+        speedMult, jumpMult, gravityFlip, canDoubleJump, canSwing, canFly,
       });
 
       if (ev.candy && p.candyFreeze <= 0 && p.candyImmune <= 0 && this.state === 'playing') {
@@ -626,6 +630,8 @@ export class Room {
         });
       }
       if (ev.webRelease) this.pushEvent({ type: 'webRelease', id: p.id, x: p.body.x, y: p.body.y });
+      if (ev.flyStart) this.pushEvent({ type: 'flyStart', id: p.id, x: p.body.x, y: p.body.y });
+      if (ev.flyEnd) this.pushEvent({ type: 'flyEnd', id: p.id, x: p.body.x, y: p.body.y });
       if (ev.portal) {
         this.pushEvent({
           type: 'portal', id: p.id,
@@ -1078,6 +1084,7 @@ export class Room {
       if (p.powerTimer > 0 && p.powerType === 'shield') flags |= 64;
       if (this.chairEliminated.has(p.id) || this.waveEliminated.has(p.id)) flags |= 128;
       if (p.body.swinging) flags |= 256;
+      if (p.body.flying) flags |= 512;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,

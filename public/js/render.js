@@ -333,6 +333,7 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     scale = 1,
     frankenstein = false,
     pushT = null,
+    flying = false,
   } = opts;
 
   // Frankenstein's Lab: whoever is "it" fully transforms into the monster,
@@ -364,6 +365,29 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     ctx.filter = 'blur(6px)';
     roundRect(ctx, bx - 6, by - 6, bw + 12, bh + 12, 12);
     ctx.fill();
+    ctx.restore();
+  }
+
+  if (flying) {
+    // Ironboy's flight: a pair of flickering repulsor jets beneath the feet,
+    // drawn behind the body so they read as thrust it's standing on rather
+    // than something overlapping it.
+    ctx.save();
+    for (const off of [0.28, 0.72]) {
+      const flicker = 0.7 + Math.sin(time * 26 + off * 10) * 0.3;
+      const jx = bx + bw * off;
+      const jy = by + bh + 2;
+      ctx.fillStyle = skin.eye;
+      ctx.globalAlpha = 0.75 * flicker;
+      ctx.beginPath();
+      ctx.ellipse(jx, jy, bw * 0.1, bh * 0.16 * flicker, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.6 * flicker;
+      ctx.beginPath();
+      ctx.ellipse(jx, jy, bw * 0.045, bh * 0.08 * flicker, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 

@@ -1,12 +1,15 @@
 // Skin catalogue. The server only ever stores/echoes a skin id; all of the
 // drawing happens on the client from this table. Skins are purely cosmetic --
 // nothing here changes movement, speed, or hitbox, so owning more of them is
-// never a gameplay advantage, just a look. There are two deliberate
-// exceptions: `swingAbility` (Web Weaver only) gates stepBody's
-// opts.canSwing, giving that one skin a real web-swing move -- see
-// shared/physics.js's updateSwing() -- and `pushAbility` (Ironboy only) gates
-// server/room.js's resolvePush(), letting that one skin shove every other
-// player away on a cooldown. See the README's note on both.
+// never a gameplay advantage, just a look. There are three deliberate
+// exceptions, all on Ironboy and Web Weaver: `swingAbility` (Web Weaver only)
+// gates stepBody's opts.canSwing, giving that one skin a real web-swing move
+// -- see shared/physics.js's updateSwing(); `pushAbility` (Ironboy only)
+// gates server/room.js's resolvePush(), letting that one skin shove every
+// other player away on a cooldown; and `flyAbility` (Ironboy only) gates
+// stepBody's opts.canFly, letting Ironboy hold jump to fly for a few seconds
+// on a cooldown instead of jumping normally. See the README's note on all
+// three.
 //
 // unlock is either:
 //   null                                       -- available from the start
@@ -170,10 +173,12 @@ export const SKINS = [
   // Original armored hero skin (not a licensed character), built on the
   // standard body since a boxy plated suit already fits it -- see
   // drawCharacter's 'ironboy' pattern branch in public/js/render.js for the
-  // chest arc-reactor glow and gold faceplate. The only other skin with a
-  // real gameplay ability: pushAbility gates server/room.js's resolvePush().
+  // chest arc-reactor glow and gold faceplate. Two real gameplay abilities:
+  // pushAbility gates server/room.js's resolvePush(), and flyAbility gates
+  // stepBody's opts.canFly (hold jump to fly).
   { id: 'ironboy',    name: 'Ironboy',     body: '#c81e2d', dark: '#5c0d14', trim: '#ffd34d', eye: '#8be9ff', pattern: 'ironboy',
     pushAbility: true,
+    flyAbility: true,
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 ];
 

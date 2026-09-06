@@ -58,6 +58,10 @@ export function createBody(x = 0, y = 0) {
     swingAngle: 0,
     swingAngVel: 0,
     swingLen: 0,
+    // Ironboy's exclusive flight ability (opts.canFly) -- see stepBody().
+    flying: false,
+    flyTimeLeft: 0,
+    flyCooldown: 0,
   };
 }
 
@@ -75,6 +79,9 @@ export function placeAtSpawn(body, spawn) {
   body.extraJumpUsed = false;
   body.swinging = false;
   body.swingAngVel = 0;
+  body.flying = false;
+  body.flyTimeLeft = 0;
+  body.flyCooldown = 0;
   return body;
 }
 
@@ -219,7 +226,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
 
   const events = {
     jumped: false, landed: false, hazard: false, outOfBounds: false, spring: false, portal: null, candy: false, orb: -1,
-    webAttach: false, webRelease: false,
+    webAttach: false, webRelease: false, flyStart: false, flyEnd: false,
   };
   b.jumped = false;
   b.landed = false;
@@ -254,12 +261,37 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   if (b.vx > hardCap) b.vx = hardCap;
   if (b.vx < -hardCap) b.vx = -hardCap;
 
+  // --- Ironboy's exclusive flight ability (opts.canFly) -------------------
+  // Holding jump ignites a steady upward thrust immediately, in place of
+  // normal jumping, for up to FLY_DURATION seconds; releasing early or
+  // running out both end it and start a fixed FLY_COOLDOWN before it can
+  // ignite again -- jump behaves completely normally the rest of the time.
+  const wasFlying = b.flying;
+  if (opts.canFly) {
+    if (b.flying) {
+      b.flyTimeLeft -= dt;
+      if (!input.jump || b.flyTimeLeft <= 0) {
+        b.flying = false;
+        b.flyCooldown = C.FLY_COOLDOWN;
+      }
+    } else if (b.flyCooldown > 0) {
+      b.flyCooldown = Math.max(0, b.flyCooldown - dt);
+    } else if (input.jump) {
+      b.flying = true;
+      b.flyTimeLeft = C.FLY_DURATION;
+    }
+  } else {
+    b.flying = false;
+  }
+  if (b.flying && !wasFlying) events.flyStart = true;
+  if (!b.flying && wasFlying) events.flyEnd = true;
+
   // --- jump --------------------------------------------------------------
   b.coyote = b.onGround ? C.COYOTE_TIME : Math.max(0, b.coyote - dt);
   if (input.jump && !b.prevJump) b.jumpBuf = C.JUMP_BUFFER;
   else b.jumpBuf = Math.max(0, b.jumpBuf - dt);
 
-  if (b.jumpBuf > 0 && b.coyote > 0) {
+  if (!b.flying && b.jumpBuf > 0 && b.coyote > 0) {
     // Launch velocity does NOT scale with gravity, so a low gravity map jumps
     // proportionally higher: height = v^2 / (2 * G * gravityScale). Moon Base
     // at 0.34 gravity gives roughly three times the arc of a normal map.
@@ -269,7 +301,7 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     b.onGround = false;
     b.jumped = true;
     events.jumped = true;
-  } else if (b.jumpBuf > 0 && opts.canDoubleJump && !b.extraJumpUsed) {
+  } else if (!b.flying && b.jumpBuf > 0 && opts.canDoubleJump && !b.extraJumpUsed) {
     // The Double Jump power: one extra mid-air jump, refreshed the moment
     // this body next touches ground (see the onGround check below).
     b.vy = -C.JUMP_VELOCITY * (map.jumpScale ?? 1) * gravityDir;
@@ -278,8 +310,8 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
     b.jumped = true;
     events.jumped = true;
   }
-  // Releasing jump early cuts the arc short.
-  if (!input.jump && b.vy * gravityDir < 0 && b.springTimer <= 0) b.vy *= Math.pow(C.JUMP_CUT, dt * 30);
+  // Releasing jump early cuts the arc short (flight handles its own vy below).
+  if (!b.flying && !input.jump && b.vy * gravityDir < 0 && b.springTimer <= 0) b.vy *= Math.pow(C.JUMP_CUT, dt * 30);
   b.prevJump = input.jump;
 
   // --- drop through one-way platforms ------------------------------------
@@ -288,12 +320,19 @@ export function stepBody(b, inputBits, map, dt, opts = {}) {
   b.springTimer = Math.max(0, b.springTimer - dt);
 
   // --- gravity -----------------------------------------------------------
-  b.vy += C.GRAVITY * gravityScale * dt;
-  const maxFall = C.MAX_FALL * Math.sqrt(Math.max(Math.abs(gravityScale), 0.05));
-  if (gravityDir > 0) {
-    if (b.vy > maxFall) b.vy = maxFall;
-  } else if (b.vy < -maxFall) {
-    b.vy = -maxFall;
+  if (b.flying) {
+    // A steady climb in place of gravity -- collision below still applies
+    // normally, so flying into a ceiling or platform stops it exactly like
+    // any other upward motion would.
+    b.vy = -C.FLY_SPEED * gravityDir;
+  } else {
+    b.vy += C.GRAVITY * gravityScale * dt;
+    const maxFall = C.MAX_FALL * Math.sqrt(Math.max(Math.abs(gravityScale), 0.05));
+    if (gravityDir > 0) {
+      if (b.vy > maxFall) b.vy = maxFall;
+    } else if (b.vy < -maxFall) {
+      b.vy = -maxFall;
+    }
   }
 
   // --- integrate + collide ----------------------------------------------

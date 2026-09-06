@@ -224,4 +224,13 @@ export const sfx = {
     blip({ freq: 150, to: 50, dur: 0.3, type: 'square', gain: 0.2 });
     noise({ dur: 0.1, gain: 0.1, freq: 400 });
   },
+  // Ironboy: a rising thruster ignition the instant flight kicks in.
+  flyStart: () => {
+    noise({ dur: 0.2, gain: 0.1, freq: 3000 });
+    blip({ freq: 220, to: 700, dur: 0.35, type: 'sawtooth', gain: 0.14 });
+  },
+  // A falling power-down tone when flight ends.
+  flyEnd: () => {
+    blip({ freq: 500, to: 160, dur: 0.3, type: 'sawtooth', gain: 0.1 });
+  },
 };

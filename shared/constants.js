@@ -130,6 +130,18 @@ export const PUSH_FORCE = 820; // knockback speed along the push direction
 export const PUSH_UPKICK = 260; // extra upward pop so a push reads as a shove, not a shove sideways
 export const PUSH_COOLDOWN = 1.4;
 
+// Ironboy's exclusive flight ability (gated on the player's equipped skin --
+// see shared/skins.js's flyAbility flag, and stepBody's opts.canFly in
+// shared/physics.js). Holding jump ignites a steady upward thrust in place
+// of normal gravity for up to FLY_DURATION seconds; releasing early or
+// running out both end it and start a fixed FLY_COOLDOWN before it can
+// ignite again -- jump behaves completely normally the rest of the time.
+// The third deliberate exception to "skins are purely cosmetic" in this
+// game, alongside the swing and push notes above.
+export const FLY_DURATION = 3;
+export const FLY_COOLDOWN = 3;
+export const FLY_SPEED = 400; // steady upward speed while flying
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;
