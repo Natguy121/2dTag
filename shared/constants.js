@@ -98,6 +98,19 @@ export const CHAIRS_MOVING_MAX = 8;
 export const CHAIRS_GRACE_TIME = 2.8;
 export const CHAIRS_WINNER_BONUS = 300;
 
+// Wave Survival (maps with map.waveSurvival: true, e.g. Tidal Tower). No
+// tagging at all on this map either -- instead the tide can rise at any
+// moment: a random CALM window, then a short WARNING telegraph, then
+// anyone not above map.waveLevels[the current wave index] is swept out.
+// waveLevels is ordered low water to high (each entry a smaller y than the
+// last), so the safe zone only ever shrinks upward, wave after wave, until
+// one player is left standing, who wins on the spot and earns
+// WAVE_WINNER_BONUS coins on top of the normal per-round payout.
+export const WAVE_CALM_MIN = 4;
+export const WAVE_CALM_MAX = 9;
+export const WAVE_WARNING_TIME = 1.6;
+export const WAVE_WINNER_BONUS = 300;
+
 // Wall Builder (maps with map.wallBuilder: true, e.g. Blocky Blastu).
 // Anyone who isn't "it" can drop a solid wall beside themselves, facing
 // direction, up to map.wallLimit (or WALL_DEFAULT_LIMIT) times a round.

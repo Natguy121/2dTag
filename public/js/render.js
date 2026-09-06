@@ -999,6 +999,29 @@ function drawBackground(ctx, map, cam, view, time) {
       ctx.fillRect(-2, -1, 4, 2);
       ctx.restore();
     }
+  } else if (theme.decor === 'tide') {
+    // Tidal Tower: slow ripple lines and a scatter of rising bubbles in the
+    // deep-sea teal palette, evoking the tide waiting below.
+    ctx.strokeStyle = 'rgba(79,216,224,0.18)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const sy = ((i * 97 + py * 0.3) % (view.h + 60)) - 30;
+      ctx.beginPath();
+      for (let x = 0; x <= view.w; x += 20) {
+        const yy = sy + Math.sin(x * 0.02 + time * 1.2 + i) * 6;
+        if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#7fe8ee';
+    for (let i = 0; i < 26; i++) {
+      const sx = ((i * 149 + px * 0.4 + Math.sin(time * 0.5 + i) * 14) % (view.w + 30)) - 15;
+      const sy = view.h - ((i * 83 + time * 24 + py * 0.4) % (view.h + 40));
+      ctx.globalAlpha = 0.2 + Math.sin(time * 1.5 + i) * 0.08;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.5 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
     // Neon grid.
     ctx.strokeStyle = theme.grid;
@@ -1073,6 +1096,54 @@ export function drawMap(ctx, map, time, orbState, activeChairs) {
   const chairs = map.chairs || [];
   const activeSet = new Set(activeChairs || []);
   for (let i = 0; i < chairs.length; i++) drawChair(ctx, chairs[i], activeSet.has(i), theme, time, i);
+}
+
+/**
+ * Tidal Tower (map.waveSurvival): a translucent tide fill from wherever the
+ * water has permanently settled (map.waveLevels[index - 1], or all the way
+ * off the bottom of the map before the first wave has ever resolved) up to
+ * the level it's currently rising to, animated across the 'warning'
+ * telegraph so the rise itself is the countdown, not just the HUD text.
+ */
+export function drawWaterLevel(ctx, map, waves, time) {
+  if (!map.waveSurvival || !waves) return;
+  const levels = map.waveLevels || [];
+  const idx = waves.index ?? 0;
+  const permanentLevel = idx > 0 ? levels[idx - 1] : map.height;
+  const targetLevel = waves.nextLevel ?? levels[idx] ?? permanentLevel;
+  let waterY = permanentLevel;
+  if (waves.stage === 'warning') {
+    const k = 1 - Math.max(0, Math.min(1, waves.timer / C.WAVE_WARNING_TIME));
+    waterY = permanentLevel + (targetLevel - permanentLevel) * k;
+  }
+  if (waterY >= map.height) return;
+
+  ctx.save();
+  const grad = ctx.createLinearGradient(0, waterY, 0, map.height);
+  grad.addColorStop(0, 'rgba(79,216,224,0.55)');
+  grad.addColorStop(1, 'rgba(10,50,64,0.75)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(0, map.height);
+  ctx.lineTo(0, waterY);
+  const step = 24;
+  for (let x = 0; x <= map.width; x += step) {
+    ctx.lineTo(x, waterY + Math.sin(x * 0.045 + time * 3) * 5);
+  }
+  ctx.lineTo(map.width, waterY);
+  ctx.lineTo(map.width, map.height);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(210,255,255,0.6)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let x = 0; x <= map.width; x += step) {
+    const yy = waterY + Math.sin(x * 0.045 + time * 3) * 5;
+    if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 export { drawBackground };

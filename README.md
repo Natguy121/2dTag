@@ -94,6 +94,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Chair Chaos** | Musical chairs -- when the music stops, find a chair or you're out. Last one standing wins 300 coins. |
 | **Frankenstein's Lab** | Get tagged and you become the monster -- green skin, neck bolts and all -- until you pass it on. |
 | **Blocky Blastu** | Anyone not it can drop up to 3 walls to block the tagger's path -- build smart. |
+| **Tidal Tower** | A vertical tower where the tide can rise any second -- get above it or you're swept out. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -110,7 +111,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Ten maps bend the base rules further, each in a different direction:
+Eleven maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -198,6 +199,18 @@ Ten maps bend the base rules further, each in a different direction:
   that clearing one takes a real jump. The tagger can't build one
   themselves -- it's purely an evader's tool, so use your three charges
   wisely.
+- **Tidal Tower** throws out tagging entirely too, for a vertical climb
+  against an unpredictable tide -- nobody is ever "it" here either. The
+  tide waits for a random few seconds, then telegraphs a rise for a second
+  and a half before it actually happens: anyone not standing on a platform
+  above the new water line when it hits is swept out and becomes a faded,
+  grayscale spectator for the rest of the round, the same elimination look
+  Chair Chaos uses. Every wave permanently claims one more platform tier,
+  so the safe zone only ever shrinks, higher and higher up the tower, until
+  a single player is left standing -- they win the round on the spot and
+  earn 300 bonus coins on top of the normal payout. If the tide runs out of
+  higher ground with more than one player still up, or the round timer
+  cuts things short, everyone still in ties for the win.
 
 ## Bots
 

@@ -85,6 +85,15 @@ export class Room {
     this.chairWinnerId = null;
     this.chairAssignment = new Map(); // id -> chair index, a bot-steering hint only
     this.walls = []; // player-placed [x, y, w, h] solids (map.wallBuilder), for the rest of the round
+    // Wave Survival (map.waveSurvival). waveStage is null off that map;
+    // otherwise 'calm' (safe, for now) or 'warning' (the tide is about to
+    // rise to waveLevels[waveIndex] -- get above it or you're out).
+    this.waveStage = null;
+    this.waveTimer = 0;
+    this.waveIndex = 0;
+    this.waveEliminated = new Set();
+    this.waveEliminationOrder = []; // array of id-arrays, earliest elimination first
+    this.waveWinnerId = null;
     this.onEmpty = null;
   }
 
@@ -322,9 +331,16 @@ export class Room {
     this.chairEliminationOrder = [];
     this.chairWinnerId = null;
     this.chairAssignment = new Map();
-    // Musical Chairs has no tagger at all -- nobody gets the speed bonus or
-    // the "X is IT" spotlight, since the whole rules set doesn't apply here.
-    if (!this.map.musicalChairs) {
+    this.waveStage = null;
+    this.waveTimer = 0;
+    this.waveIndex = 0;
+    this.waveEliminated = new Set();
+    this.waveEliminationOrder = [];
+    this.waveWinnerId = null;
+    // Musical Chairs and Wave Survival have no tagger at all -- nobody gets
+    // the speed bonus or the "X is IT" spotlight, since the whole rules set
+    // doesn't apply on either of those maps.
+    if (!this.map.musicalChairs && !this.map.waveSurvival) {
       const starter = pick([...this.players.values()]);
       starter.it = true;
       this.pushEvent({ type: 'newIt', to: starter.id, reason: 'start' });
@@ -339,6 +355,7 @@ export class Room {
     // free to move and scatter the instant the round begins.
     this.seekerFreezeTimer = this.map.seekerFreeze || 0;
     if (this.map.musicalChairs) this.startMusicalChairs();
+    if (this.map.waveSurvival) this.startWaveSurvival();
     this.rosterDirty = true;
     this.pushEvent({ type: 'go' });
   }
@@ -364,14 +381,35 @@ export class Room {
     this.pushEvent({ type: 'chairsMoving', chairs: this.activeChairs });
   }
 
+  /** Kick off a Wave Survival round: everyone starts safe on the floor, a
+   * random CALM window before the first wave even telegraphs. A solo game
+   * has nothing to play, so it resolves immediately like Musical Chairs
+   * does in the same situation. */
+  startWaveSurvival() {
+    const alive = [...this.players.values()].filter((p) => p.respawn <= 0);
+    if (alive.length <= 1) {
+      this.waveWinnerId = alive[0]?.id ?? null;
+      this.waveStage = null;
+      this.endRound();
+      return;
+    }
+    this.waveIndex = 0;
+    this.waveStage = 'calm';
+    this.waveTimer = C.WAVE_CALM_MIN + Math.random() * (C.WAVE_CALM_MAX - C.WAVE_CALM_MIN);
+    this.pushEvent({ type: 'waveCalm' });
+  }
+
   endRound() {
     this.state = 'results';
     this.timer = C.POST_ROUND_TIME;
-    // Usually already null by the time a Musical Chairs game concludes
-    // itself (see resolveChairElimination()), but the round timer can also
-    // cut a game short mid-phase -- always land on a clean null so the
-    // client never renders a stale "find a chair!" over the results screen.
+    // Usually already null by the time a Musical Chairs or Wave Survival
+    // game concludes itself (see resolveChairElimination()/
+    // resolveWaveElimination()), but the round timer can also cut a game
+    // short mid-phase -- always land on a clean null so the client never
+    // renders a stale "find a chair!"/"wave incoming!" over the results
+    // screen.
     this.chairStage = null;
+    this.waveStage = null;
     const list = [...this.players.values()].map((p) => ({
       id: p.id,
       name: p.name,
@@ -412,6 +450,28 @@ export class Room {
         const placeBonus = entry.place === 1 ? 20 : entry.place === 2 ? 10 : entry.place === 3 ? 5 : 0;
         entry.coinsEarned = 8 + placeBonus + (entry.place === 1 ? C.CHAIRS_WINNER_BONUS : 0);
       });
+    } else if (this.map.waveSurvival) {
+      // Same ranking scheme as Musical Chairs above: whoever's still in when
+      // the game concludes ranks best (tied for 1st if the tide ran out of
+      // higher ground, or the round timer cut things short, with more than
+      // one still standing), then work backwards through elimination order.
+      const rank = new Map();
+      let place = 1;
+      const stillIn = [...this.players.values()].filter((p) => !this.waveEliminated.has(p.id));
+      for (const p of stillIn) rank.set(p.id, place);
+      place += stillIn.length;
+      for (let i = this.waveEliminationOrder.length - 1; i >= 0; i--) {
+        const group = this.waveEliminationOrder[i];
+        for (const id of group) rank.set(id, place);
+        place += group.length;
+      }
+      list.sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity)
+        || a.name.localeCompare(b.name));
+      list.forEach((entry) => {
+        entry.place = rank.get(entry.id) ?? list.length;
+        const placeBonus = entry.place === 1 ? 20 : entry.place === 2 ? 10 : entry.place === 3 ? 5 : 0;
+        entry.coinsEarned = 8 + placeBonus + (entry.place === 1 ? C.WAVE_WINNER_BONUS : 0);
+      });
     } else {
       // Least time spent as "it" wins; more tags made breaks a tie.
       list.sort((a, b) => (a.itTime - b.itTime) || (b.tags - a.tags) || a.name.localeCompare(b.name));
@@ -449,6 +509,8 @@ export class Room {
     }
     this.chairStage = null;
     this.chairEliminated = new Set();
+    this.waveStage = null;
+    this.waveEliminated = new Set();
     this.syncBots();
     this.rosterDirty = true;
   }
@@ -485,6 +547,9 @@ export class Room {
           activeChairs: this.activeChairs,
           eliminated: this.chairEliminated,
           assignment: this.chairAssignment,
+          waveStage: this.waveStage,
+          waveIndex: this.waveIndex,
+          waveEliminated: this.waveEliminated,
         });
       }
     }
@@ -518,7 +583,8 @@ export class Room {
       // Musical Chairs: an eliminated player is a spectator from here on --
       // still simulated (gravity still applies) but can't steer anymore.
       const chairedOut = map.musicalChairs && this.chairEliminated.has(p.id);
-      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 || chairedOut ? 0 : p.inputBits;
+      const wavedOut = map.waveSurvival && this.waveEliminated.has(p.id);
+      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 || chairedOut || wavedOut ? 0 : p.inputBits;
       let speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
       let jumpMult = 1;
       if (p.powerTimer > 0 && p.powerType === 'speed') speedMult *= C.ORB_SPEED_MULT;
@@ -582,6 +648,8 @@ export class Room {
     if (this.state === 'playing') {
       if (map.musicalChairs) {
         this.updateMusicalChairs(map, dt);
+      } else if (map.waveSurvival) {
+        this.updateWaveSurvival(map, dt);
       } else {
         this.resolveTags();
         this.resolveShots(map, dt);
@@ -859,6 +927,55 @@ export class Room {
     this.pushEvent({ type: 'chairsMoving', chairs: this.activeChairs });
   }
 
+  /** Wave Survival's per-tick clock: a random calm window, then a short
+   * warning telegraph, then the tide actually rises (resolveWaveElimination). */
+  updateWaveSurvival(map, dt) {
+    if (this.waveStage === 'calm') {
+      this.waveTimer -= dt;
+      if (this.waveTimer <= 0) {
+        this.waveStage = 'warning';
+        this.waveTimer = C.WAVE_WARNING_TIME;
+        this.pushEvent({ type: 'waveWarning', level: map.waveLevels[this.waveIndex] });
+      }
+    } else if (this.waveStage === 'warning') {
+      this.waveTimer -= dt;
+      if (this.waveTimer <= 0) this.resolveWaveElimination(map);
+    }
+  }
+
+  /** The tide has risen to waveLevels[waveIndex]: anyone whose feet aren't
+   * above that line is swept out. Whoever's left either wins outright (one
+   * left) or ties for 1st if the tide has nowhere higher left to go. */
+  resolveWaveElimination(map) {
+    const alive = [...this.players.values()].filter((p) => !this.waveEliminated.has(p.id) && p.respawn <= 0);
+    const safeY = map.waveLevels[this.waveIndex];
+    const out = alive.filter((p) => (p.body.y + C.PLAYER_H) >= safeY);
+    if (out.length) {
+      this.waveEliminationOrder.push(out.map((p) => p.id));
+      for (const p of out) {
+        this.waveEliminated.add(p.id);
+        this.pushEvent({ type: 'waveOut', id: p.id, x: p.body.x, y: p.body.y });
+      }
+      this.rosterDirty = true;
+    }
+
+    const remaining = alive.filter((p) => !out.includes(p));
+    if (remaining.length <= 1 || this.waveIndex >= map.waveLevels.length - 1) {
+      // Either one winner left, or the tide has run out of higher ground to
+      // rise to -- whoever's still standing when that happens ties for 1st,
+      // the same resolution Chair Chaos uses when nobody's left to eliminate.
+      this.waveWinnerId = remaining[0]?.id ?? null;
+      this.waveStage = null;
+      this.endRound();
+      return;
+    }
+
+    this.waveIndex += 1;
+    this.waveStage = 'calm';
+    this.waveTimer = C.WAVE_CALM_MIN + Math.random() * (C.WAVE_CALM_MAX - C.WAVE_CALM_MIN);
+    this.pushEvent({ type: 'waveCalm' });
+  }
+
   // -------------------------------------------------------------- snapshots
 
   rosterPayload() {
@@ -901,7 +1018,7 @@ export class Room {
       if (p.invisible) flags |= 16;
       if (p.candyFreeze > 0) flags |= 32;
       if (p.powerTimer > 0 && p.powerType === 'shield') flags |= 64;
-      if (this.chairEliminated.has(p.id)) flags |= 128;
+      if (this.chairEliminated.has(p.id) || this.waveEliminated.has(p.id)) flags |= 128;
       if (p.body.swinging) flags |= 256;
       players.push([
         p.id,
@@ -934,6 +1051,13 @@ export class Room {
         timer: Math.round(this.chairTimer * 10) / 10,
         active: this.activeChairs,
         remaining: [...this.players.values()].filter((p) => !this.chairEliminated.has(p.id)).length,
+      } : null,
+      waves: this.map.waveSurvival ? {
+        stage: this.waveStage,
+        timer: Math.round(this.waveTimer * 10) / 10,
+        index: this.waveIndex,
+        nextLevel: this.map.waveLevels[this.waveIndex] ?? null,
+        remaining: [...this.players.values()].filter((p) => !this.waveEliminated.has(p.id)).length,
       } : null,
       walls: this.walls,
       players,

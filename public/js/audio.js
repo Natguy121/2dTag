@@ -197,4 +197,21 @@ export const sfx = {
     noise({ dur: 0.06, gain: 0.08, freq: 500 });
     blip({ freq: 220, to: 130, dur: 0.12, type: 'triangle', gain: 0.08 });
   },
+  // Tidal Tower: a low rising rumble the instant the tide telegraphs a rise.
+  waveWarning: () => {
+    noise({ dur: 0.4, gain: 0.14, freq: 220 });
+    blip({
+      freq: 90, to: 180, dur: 0.6, type: 'sine', gain: 0.16, delay: 0.05,
+    });
+  },
+  // A splashy dunk for the local player getting swept out by the tide.
+  waveOut: () => {
+    noise({ dur: 0.3, gain: 0.2, freq: 900 });
+    blip({ freq: 500, to: 80, dur: 0.45, type: 'sine', gain: 0.18, delay: 0.03 });
+  },
+  // A quieter splash heard when someone ELSE gets swept out.
+  waveOutFar: () => {
+    noise({ dur: 0.15, gain: 0.09, freq: 700 });
+    blip({ freq: 350, to: 120, dur: 0.18, type: 'sine', gain: 0.08 });
+  },
 };

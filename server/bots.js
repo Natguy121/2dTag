@@ -28,6 +28,7 @@ export function createBrain(difficulty = 'normal') {
     jumpHold: 0,
     roamX: null,
     chairTarget: null, // [x, y] center of the chair to home in on, freeze phase only
+    waveTarget: null, // [x, y] center of the platform to climb to, Wave Survival only
   };
 }
 
@@ -83,8 +84,9 @@ function platformAbove(map, x, y, maxUp = 200) {
 /**
  * Decide this bot's input for the current tick.
  * `self` and `others` are room player objects; returns an input bitmask.
- * `chairs` (Musical Chairs maps only) is { stage, activeChairs, eliminated }
- * from the Room -- null/undefined everywhere else.
+ * `chairs` carries mode-specific info from the Room: on Musical Chairs maps
+ * { stage, activeChairs, eliminated, assignment }, on Wave Survival maps
+ * { waveStage, waveIndex, waveEliminated } -- null/undefined everywhere else.
  */
 export function think(self, others, map, dt, state, chairs = null) {
   const brain = self.ai;
@@ -176,6 +178,34 @@ export function think(self, others, map, dt, state, chairs = null) {
         brain.dir = brain.roamX > cx ? 1 : -1;
         if (Math.random() < 0.15) brain.wantJump = true;
       }
+    } else if (map.waveSurvival) {
+      // --- wave survival -------------------------------------------------
+      if (state !== 'playing' || chairs?.waveEliminated?.has(self.id)) {
+        // Lobby, or already swept out -- just mill about like a spectator.
+        if (Math.random() < 0.25) brain.dir = Math.random() < 0.5 ? -1 : 1;
+        brain.waveTarget = null;
+      } else {
+        // Danger is relative to the CURRENT wave threshold, not just the
+        // 'warning' telegraph -- climbing the moment the previous wave
+        // resolves (rather than waiting for the next warning) uses the
+        // whole calm window as spare time instead of racing the clock.
+        const footY = b.y + C.PLAYER_H;
+        const safeY = map.waveLevels?.[chairs?.waveIndex ?? 0];
+        if (safeY !== undefined && footY >= safeY) {
+          const up = platformAbove(map, cx, b.y, 260);
+          brain.waveTarget = up ? [up.p[0] + up.p[2] / 2, up.p[1]] : null;
+        } else {
+          brain.waveTarget = null;
+        }
+        if (!brain.waveTarget) {
+          // Already above the current threshold -- roam a little so
+          // everyone doesn't clump on the same spot of the same platform.
+          if (brain.roamX === null || Math.abs(brain.roamX - cx) < 120) {
+            brain.roamX = 80 + Math.random() * (map.width - 160);
+          }
+          brain.dir = brain.roamX > cx ? 1 : -1;
+        }
+      }
     } else if (state !== 'playing') {
       // Idle milling about in the lobby.
       if (Math.random() < 0.25) brain.dir = Math.random() < 0.5 ? -1 : 1;
@@ -245,6 +275,15 @@ export function think(self, others, map, dt, state, chairs = null) {
     dir = brain.dir = Math.abs(ddx) < 6 ? 0 : (ddx > 0 ? 1 : -1);
     if (ty < cy - 30) brain.wantJump = true;
     else if (ty > cy + 40) brain.wantDown = true;
+  }
+
+  // Same per-tick homing for Wave Survival's climb target -- always straight
+  // up, so there's no ty comparison, just line up under it and keep jumping.
+  if (brain.waveTarget) {
+    const [tx] = brain.waveTarget;
+    const ddx = tx - cx;
+    dir = brain.dir = Math.abs(ddx) < 6 ? 0 : (ddx > 0 ? 1 : -1);
+    brain.wantJump = true;
   }
 
   if (brain.unstickTimer > 0) {

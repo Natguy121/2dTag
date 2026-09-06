@@ -235,7 +235,8 @@ function updateHud(hud) {
     name.textContent = row.name + (row.isBot ? ' [bot]' : '');
     const score = document.createElement('span');
     score.className = 'sc';
-    score.textContent = hud.musicalChairs ? (row.eliminated ? 'out' : 'in') : `${row.itTime.toFixed(1)}s it`;
+    score.textContent = (hud.musicalChairs || hud.waveSurvival)
+      ? (row.eliminated ? 'out' : 'in') : `${row.itTime.toFixed(1)}s it`;
     li.append(name, score);
     list.append(li);
   }
@@ -250,6 +251,8 @@ function showResults(standings, meId) {
   if (!standings) { overlay.hidden = true; return; }
 
   const chairs = !!game?.map?.musicalChairs;
+  const waves = !!game?.map?.waveSurvival;
+  const eliminationMode = chairs || waves;
   const list = $('[data-results-list]');
   list.innerHTML = '';
   for (const row of standings) {
@@ -264,7 +267,7 @@ function showResults(standings, meId) {
     const score = document.createElement('span');
     score.className = 'score';
     const coinsPart = row.coinsEarned ? ` · +${row.coinsEarned}c` : '';
-    score.textContent = chairs
+    score.textContent = eliminationMode
       ? `${row.place === 1 ? 'Last one standing!' : 'Eliminated'}${coinsPart}`
       : `${row.itTime.toFixed(1)}s as it - ${row.tags} tag${row.tags === 1 ? '' : 's'}${coinsPart}`;
     li.append(place, who, score);
@@ -276,7 +279,7 @@ function showResults(standings, meId) {
   if (me) {
     const coinLine = typeof me.coinsEarned === 'number' ? ` +${me.coinsEarned} coins.` : '';
     sub.textContent = (me.place === 1
-      ? (chairs ? 'You won musical chairs!' : `You win! Only ${me.itTime.toFixed(1)}s spent as it.`)
+      ? (chairs ? 'You won musical chairs!' : waves ? 'You outlasted the tide!' : `You win! Only ${me.itTime.toFixed(1)}s spent as it.`)
       : `You placed ${ordinal(me.place)} of ${standings.length}.`) + coinLine;
     if (typeof me.coinsEarned === 'number') {
       addCoins(me.coinsEarned);

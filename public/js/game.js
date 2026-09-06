@@ -18,7 +18,7 @@ import { profile, bumpStat, trackMapPlayed } from './storage.js';
 import { sfx } from './audio.js';
 import * as music from './music.js';
 import {
-  drawBackground, drawMap, drawWalls, drawCharacter, drawRoundStartRainbow, Particles, formatTime,
+  drawBackground, drawMap, drawWalls, drawCharacter, drawRoundStartRainbow, drawWaterLevel, Particles, formatTime,
 } from './render.js';
 
 const INTERP_DELAY = 0.1; // seconds of buffer for remote players
@@ -52,6 +52,7 @@ export class Game {
     this.seekerFreeze = 0;
     this.orbState = []; // per-orb seconds until it respawns, from the last snapshot
     this.chairs = null; // { stage, timer, active, remaining } on map.musicalChairs, else null
+    this.waves = null; // { stage, timer, index, nextLevel, remaining } on map.waveSurvival, else null
     this.wallState = []; // [x, y, w, h] player-placed walls (map.wallBuilder), from the last snapshot
     this.resultsShown = false;
 
@@ -150,6 +151,7 @@ export class Game {
     this.seekerFreeze = msg.seekerFreeze || 0;
     this.orbState = msg.orbs || [];
     this.chairs = msg.chairs || null;
+    this.waves = msg.waves || null;
     this.wallState = msg.walls || [];
     this.applyState(msg.state);
 
@@ -492,6 +494,24 @@ export class Game {
             sfx.chairsOutFar();
           }
           break;
+        case 'waveWarning':
+          sfx.waveWarning();
+          this.showCenter('WAVE INCOMING!', C.WAVE_WARNING_TIME);
+          if (profile.shake) this.shake = Math.max(this.shake, 5);
+          break;
+        case 'waveOut':
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 24, {
+              color: '#4fd8e0', speed: 200, life: 0.65, size: 4, gravity: -40, spread: Math.PI * 2,
+            });
+          }
+          if (ev.id === this.youId) {
+            sfx.waveOut();
+            this.showCenter("SWEPT OUT!", 1.6);
+          } else {
+            sfx.waveOutFar();
+          }
+          break;
         default:
           break;
       }
@@ -754,6 +774,7 @@ export class Game {
     ctx.translate(-this.cam.x, -this.cam.y);
 
     drawMap(ctx, this.map, this.time, this.orbState, this.chairs?.active);
+    if (this.map.waveSurvival) drawWaterLevel(ctx, this.map, this.waves, this.time);
     if (this.wallState.length) drawWalls(ctx, this.wallState, this.map.theme);
 
     // Remote players first, local player on top.
@@ -1033,6 +1054,16 @@ export class Game {
         else if (this.chairs.stage === 'moving') itName = `Keep moving... ${who}`;
         else itName = who;
       }
+    } else if (this.map.waveSurvival) {
+      // Same "still in first" sort as Musical Chairs -- there's no itTime
+      // to rank by on this map either.
+      rows.sort((a, b) => (a.eliminated === b.eliminated ? 0 : a.eliminated ? 1 : -1));
+      if (this.waves) {
+        const n = this.waves.remaining;
+        const who = `${n} player${n === 1 ? '' : 's'} left`;
+        if (this.waves.stage === 'warning') itName = `WAVE INCOMING! -- ${who}`;
+        else itName = `Tide is calm... ${who}`;
+      }
     } else {
       rows.sort((a, b) => a.itTime - b.itTime);
       const itPlayer = rows.find((r) => r.it);
@@ -1052,6 +1083,8 @@ export class Game {
       rows,
       itName,
       musicalChairs: !!this.map.musicalChairs,
+      waveSurvival: !!this.map.waveSurvival,
+      waves: this.waves,
       power,
       powerLabel: power ? POWER_LABELS[power] : '',
       powerIcon: power ? POWER_ICONS[power] : '',

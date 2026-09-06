@@ -63,6 +63,17 @@
 //                     resolveWalls() and WALL_* in constants.js.
 //   wallLimit         N     -- how many walls each player may place on a
 //                     wallBuilder map; omitted = WALL_DEFAULT_LIMIT.
+//   waveSurvival      true  -- replaces tagging entirely, like
+//                     musicalChairs: the tide can rise at any moment -- a
+//                     random calm window, a short warning telegraph, then
+//                     anyone not above waveLevels[the current wave index]
+//                     is swept out. No one is ever "it" on this map. See
+//                     server/room.js's updateWaveSurvival() and WAVE_* in
+//                     constants.js.
+//   waveLevels        [N, ...]  y-coordinates the tide rises to, one per
+//                     possible wave, ordered low water to high (each entry
+//                     a smaller y than the one before it). Required when
+//                     waveSurvival is true.
 
 export const PLATFORM_H = 14;
 export const SPRING_H = 14;
@@ -957,6 +968,62 @@ export const MAPS = [
     spawns: [
       [150, 860], [400, 860], [640, 860], [980, 860],
       [1230, 860], [1450, 860], [700, 352], [900, 352],
+    ],
+  },
+
+  {
+    id: 'tide',
+    name: 'Tidal Tower',
+    blurb: "The tide can rise any second -- if you're not on a platform when it hits, you're swept out.",
+    // A tall vertical tower instead of the usual wide arena -- the whole
+    // point is that "up" is the only direction that matters here.
+    width: 1200,
+    height: 1500,
+    gravityScale: 1,
+    frictionScale: 1,
+    waveSurvival: true,
+    // One entry per platform tier below (floor excluded), the y midway
+    // between it and the tier above -- see WAVE_* in constants.js and
+    // updateWaveSurvival()/resolveWaveElimination() in server/room.js for
+    // exactly how a wave checks a player's feet against these.
+    waveLevels: [1390, 1250, 1110, 970, 830, 690, 550],
+    theme: {
+      sky: ['#04101c', '#0a2438', '#020810'],
+      solid: '#123044',
+      solidEdge: '#4fd8e0',
+      platform: '#1c4a5e',
+      accent: '#4fd8e0',
+      hazard: '#ff4d6d',
+      fog: 'rgba(79,216,224,0.12)',
+      grid: 'rgba(100,220,230,0.08)',
+      decor: 'tide',
+    },
+    // Side walls the full height of the tower, a floor at the bottom (the
+    // very first thing the tide swallows), and seven platform tiers rising
+    // above it. Each tier is two wide, nearly-full-width platforms with a
+    // narrow gap in the middle -- deliberately generous so climbing is
+    // about reacting to the tide, not fighting precise platforming, and
+    // 140px between tiers keeps every one of them a plain straight-up jump
+    // (max jump height is ~152px) with no run-up required.
+    solids: [
+      [0, 1460, 1200, 40],
+      [0, 0, 24, 1500],
+      [1176, 0, 24, 1500],
+    ],
+    platforms: [
+      [40, 1320, 500], [660, 1320, 500],
+      [40, 1180, 500], [660, 1180, 500],
+      [40, 1040, 500], [660, 1040, 500],
+      [40, 900, 500], [660, 900, 500],
+      [40, 760, 500], [660, 760, 500],
+      [40, 620, 500], [660, 620, 500],
+      [40, 480, 500], [660, 480, 500],
+    ],
+    hazards: [],
+    springs: [],
+    spawns: [
+      [100, 1460], [250, 1460], [400, 1460], [550, 1460],
+      [650, 1460], [800, 1460], [950, 1460], [1100, 1460],
     ],
   },
 ];
