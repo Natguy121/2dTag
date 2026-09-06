@@ -468,6 +468,7 @@ body {
 .skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 12px; }
 
 .skin-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -489,6 +490,36 @@ body {
 .skin-card.is-locked.is-affordable { opacity: 1; cursor: pointer; border-color: rgba(255, 209, 102, 0.5); }
 .skin-card.is-locked.is-affordable .skin-note { color: var(--gold); font-weight: 700; }
 .skin-card.is-locked.is-affordable:hover { border-color: var(--gold); }
+
+.skin-rarity {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--rarity-color);
+  background: color-mix(in srgb, var(--rarity-color) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rarity-color) 55%, transparent);
+}
+
+/* Mythic (the three exclusive-ability skins) gets a shifting rainbow edge
+   instead of a flat tint -- the one tier that isn't just "a pricier look". */
+.skin-rarity--mythic {
+  color: #fff;
+  background: linear-gradient(120deg, #ff4d6d, #ffd166, #4cc9f0, #a06bff);
+  background-size: 300% 100%;
+  border-color: transparent;
+  animation: rarity-shift 3s linear infinite;
+}
+
+@keyframes rarity-shift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
 
 /* ------------------------------------------------------ shop screen tabs */
 

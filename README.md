@@ -230,7 +230,11 @@ that is already in progress.
 (Web Weaver and Ironboy, below), no skin is faster or bigger than another,
 and the palette is deliberately wide and vivid (no black or near-black skin
 exists) -- **Huge**, below, only ever looks bigger, it never actually is.
-The rest unlock two ways:
+Every card in the shop carries a rarity badge too -- Common, Uncommon,
+Rare, Epic, Legendary, or Mythic for the three ability skins -- derived
+straight from how a skin unlocks (free, a stat grind, or a coin price)
+rather than a separate hand-set value, so it can never drift out of sync
+with the actual unlock rule. The rest unlock two ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins

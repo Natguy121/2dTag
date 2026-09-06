@@ -219,6 +219,41 @@ export function isUnlocked(skin, stats, owned) {
   return (stats?.[skin.unlock.stat] || 0) >= skin.unlock.value;
 }
 
+// Rarity is purely a display label -- it never changes an unlock rule
+// above, just how a skin's card reads in the shop. Client-only info
+// (label + color); the server never needs it.
+export const RARITIES = {
+  common: { label: 'Common', color: '#9aa5b1' },
+  uncommon: { label: 'Uncommon', color: '#61c46b' },
+  rare: { label: 'Rare', color: '#4cc9f0' },
+  epic: { label: 'Epic', color: '#a06bff' },
+  legendary: { label: 'Legendary', color: '#ffd166' },
+  mythic: { label: 'Mythic', color: '#ff4d6d' },
+};
+
+// How much a stat-gated skin's own requirement asks of you, per stat --
+// meeting or beating this reads as Epic instead of Rare. Stats with no
+// entry here (only ever one skin gated on them so far) just stay Rare.
+const STAT_EPIC_AT = {
+  tags: 60, wins: 15, games: 40, moonRounds: 8, shotHits: 30,
+};
+
+/** @param skin an entry from SKINS -- see RARITIES above for the possible results. */
+export function getRarity(skin) {
+  // The exclusive-ability skins are a cut above everything else money can buy.
+  if (skin.swingAbility || skin.pushAbility || skin.flyAbility || skin.transformAbility) return 'mythic';
+  if (!skin.unlock) return 'common';
+  if (skin.unlock.type === 'stat') {
+    return skin.unlock.value >= (STAT_EPIC_AT[skin.unlock.stat] ?? Infinity) ? 'epic' : 'rare';
+  }
+  // Coin shop: price alone already reflects how special a look is.
+  const { price } = skin.unlock;
+  if (price < 200) return 'uncommon';
+  if (price < 320) return 'rare';
+  if (price < 500) return 'epic';
+  return 'legendary'; // 600 (Prism) and 1500 (Chameleon) -- 5000 is caught by the ability check above.
+}
+
 // Bots pick from the always-available skins so they never look like a locked one.
 export const BOT_SKINS = SKINS.filter((s) => !s.unlock).map((s) => s.id);
 

@@ -3,7 +3,9 @@
 
 import * as C from '/shared/constants.js';
 import { MAPS, getMap } from '/shared/maps.js';
-import { SKINS, getSkin, isUnlocked } from '/shared/skins.js';
+import {
+  SKINS, getSkin, isUnlocked, getRarity, RARITIES,
+} from '/shared/skins.js';
 import { TRAILS, isTrailUnlocked } from '/shared/trails.js';
 import { QUESTS } from '/shared/quests.js';
 import * as net from './net.js';
@@ -552,6 +554,13 @@ function renderSkins() {
     card.className = `skin-card${unlocked ? '' : ' is-locked'}`;
     card.setAttribute('aria-pressed', String(profile.skin === skin.id));
 
+    const rarityKey = getRarity(skin);
+    const rarity = RARITIES[rarityKey];
+    const rarityTag = document.createElement('div');
+    rarityTag.className = `skin-rarity skin-rarity--${rarityKey}`;
+    rarityTag.style.setProperty('--rarity-color', rarity.color);
+    rarityTag.textContent = rarity.label;
+
     const canvas = document.createElement('canvas');
     canvas.width = 124;
     canvas.height = 148;
@@ -583,7 +592,7 @@ function renderSkins() {
     }
 
     card.disabled = !action;
-    card.append(canvas, name, note);
+    card.append(rarityTag, canvas, name, note);
     if (action) card.addEventListener('click', action);
     grid.append(card);
     requestAnimationFrame(() => drawSkinPreview(canvas, skin.id));
