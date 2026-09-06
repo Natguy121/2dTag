@@ -286,9 +286,9 @@ sync with the actual unlock rule. The rest unlock two ways:
 
   The single priciest skin in the shop, at 7000 coins, is **Mini Man**: an
   original shrinking-tech hero (not a licensed character) in a sleek dark
-  suit with a glowing cyan visor. Tap **Q** (rebindable, an on-screen
+  suit with a glowing red visor. Tap **Q** (rebindable, an on-screen
   button on touch) to shrink: for 8 seconds you're 4x smaller and move 2x
-  as fast, ringed by a shrinking swirl of cyan motes, while your own
+  as fast, ringed by a shrinking swirl of red motes, while your own
   camera zooms in to keep a tiny character just as easy to see and control
   -- then a matching 8-second cooldown before you can shrink again. Like
   Web Weaver and Ironboy, this is a genuine gameplay exception, not just a

@@ -437,7 +437,7 @@ export class Game {
           // treatment as transformStart above.
           if (profile.particles) {
             this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 18, {
-              color: '#4fd8ff', speed: 160, life: 0.4, size: 3, gravity: 0, spread: Math.PI * 2,
+              color: '#ff4f4f', speed: 160, life: 0.4, size: 3, gravity: 0, spread: Math.PI * 2,
             });
           }
           if (mine) {

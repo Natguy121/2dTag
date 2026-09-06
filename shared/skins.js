@@ -207,13 +207,13 @@ export const SKINS = [
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 
   // Original shrinking-tech hero skin (not a licensed character) -- a sleek
-  // dark suit with a glowing cyan visor, using the existing 'visor' pattern
+  // dark suit with a glowing red visor, using the existing 'visor' pattern
   // for the resting look. Its shrinkAbility triggers Room.resolveShrink():
   // SHRINK_SCALE the normal size and SHRINK_SPEED_MULT times as fast for
   // SHRINK_DURATION seconds, plus a client-side camera zoom-in (see
   // game.js's updateCamera()) so playing tiny never means playing blind.
   // The priciest skin in the shop.
-  { id: 'miniman',    name: 'Mini Man',    body: '#1c2340', dark: '#0d1224', trim: '#4fd8ff', eye: '#4fd8ff', pattern: 'visor',
+  { id: 'miniman',    name: 'Mini Man',    body: '#1c2340', dark: '#0d1224', trim: '#ff4f4f', eye: '#ff4f4f', pattern: 'visor',
     shrinkAbility: true,
     unlock: { type: 'coins', price: 7000, label: 'Coin shop' } },
 

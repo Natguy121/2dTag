@@ -385,7 +385,7 @@ export function drawCharacter(ctx, x, y, opts = {}) {
   }
 
   if (shrink) {
-    // Mini Man's shrink: a ring of cyan motes drawn shrinking inward, the
+    // Mini Man's shrink: a ring of red motes drawn shrinking inward, the
     // opposite motion of Huge's outward glow above -- the actual size
     // change itself is the caller's canvas scale around this whole call.
     ctx.save();
