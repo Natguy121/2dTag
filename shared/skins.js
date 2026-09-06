@@ -11,6 +11,12 @@
 // on a cooldown instead of jumping normally. See the README's note on all
 // three.
 //
+// `transformAbility` (Huge only) is a fourth flag, but NOT a cosmetic
+// exception -- Room.resolveTransform() only ever changes how Huge is
+// rendered (HUGE_SCALE times bigger, a fiercer look) for TRANSFORM_DURATION
+// seconds, never movement, speed or hitbox, same promise every other skin
+// keeps. See shared/constants.js's TRANSFORM_*/HUGE_SCALE.
+//
 // unlock is either:
 //   null                                       -- available from the start
 //   { type: 'stat', stat, value, label }        -- unlocked by a play stat
@@ -179,6 +185,17 @@ export const SKINS = [
   { id: 'ironboy',    name: 'Ironboy',     body: '#c81e2d', dark: '#5c0d14', trim: '#ffd34d', eye: '#8be9ff', pattern: 'ironboy',
     pushAbility: true,
     flyAbility: true,
+    unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
+
+  // Original green bruiser skin (not a licensed character), a muscular
+  // build shown via ab/chest striations on the standard body -- see
+  // drawCharacter's 'huge' pattern branch in public/js/render.js. Its
+  // transformAbility triggers Room.resolveTransform(): a towering, far
+  // angrier version of this same look for a few seconds, HUGE_SCALE times
+  // the normal size, purely a render-time effect (see the header comment
+  // above).
+  { id: 'huge',       name: 'Huge',        body: '#5a9c3f', dark: '#2f5e26', trim: '#dfffb8', eye: '#ffe14d', pattern: 'huge',
+    transformAbility: true,
     unlock: { type: 'coins', price: 5000, label: 'Coin shop' } },
 ];
 

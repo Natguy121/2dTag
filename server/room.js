@@ -145,6 +145,10 @@ export class Room {
       prevBuild: false,
       pushCooldown: 0,
       prevPush: false,
+      transformed: false,
+      transformTimer: 0,
+      transformCooldown: 0,
+      prevTransform: false,
       invisCycle: 0,
       invisible: false,
       candyFreeze: 0,
@@ -319,6 +323,10 @@ export class Room {
       p.prevBuild = false;
       p.pushCooldown = 0;
       p.prevPush = false;
+      p.transformed = false;
+      p.transformTimer = 0;
+      p.transformCooldown = 0;
+      p.prevTransform = false;
       p.invisCycle = 0;
       p.invisible = false;
       p.candyFreeze = 0;
@@ -668,6 +676,7 @@ export class Room {
         this.updateInvisibility(map, dt);
       }
       this.resolvePush(map, dt);
+      this.resolveTransform(map, dt);
     }
 
     // Timers.
@@ -879,6 +888,43 @@ export class Room {
     }
   }
 
+  /** Huge's exclusive transformation ability (gated on the player's equipped
+   * skin -- see shared/skins.js's transformAbility flag), works on every map
+   * just like the swing/push/fly abilities above. Tapping (not holding) the
+   * transform input turns them into a towering, enraged form for
+   * TRANSFORM_DURATION seconds, then TRANSFORM_COOLDOWN seconds before it
+   * can trigger again. Purely a render-time effect (see the header comment
+   * in shared/skins.js) -- this never touches physics, just p.transformed
+   * for snapshot()/the client to pick up. */
+  resolveTransform(map, dt) {
+    for (const p of this.players.values()) {
+      if (!SKIN_BY_ID[p.skin]?.transformAbility) continue;
+      const eliminated = (map.musicalChairs && this.chairEliminated.has(p.id))
+        || (map.waveSurvival && this.waveEliminated.has(p.id));
+
+      const input = decodeInput(p.inputBits);
+      const pressed = input.transform && !p.prevTransform;
+      p.prevTransform = input.transform;
+
+      if (p.transformed) {
+        p.transformTimer -= dt;
+        if (p.transformTimer <= 0 || eliminated) {
+          p.transformed = false;
+          p.transformCooldown = C.TRANSFORM_COOLDOWN;
+          this.pushEvent({ type: 'transformEnd', id: p.id, x: p.body.x, y: p.body.y });
+        }
+        continue;
+      }
+
+      p.transformCooldown = Math.max(0, p.transformCooldown - dt);
+      if (!pressed || p.respawn > 0 || eliminated || p.transformCooldown > 0) continue;
+
+      p.transformed = true;
+      p.transformTimer = C.TRANSFORM_DURATION;
+      this.pushEvent({ type: 'transformStart', id: p.id, x: p.body.x, y: p.body.y });
+    }
+  }
+
   /** Invisibility maps: the tagger cycles visible/invisible on a repeating
    * timer, always starting visible right when they become "it". Also
    * applies the 'invis' power-orb roll, which works the same way (hidden
@@ -1085,6 +1131,7 @@ export class Room {
       if (this.chairEliminated.has(p.id) || this.waveEliminated.has(p.id)) flags |= 128;
       if (p.body.swinging) flags |= 256;
       if (p.body.flying) flags |= 512;
+      if (p.transformed) flags |= 1024;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,

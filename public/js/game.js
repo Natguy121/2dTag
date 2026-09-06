@@ -410,6 +410,27 @@ export class Game {
         case 'flyEnd':
           if (!mine) sfx.flyEnd();
           break;
+        case 'transformStart':
+          // No client-side prediction for this one (like the gun's shot) --
+          // purely cosmetic and not time-critical, so everyone including
+          // the transforming player hears/sees it the same way, off the
+          // server's own event.
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 24, {
+              color: '#dfffb8', speed: 240, life: 0.6, size: 4, gravity: -60, spread: Math.PI * 2,
+            });
+          }
+          if (profile.shake) this.shake = Math.max(this.shake, mine ? 14 : 7);
+          if (mine) {
+            sfx.transformStart();
+            this.showCenter('HUGE!', 1.2);
+          } else {
+            sfx.transformStartFar();
+          }
+          break;
+        case 'transformEnd':
+          if (mine) sfx.transformEnd();
+          break;
         case 'wallPlaced':
           // No client-side prediction for this one (like the gun's shot) --
           // this event is the first time even the placer hears/sees it land.
@@ -908,6 +929,7 @@ export class Game {
     const eliminated = !!(p.flags & 128);
     const swinging = !!(p.flags & 256);
     const flying = !!(p.flags & 512);
+    const huge = !!(p.flags & 1024);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
@@ -923,6 +945,17 @@ export class Game {
       this.particles.spawn(x + C.PLAYER_W / 2, y + C.PLAYER_H, 2, {
         color: '#8be9ff', speed: 90, life: 0.3, size: 3, gravity: 250, angle: Math.PI / 2, spread: 1.2,
       });
+    }
+
+    // Huge's transformation: a scattering of green power motes while
+    // active, same invisibility carve-out as flight above.
+    if (huge && !invisible && profile.particles && Math.random() < 0.4) {
+      this.particles.spawn(
+        x + C.PLAYER_W / 2 + (Math.random() - 0.5) * C.PLAYER_W * C.HUGE_SCALE,
+        y + C.PLAYER_H * (0.3 + Math.random() * 0.7),
+        1,
+        { color: '#dfffb8', speed: 30, life: 0.5, size: 3, gravity: -20, spread: Math.PI * 2 },
+      );
     }
 
     // Tagger leaves a faint red warning trail so you can see them coming --
@@ -994,6 +1027,18 @@ export class Game {
     const pushFiredAt = id != null ? this.pushAnims.get(id) : undefined;
     const pushT = pushFiredAt != null ? this.time - pushFiredAt : null;
 
+    if (huge) {
+      // The actual size increase: scale the whole drawing up around the
+      // feet so it grows upward from the ground instead of from its
+      // top-left corner.
+      const feetX = x + C.PLAYER_W / 2;
+      const feetY = y + C.PLAYER_H;
+      ctx.save();
+      ctx.translate(feetX, feetY);
+      ctx.scale(C.HUGE_SCALE, C.HUGE_SCALE);
+      ctx.translate(-feetX, -feetY);
+    }
+
     drawCharacter(ctx, x, y, {
       skinId: meta?.skin || 'runner',
       facing: p.facing,
@@ -1007,7 +1052,10 @@ export class Game {
       frankenstein: this.map.frankenstein && it,
       pushT: pushT != null && pushT < PUSH_ANIM_DURATION ? pushT : null,
       flying,
+      huge,
     });
+
+    if (huge) ctx.restore();
 
     if (eliminated) ctx.restore();
     if (invisible) ctx.restore();

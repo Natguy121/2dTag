@@ -13,12 +13,13 @@ export const IN_SHOOT = 16;
 export const IN_SWING = 32;
 export const IN_BUILD = 64;
 export const IN_PUSH = 128;
-export const INPUT_MASK = 255; // every bit above, OR'd together
+export const IN_TRANSFORM = 256;
+export const INPUT_MASK = 511; // every bit above, OR'd together
 
-export function encodeInput({ left, right, jump, down, shoot, swing, build, push }) {
+export function encodeInput({ left, right, jump, down, shoot, swing, build, push, transform }) {
   return (left ? IN_LEFT : 0) | (right ? IN_RIGHT : 0) | (jump ? IN_JUMP : 0)
     | (down ? IN_DOWN : 0) | (shoot ? IN_SHOOT : 0) | (swing ? IN_SWING : 0) | (build ? IN_BUILD : 0)
-    | (push ? IN_PUSH : 0);
+    | (push ? IN_PUSH : 0) | (transform ? IN_TRANSFORM : 0);
 }
 
 export function decodeInput(bits) {
@@ -31,6 +32,7 @@ export function decodeInput(bits) {
     swing: !!(bits & IN_SWING),
     build: !!(bits & IN_BUILD),
     push: !!(bits & IN_PUSH),
+    transform: !!(bits & IN_TRANSFORM),
   };
 }
 

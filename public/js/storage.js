@@ -12,6 +12,7 @@ export const DEFAULT_KEYS = {
   swing: 'KeyE',
   build: 'KeyQ',
   push: 'KeyQ',
+  transform: 'KeyQ',
 };
 
 const DEFAULTS = {

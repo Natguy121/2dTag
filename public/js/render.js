@@ -334,6 +334,7 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     frankenstein = false,
     pushT = null,
     flying = false,
+    huge = false,
   } = opts;
 
   // Frankenstein's Lab: whoever is "it" fully transforms into the monster,
@@ -364,6 +365,20 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     ctx.fillStyle = '#ff4d6d';
     ctx.filter = 'blur(6px)';
     roundRect(ctx, bx - 6, by - 6, bw + 12, bh + 12, 12);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  if (huge) {
+    // Huge's transformation: a pulsing rage glow -- the actual size
+    // increase itself is applied by the caller (a canvas scale around this
+    // whole call), this is just the extra "glowing with power" flourish.
+    const pulse = 0.5 + Math.sin(time * 10) * 0.3;
+    ctx.save();
+    ctx.globalAlpha *= pulse * 0.6;
+    ctx.fillStyle = skin.eye;
+    ctx.filter = 'blur(9px)';
+    roundRect(ctx, bx - 10, by - 10, bw + 20, bh + 20, 14);
     ctx.fill();
     ctx.restore();
   }
@@ -486,6 +501,15 @@ export function drawCharacter(ctx, x, y, opts = {}) {
       ctx.beginPath();
       ctx.arc(bx + bw * 0.5, by + bodyH * 0.42, bw * 0.14, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (skin.pattern === 'huge') {
+      // Ab and pec striations suggest muscle without a custom body shape --
+      // darker and more pronounced while actually transformed.
+      ctx.fillStyle = skin.dark;
+      ctx.globalAlpha *= huge ? 0.8 : 0.5;
+      ctx.fillRect(bx + bw * 0.48, by + bodyH * 0.1, bw * 0.04, bodyH * 0.32);
+      for (const ry of [0.46, 0.58, 0.7]) {
+        ctx.fillRect(bx + bw * 0.22, by + bodyH * ry, bw * 0.56, bodyH * 0.035);
+      }
     }
     ctx.restore();
 
@@ -514,6 +538,34 @@ export function drawCharacter(ctx, x, y, opts = {}) {
         ctx.fill();
       }
       ctx.globalAlpha = respawning ? 0.28 : 1;
+    } else if (skin.pattern === 'huge') {
+      // A heavy brow reads as a permanent scowl at rest; transformed, the
+      // eyes glow and a snarl of bared teeth shows underneath.
+      ctx.fillStyle = skin.dark;
+      roundRect(ctx, bx + bw * 0.14, eyeY - bodyH * 0.17, bw * 0.72, bodyH * 0.09, 3);
+      ctx.fill();
+      for (const off of [-0.17, 0.17]) {
+        if (huge) {
+          ctx.fillStyle = skin.eye;
+          ctx.beginPath();
+          ctx.ellipse(bx + bw * (0.5 + off) + lookX * 0.35, eyeY, bw * 0.11, bw * 0.08, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.ellipse(bx + bw * (0.5 + off) + lookX * 0.35, eyeY, bw * 0.11, bw * 0.1, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = skin.eye;
+          ctx.beginPath();
+          ctx.arc(bx + bw * (0.5 + off) + lookX * 0.6, eyeY + bw * 0.01, bw * 0.05, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      if (huge) {
+        ctx.fillStyle = '#fff';
+        roundRect(ctx, bx + bw * 0.28, eyeY + bodyH * 0.15, bw * 0.44, bodyH * 0.08, 2);
+        ctx.fill();
+      }
     } else {
       for (const off of [-0.17, 0.17]) {
         ctx.fillStyle = '#fff';

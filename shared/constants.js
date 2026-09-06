@@ -142,6 +142,19 @@ export const FLY_DURATION = 3;
 export const FLY_COOLDOWN = 3;
 export const FLY_SPEED = 400; // steady upward speed while flying
 
+// Huge's exclusive transformation (gated on the player's equipped skin --
+// see shared/skins.js's transformAbility flag, and Room.resolveTransform()
+// in server/room.js). Tapping the transform input turns them into a
+// towering, enraged form -- HUGE_SCALE times their normal size -- for
+// TRANSFORM_DURATION seconds, then TRANSFORM_COOLDOWN seconds before it can
+// trigger again. Unlike the swing/push/fly abilities above, this is purely
+// a look: no speed, hitbox or power change, the same "purely cosmetic"
+// promise every other skin keeps -- see the Frankenstein's Lab transformation
+// for the map-triggered equivalent.
+export const TRANSFORM_DURATION = 8;
+export const TRANSFORM_COOLDOWN = 8;
+export const HUGE_SCALE = 3;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

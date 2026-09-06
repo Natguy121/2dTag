@@ -233,4 +233,21 @@ export const sfx = {
   flyEnd: () => {
     blip({ freq: 500, to: 160, dur: 0.3, type: 'sawtooth', gain: 0.1 });
   },
+  // Huge: a deep, rising roar the instant the transformation kicks in.
+  transformStart: () => {
+    noise({ dur: 0.35, gain: 0.16, freq: 300 });
+    blip({ freq: 90, to: 220, dur: 0.5, type: 'sawtooth', gain: 0.2 });
+    blip({
+      freq: 140, to: 300, dur: 0.4, type: 'square', gain: 0.1, delay: 0.06,
+    });
+  },
+  // A quieter version heard when someone ELSE transforms.
+  transformStartFar: () => {
+    noise({ dur: 0.18, gain: 0.08, freq: 300 });
+    blip({ freq: 100, to: 200, dur: 0.3, type: 'sawtooth', gain: 0.1 });
+  },
+  // A low grumbling power-down when the transformation wears off.
+  transformEnd: () => {
+    blip({ freq: 220, to: 80, dur: 0.4, type: 'sawtooth', gain: 0.12 });
+  },
 };

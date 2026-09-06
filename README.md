@@ -226,15 +226,16 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-74 characters, 21 unlocked from the start. With two deliberate exceptions
+75 characters, 21 unlocked from the start. With two deliberate exceptions
 (Web Weaver and Ironboy, below), no skin is faster or bigger than another,
 and the palette is deliberately wide and vivid (no black or near-black skin
-exists). The rest unlock two ways:
+exists) -- **Huge**, below, only ever looks bigger, it never actually is.
+The rest unlock two ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins
   earned rather than anything done in a single round.
-- **Coin shop** (35 skins, 120-5000 coins): earned by playing rounds. Every
+- **Coin shop** (36 skins, 120-5000 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
@@ -269,6 +270,15 @@ exists). The rest unlock two ways:
   steady climb (twin repulsor jets flaring beneath your feet) in place of
   a normal jump, for up to 3 seconds, then a 3-second cooldown before you
   can take off again -- jump behaves completely normally in between.
+
+  Rounding out the flagship tier at 5000 coins is **Huge**: an original
+  green bruiser (not a licensed character) with a permanent scowl and
+  visible ab/chest muscle. Tap **Q** (rebindable, an on-screen button on
+  touch) to transform: for 8 seconds you tower 3x your normal size, eyes
+  glowing and teeth bared, wrapped in a pulsing green rage aura -- then a
+  matching 8-second cooldown before you can transform again. Unlike
+  Ironboy's abilities, this one really is purely cosmetic: no speed,
+  hitbox, or power change, just the biggest entrance in the game.
 
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately
