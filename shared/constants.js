@@ -171,6 +171,19 @@ export const SHRINK_SCALE = 0.25; // 4x smaller
 export const SHRINK_SPEED_MULT = 2;
 export const SHRINK_ZOOM = 1.7;
 
+// Mystery Boxes (maps with map.mysteryBoxes: true, e.g. Loot Hollow). Anyone
+// can walk up to an unopened box and tap the box-open input to claim a
+// single throwable item, then tap the throw input to hurl it in their
+// facing direction -- a straight-line shot exactly like a gun's (see
+// resolveShot() in shared/physics.js), just shorter range and open to
+// anyone holding an item rather than only the tagger. A hit freezes the
+// target in place, reusing CANDY_FREEZE_TIME/the 'freeze' event wholesale
+// (same mechanic candy pieces and the Frost Touch power already use). Each
+// box goes dark for BOX_RESPAWN_TIME seconds after being opened before it
+// can be found again, and only one item can be held at a time.
+export const BOX_RESPAWN_TIME = 12;
+export const BOX_THROW_RANGE = 480;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

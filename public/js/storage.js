@@ -18,6 +18,8 @@ export const DEFAULT_KEYS = {
   push: 'KeyQ',
   transform: 'KeyQ',
   shrink: 'KeyQ',
+  box: 'KeyQ',
+  throwItem: 'KeyR',
 };
 
 const DEFAULTS = {

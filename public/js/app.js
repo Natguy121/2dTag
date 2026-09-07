@@ -77,6 +77,8 @@ function showScreen(name) {
     $('[data-push-btn]').hidden = !getSkin(profile.skin)?.pushAbility;
     $('[data-transform-btn]').hidden = !getSkin(profile.skin)?.transformAbility;
     $('[data-shrink-btn]').hidden = !getSkin(profile.skin)?.shrinkAbility;
+    $('[data-box-btn]').hidden = !game.map.mysteryBoxes;
+    $('[data-throw-btn]').hidden = !game.map.mysteryBoxes;
     lockLandscape();
   } else if (game) {
     game.stop();
@@ -930,6 +932,7 @@ const KEY_LABELS = {
   build: 'Build wall (Blocky Blastu)', push: 'Push (Ironboy skin)',
   transform: 'Transform (Huge skin)',
   shrink: 'Shrink (Mini Man skin)',
+  box: 'Open mystery box (Loot Hollow)', throwItem: 'Throw item (Loot Hollow)',
 };
 
 function renderKeybinds() {

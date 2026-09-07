@@ -178,6 +178,22 @@ export const sfx = {
       freq: 2000, to: 1000, dur: 0.1, type: 'triangle', gain: 0.06, delay: 0.03,
     });
   },
+  // Loot Hollow: a satisfying crate-crack as a mystery box pops open.
+  boxOpen: () => {
+    blip({ freq: 300, to: 900, dur: 0.12, type: 'square', gain: 0.16 });
+    noise({ dur: 0.08, gain: 0.12, freq: 1400 });
+  },
+  // A quieter cue heard when someone ELSE opens one.
+  boxOpenFar: () => {
+    blip({ freq: 260, to: 700, dur: 0.1, type: 'square', gain: 0.07 });
+  },
+  // A quick whoosh-thud as a held item gets hurled.
+  boxThrow: () => {
+    noise({ dur: 0.1, gain: 0.1, freq: 1000 });
+    blip({
+      freq: 500, to: 200, dur: 0.12, type: 'triangle', gain: 0.1, delay: 0.04,
+    });
+  },
   // Musical Chairs: a harsh needle-scratch the instant the music cuts out.
   chairsStop: () => {
     noise({ dur: 0.18, gain: 0.18, freq: 1800 });

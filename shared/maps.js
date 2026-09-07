@@ -1026,6 +1026,68 @@ export const MAPS = [
       [650, 1460], [800, 1460], [950, 1460], [1100, 1460],
     ],
   },
+
+  {
+    id: 'loot',
+    name: 'Loot Hollow',
+    blurb: "Mystery boxes wait on every ledge -- open one with Q, then throw what's inside to freeze someone in their tracks.",
+    width: 1600,
+    height: 900,
+    gravityScale: 1,
+    frictionScale: 1,
+    mysteryBoxes: true,
+    theme: {
+      sky: ['#170f2b', '#2b1a4d', '#0a0616'],
+      solid: '#3a2a5c',
+      solidEdge: '#ffd54f',
+      platform: '#4a3872',
+      accent: '#ffd54f',
+      hazard: '#ff4d6d',
+      fog: 'rgba(150,110,255,0.12)',
+      grid: 'rgba(180,140,255,0.08)',
+      decor: 'dust',
+    },
+    // Neon Arena's exact geometry -- already proven fully reachable (Surge
+    // Ruins reuses it too, see that map's own note) -- so it's reused here
+    // as well, with only the theme and the added boxes being new.
+    solids: [
+      [0, 860, 1600, 40],
+      [0, 0, 24, 900],
+      [1576, 0, 24, 900],
+      [430, 740, 40, 120],
+      [1130, 740, 40, 120],
+      [720, 690, 160, 40],
+    ],
+    platforms: [
+      [170, 726, 230],
+      [1200, 726, 230],
+      [545, 586, 200],
+      [855, 586, 200],
+      [290, 470, 240],
+      [1070, 470, 240],
+      [660, 352, 280],
+      [110, 316, 190],
+      [1300, 316, 190],
+      [400, 210, 200],
+      [1000, 210, 200],
+    ],
+    hazards: [],
+    springs: [[770, 846, 60]],
+    // One crate centered on top of every platform -- 28x28, the exact same
+    // one-per-platform layout Surge Ruins uses for its orbs.
+    boxes: [
+      [271, 698, 28, 28], [1301, 698, 28, 28],
+      [631, 558, 28, 28], [941, 558, 28, 28],
+      [396, 442, 28, 28], [1176, 442, 28, 28],
+      [786, 324, 28, 28],
+      [191, 288, 28, 28], [1381, 288, 28, 28],
+      [486, 182, 28, 28], [1086, 182, 28, 28],
+    ],
+    spawns: [
+      [150, 860], [400, 860], [640, 860], [980, 860],
+      [1230, 860], [1450, 860], [700, 352], [900, 352],
+    ],
+  },
 ];
 
 export const MAP_BY_ID = Object.fromEntries(MAPS.map((m) => [m.id, m]));

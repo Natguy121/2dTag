@@ -865,6 +865,65 @@ function drawOrb(ctx, o, time, seed, cooldown) {
   ctx.restore();
 }
 
+/** A Loot Hollow mystery box: a crate with a glowing "?" on its lid, bobbing
+ * and pulsing gold -- same "dims to a faint outline while on cooldown" look
+ * as drawOrb() above, just after having just been opened rather than
+ * grabbed. */
+function drawBox(ctx, box, time, seed, cooldown) {
+  const [x, y, w, h] = box;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+
+  if (cooldown > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = '#ffd54f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+    return;
+  }
+
+  const bob = Math.sin(time * 2 + seed) * 2.5;
+  const pulse = 0.7 + Math.sin(time * 3 + seed * 1.4) * 0.3;
+
+  ctx.save();
+  ctx.translate(cx, cy + bob);
+
+  // Soft gold bloom, the same "unstable power" cue as the orbs above.
+  ctx.globalAlpha = 0.3 * pulse;
+  ctx.filter = 'blur(5px)';
+  ctx.fillStyle = '#ffd54f';
+  ctx.beginPath();
+  ctx.arc(0, 0, w * 0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.filter = 'none';
+
+  // The crate itself -- a plain wooden box with corner-to-corner strapping.
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#8a5a2b';
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.strokeStyle = '#5c3a1a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, -h / 2);
+  ctx.lineTo(w / 2, h / 2);
+  ctx.moveTo(w / 2, -h / 2);
+  ctx.lineTo(-w / 2, h / 2);
+  ctx.stroke();
+
+  // A glowing "?" so it reads as a mystery even at a glance.
+  ctx.globalAlpha = 0.85 + Math.sin(time * 4 + seed) * 0.15;
+  ctx.fillStyle = '#ffd54f';
+  ctx.font = `bold ${Math.round(w * 0.6)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', 0, 1);
+
+  ctx.restore();
+}
+
 /** A musical-chairs seat. `active` chairs (currently sittable) glow in the
  * map's own colors and bob gently; inactive ones (already removed from
  * play this round) sit dim and gray so it's obvious not to bother. */
@@ -1232,7 +1291,7 @@ export function drawRoundStartRainbow(ctx, view, reveal, alpha) {
 }
 
 /** Draw the whole world. Camera transform is applied by the caller. */
-export function drawMap(ctx, map, time, orbState, activeChairs) {
+export function drawMap(ctx, map, time, orbState, activeChairs, boxState) {
   const theme = map.theme;
 
   // Depth wash over the play area. A flat fill reads as a hard-edged block
@@ -1255,6 +1314,8 @@ export function drawMap(ctx, map, time, orbState, activeChairs) {
   for (let i = 0; i < candies.length; i++) drawCandy(ctx, candies[i], time, i);
   const orbs = map.orbs || [];
   for (let i = 0; i < orbs.length; i++) drawOrb(ctx, orbs[i], time, i, orbState?.[i] || 0);
+  const boxes = map.boxes || [];
+  for (let i = 0; i < boxes.length; i++) drawBox(ctx, boxes[i], time, i, boxState?.[i] || 0);
   const chairs = map.chairs || [];
   const activeSet = new Set(activeChairs || []);
   for (let i = 0; i < chairs.length; i++) drawChair(ctx, chairs[i], activeSet.has(i), theme, time, i);
@@ -1421,6 +1482,8 @@ export function drawMapPreview(canvas, map) {
     ctx.arc(o[0] + o[2] / 2, o[1] + o[3] / 2, o[2] * 0.55, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.fillStyle = '#8a5a2b';
+  for (const b of map.boxes || []) ctx.fillRect(b[0], b[1], b[2], b[3]);
   ctx.fillStyle = theme.accent;
   for (const c of map.chairs || []) ctx.fillRect(c[0], c[1], c[2], c[3]);
 

@@ -52,6 +52,7 @@ export class Game {
     this.timer = 0;
     this.seekerFreeze = 0;
     this.orbState = []; // per-orb seconds until it respawns, from the last snapshot
+    this.boxState = []; // per-box seconds until it respawns, from the last snapshot (Loot Hollow)
     this.chairs = null; // { stage, timer, active, remaining } on map.musicalChairs, else null
     this.waves = null; // { stage, timer, index, nextLevel, remaining } on map.waveSurvival, else null
     this.wallState = []; // [x, y, w, h] player-placed walls (map.wallBuilder), from the last snapshot
@@ -69,6 +70,7 @@ export class Game {
 
     this.particles = new Particles();
     this.shotBeams = []; // {x1, y1, x2, y2, age, life, hit} -- Crossfire Yard laser flashes
+    this.thrownBoxes = []; // {x1, y1, x2, y2, age, life, hit} -- Loot Hollow's thrown items
     this.shake = 0;
     this.cam = { x: 0, y: 0, scale: 1, ready: false };
     this.camZoom = 1; // Mini Man's shrink zooms this in -- see updateCamera()
@@ -153,6 +155,7 @@ export class Game {
     this.timer = msg.timer;
     this.seekerFreeze = msg.seekerFreeze || 0;
     this.orbState = msg.orbs || [];
+    this.boxState = msg.boxes || [];
     this.chairs = msg.chairs || null;
     this.waves = msg.waves || null;
     this.wallState = msg.walls || [];
@@ -545,6 +548,41 @@ export class Game {
           }
           break;
         }
+        case 'boxOpen':
+          // Loot Hollow: opening a crate is purely a state change (you're
+          // now holding an item, see the flags-bit 4096 icon in
+          // drawPlayer()) -- no client prediction needed, same "wait for
+          // the server's own event" treatment as the wall-builder's
+          // 'wallPlaced' above.
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H / 2, 16, {
+              color: '#ffd54f', speed: 180, life: 0.45, size: 3, gravity: -40, spread: Math.PI * 2,
+            });
+          }
+          if (ev.id === this.youId) {
+            sfx.boxOpen();
+            this.showCenter('MYSTERY ITEM!', 1.2);
+          } else {
+            sfx.boxOpenFar();
+          }
+          break;
+        case 'boxThrow': {
+          // The thrown-item visual only -- a hit's actual freeze effect
+          // rides on its own 'freeze' event (pushed alongside this one by
+          // resolveThrows()), which already handles the banner/sfx/particles.
+          const mineThrow = ev.by === this.youId;
+          this.thrownBoxes.push({
+            x1: ev.fromX, y1: ev.fromY, x2: ev.toX, y2: ev.fromY,
+            age: 0, life: mineThrow ? 0.3 : 0.36, hit: !!ev.hitId,
+          });
+          if (mineThrow) sfx.boxThrow();
+          if (profile.particles) {
+            this.particles.spawn(ev.toX, ev.fromY, ev.hitId ? 8 : 4, {
+              color: ev.hitId ? '#5fd0ff' : '#ffd54f', speed: 130, life: 0.3, size: 2.5, gravity: 0,
+            });
+          }
+          break;
+        }
         case 'go':
           sfx.go();
           this.showCenter('GO!', 0.8);
@@ -665,6 +703,11 @@ export class Game {
       const b = this.shotBeams[i];
       b.age += dt;
       if (b.age >= b.life) this.shotBeams.splice(i, 1);
+    }
+    for (let i = this.thrownBoxes.length - 1; i >= 0; i--) {
+      const b = this.thrownBoxes[i];
+      b.age += dt;
+      if (b.age >= b.life) this.thrownBoxes.splice(i, 1);
     }
     this.shake = Math.max(0, this.shake - dt * 40);
 
@@ -874,7 +917,7 @@ export class Game {
     ctx.scale(this.cam.scale, this.cam.scale);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    drawMap(ctx, this.map, this.time, this.orbState, this.chairs?.active);
+    drawMap(ctx, this.map, this.time, this.orbState, this.chairs?.active, this.boxState);
     if (this.map.waveSurvival) drawWaterLevel(ctx, this.map, this.waves, this.time);
     if (this.wallState.length) drawWalls(ctx, this.wallState, this.map.theme);
 
@@ -896,6 +939,7 @@ export class Game {
     }
 
     this.drawShotBeams(ctx);
+    this.drawThrownBoxes(ctx);
     this.particles.draw(ctx);
     ctx.restore();
 
@@ -949,6 +993,31 @@ export class Game {
     }
   }
 
+  /** Loot Hollow: a small spinning crate flying from thrower to
+   * target/miss-point, unlike the gun's instant full-length beam above --
+   * a thrown object reads better as something traveling than a laser does.
+   * Glows icy blue in flight if it's about to land a hit, foreshadowing the
+   * freeze that follows on its own 'freeze' event. */
+  drawThrownBoxes(ctx) {
+    for (const b of this.thrownBoxes) {
+      const k = Math.min(1, b.age / b.life);
+      const px = b.x1 + (b.x2 - b.x1) * k;
+      const py = b.y1 + (b.y2 - b.y1) * k;
+      ctx.save();
+      ctx.globalAlpha = 1 - k * 0.3;
+      ctx.translate(px, py);
+      ctx.rotate(b.age * 14);
+      ctx.fillStyle = '#8a5a2b';
+      ctx.strokeStyle = b.hit ? '#5fd0ff' : '#5c3a1a';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = b.hit ? '#5fd0ff' : 'transparent';
+      ctx.shadowBlur = b.hit ? 8 : 0;
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.strokeRect(-7, -7, 14, 14);
+      ctx.restore();
+    }
+  }
+
   drawPlayer(ctx, x, y, p, meta, isSelf = false, id = null) {
     const it = !!(p.flags & 2);
     const immune = !!(p.flags & 4);
@@ -961,6 +1030,7 @@ export class Game {
     const flying = !!(p.flags & 512);
     const huge = !!(p.flags & 1024);
     const shrunk = !!(p.flags & 2048);
+    const holdingBox = !!(p.flags & 4096);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
@@ -1131,6 +1201,23 @@ export class Game {
       ctx.strokeText(icon, x + C.PLAYER_W / 2, y - 12 + bob);
       ctx.fillStyle = '#ffffff';
       ctx.fillText(icon, x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.restore();
+    }
+
+    if (holdingBox) {
+      // Loot Hollow: a bobbing crate icon over your head so everyone
+      // (including you) can see you're carrying a throwable item -- the
+      // same "status icon above the head" treatment as the power-orb icon
+      // just below.
+      ctx.save();
+      const bob = Math.sin(this.time * 5) * 2;
+      ctx.font = '18px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeText('\u{1F4E6}', x + C.PLAYER_W / 2, y - 12 + bob);
+      ctx.fillStyle = '#ffd54f';
+      ctx.fillText('\u{1F4E6}', x + C.PLAYER_W / 2, y - 12 + bob);
       ctx.restore();
     }
 

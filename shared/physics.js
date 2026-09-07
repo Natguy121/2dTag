@@ -15,14 +15,17 @@ export const IN_BUILD = 64;
 export const IN_PUSH = 128;
 export const IN_TRANSFORM = 256;
 export const IN_SHRINK = 512;
-export const INPUT_MASK = 1023; // every bit above, OR'd together
+export const IN_BOX = 1024;
+export const IN_THROW = 2048;
+export const INPUT_MASK = 4095; // every bit above, OR'd together
 
 export function encodeInput({
-  left, right, jump, down, shoot, swing, build, push, transform, shrink,
+  left, right, jump, down, shoot, swing, build, push, transform, shrink, box, throwItem,
 }) {
   return (left ? IN_LEFT : 0) | (right ? IN_RIGHT : 0) | (jump ? IN_JUMP : 0)
     | (down ? IN_DOWN : 0) | (shoot ? IN_SHOOT : 0) | (swing ? IN_SWING : 0) | (build ? IN_BUILD : 0)
-    | (push ? IN_PUSH : 0) | (transform ? IN_TRANSFORM : 0) | (shrink ? IN_SHRINK : 0);
+    | (push ? IN_PUSH : 0) | (transform ? IN_TRANSFORM : 0) | (shrink ? IN_SHRINK : 0)
+    | (box ? IN_BOX : 0) | (throwItem ? IN_THROW : 0);
 }
 
 export function decodeInput(bits) {
@@ -37,6 +40,8 @@ export function decodeInput(bits) {
     push: !!(bits & IN_PUSH),
     transform: !!(bits & IN_TRANSFORM),
     shrink: !!(bits & IN_SHRINK),
+    box: !!(bits & IN_BOX),
+    throwItem: !!(bits & IN_THROW),
   };
 }
 
@@ -507,12 +512,14 @@ export function centerOf(b) {
  * @param shooter body-like {x, y, facing}
  * @param targets [{ id, body }] candidates, already filtered by the caller
  *   (exclude the shooter, anyone immune/respawning, etc.)
+ * @param range defaults to SHOT_RANGE -- Loot Hollow's thrown items reuse
+ *   this exact function with a shorter BOX_THROW_RANGE instead.
  */
-export function resolveShot(shooter, map, targets) {
+export function resolveShot(shooter, map, targets, range = C.SHOT_RANGE) {
   const cx = shooter.x + C.PLAYER_W / 2;
   const cy = shooter.y + C.PLAYER_H / 2;
   const dir = shooter.facing < 0 ? -1 : 1;
-  let limit = dir > 0 ? cx + C.SHOT_RANGE : cx - C.SHOT_RANGE;
+  let limit = dir > 0 ? cx + range : cx - range;
 
   for (const s of map.solids) {
     if (cy < s[1] || cy > s[1] + s[3]) continue;

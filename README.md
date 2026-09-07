@@ -3,7 +3,7 @@
 A 2D multiplayer tag game. One player is **it**; touch somebody else to pass it
 on. When the clock runs out, whoever spent the least time as "it" wins.
 
-Fifteen maps, 1 to 10 players per game, hosted lobbies with share codes,
+Nineteen maps, 1 to 10 players per game, hosted lobbies with share codes,
 coins earned by playing or from quests, unlockable skins and trails, 20
 background music tracks, and bots that keep every server busy even when
 nobody else is around.
@@ -95,6 +95,7 @@ remappable in Settings, and touchscreens get on-screen buttons.
 | **Frankenstein's Lab** | Get tagged and you become the monster -- green skin, neck bolts and all -- until you pass it on. |
 | **Blocky Blastu** | Anyone not it can drop up to 3 walls to block the tagger's path -- build smart. |
 | **Tidal Tower** | A vertical tower where the tide can rise any second -- get above it or you're swept out. |
+| **Loot Hollow** | Mystery boxes scattered everywhere. Open one with Q, then throw what's inside to freeze someone. |
 
 Every map has 8 dedicated spawn points spread so nobody spawns on top of
 anybody else. The host can cap a game anywhere from 1 (solo) to 10 players; a
@@ -111,7 +112,7 @@ bouncing straight back through.
 
 ### Rule-bending maps
 
-Eleven maps bend the base rules further, each in a different direction:
+Twelve maps bend the base rules further, each in a different direction:
 
 - **Crossfire Yard** gives the tagger a gun. Fire with **F** (or the
   on-screen target button on touch) to send a straight horizontal shot --
@@ -211,6 +212,16 @@ Eleven maps bend the base rules further, each in a different direction:
   earn 300 bonus coins on top of the normal payout. If the tide runs out of
   higher ground with more than one player still up, or the round timer
   cuts things short, everyone still in ties for the win.
+- **Loot Hollow** scatters 11 mystery boxes across the ruins, one on top of
+  every platform. Stand on an unopened one and tap **Q** (rebindable, an
+  on-screen crate button on touch) to claim a single throwable item, then
+  tap **R** (an on-screen snowflake button on touch) to hurl it in your
+  facing direction -- a straight shot just like Crossfire Yard's gun, just
+  shorter range and open to anyone holding an item, not only the tagger.
+  A hit freezes the target in place for 3 seconds, the exact same mechanic
+  Candy Land and Surge Ruins' Frost Touch power use. Each box goes dark for
+  12 seconds after being opened before it can be found again, and you can
+  only ever hold one item at a time -- find another box to reload.
 
 ## Bots
 

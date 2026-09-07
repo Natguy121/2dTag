@@ -75,6 +75,7 @@ export class Room {
     this.lobbyCheck = 0;
     this.seekerFreezeTimer = 0;
     this.orbCooldowns = []; // one entry per map.orbs, seconds until it can be grabbed again
+    this.boxCooldowns = []; // one entry per map.boxes, seconds until it can be opened again
     // Musical Chairs (map.musicalChairs). chairStage is null off that map;
     // otherwise 'moving' (music playing) or 'freeze' (find a chair now).
     this.chairStage = null;
@@ -153,6 +154,9 @@ export class Room {
       shrinkTimer: 0,
       shrinkCooldown: 0,
       prevShrink: false,
+      holdingBox: false,
+      prevBox: false,
+      prevThrow: false,
       invisCycle: 0,
       invisible: false,
       candyFreeze: 0,
@@ -335,6 +339,9 @@ export class Room {
       p.shrinkTimer = 0;
       p.shrinkCooldown = 0;
       p.prevShrink = false;
+      p.holdingBox = false;
+      p.prevBox = false;
+      p.prevThrow = false;
       p.invisCycle = 0;
       p.invisible = false;
       p.candyFreeze = 0;
@@ -343,6 +350,7 @@ export class Room {
       p.powerTimer = 0;
     }
     this.orbCooldowns = new Array((this.map.orbs || []).length).fill(0);
+    this.boxCooldowns = new Array((this.map.boxes || []).length).fill(0);
     this.walls = [];
     this.chairStage = null;
     this.chairTimer = 0;
@@ -556,6 +564,9 @@ export class Room {
     for (let i = 0; i < this.orbCooldowns.length; i++) {
       if (this.orbCooldowns[i] > 0) this.orbCooldowns[i] = Math.max(0, this.orbCooldowns[i] - dt);
     }
+    for (let i = 0; i < this.boxCooldowns.length; i++) {
+      if (this.boxCooldowns[i] > 0) this.boxCooldowns[i] = Math.max(0, this.boxCooldowns[i] - dt);
+    }
 
     // Bots decide first so they move on the same tick as the humans.
     if (this.players.size) {
@@ -689,6 +700,8 @@ export class Room {
       this.resolvePush(map, dt);
       this.resolveTransform(map, dt);
       this.resolveShrink(map, dt);
+      this.resolveBoxes(map);
+      this.resolveThrows(map);
     }
 
     // Timers.
@@ -974,6 +987,70 @@ export class Room {
     }
   }
 
+  /** Loot Hollow (map.mysteryBoxes: true): tapping (not holding) the box-open
+   * input while standing on an unopened box grants a single throwable item
+   * and starts that box's BOX_RESPAWN_TIME cooldown -- only one item can be
+   * held at a time, see resolveThrows() for using it. Unlike the power-orb
+   * pickup (an automatic overlap, no keypress), opening a box is deliberate,
+   * so this checks the overlap itself rather than reusing stepBody()'s
+   * physics-tick events. */
+  resolveBoxes(map) {
+    if (!map.mysteryBoxes) return;
+    const boxes = map.boxes || [];
+    for (const p of this.players.values()) {
+      const input = decodeInput(p.inputBits);
+      const pressed = input.box && !p.prevBox;
+      p.prevBox = input.box;
+      if (!pressed || p.respawn > 0 || p.holdingBox) continue;
+
+      for (let i = 0; i < boxes.length; i++) {
+        if (this.boxCooldowns[i] > 0) continue;
+        const b = boxes[i];
+        if (!overlaps(p.body.x, p.body.y, C.PLAYER_W, C.PLAYER_H, b[0], b[1], b[2], b[3])) continue;
+        p.holdingBox = true;
+        this.boxCooldowns[i] = C.BOX_RESPAWN_TIME;
+        this.pushEvent({ type: 'boxOpen', id: p.id, box: i, x: p.body.x, y: p.body.y });
+        break;
+      }
+    }
+  }
+
+  /** The other half of Loot Hollow's mechanic: tapping the throw input while
+   * holding an item hurls it in the player's facing direction -- a
+   * straight-line shot exactly like resolveShots()'s gun (reusing the same
+   * resolveShot() function with a shorter BOX_THROW_RANGE), just available
+   * to anyone holding an item rather than only the tagger. A hit freezes
+   * the target in place, reusing candyFreeze/the 'freeze' event wholesale,
+   * the same mechanic candy pieces and the Frost Touch power already use. */
+  resolveThrows(map) {
+    if (!map.mysteryBoxes) return;
+    for (const p of this.players.values()) {
+      const input = decodeInput(p.inputBits);
+      const pressed = input.throwItem && !p.prevThrow;
+      p.prevThrow = input.throwItem;
+      if (!pressed || !p.holdingBox || p.respawn > 0) continue;
+
+      p.holdingBox = false;
+      const targets = [...this.players.values()]
+        .filter((t) => t.id !== p.id && t.respawn <= 0 && t.candyFreeze <= 0 && t.candyImmune <= 0)
+        .map((t) => ({ id: t.id, body: t.body }));
+      const thrown = resolveShot(p.body, map, targets, C.BOX_THROW_RANGE);
+      this.pushEvent({
+        type: 'boxThrow', by: p.id, hitId: thrown.hitId,
+        fromX: thrown.fromX, fromY: thrown.fromY, toX: thrown.toX,
+      });
+      if (thrown.hitId) {
+        const target = this.players.get(thrown.hitId);
+        if (target) {
+          target.candyFreeze = C.CANDY_FREEZE_TIME;
+          this.pushEvent({
+            type: 'freeze', id: target.id, by: p.id, x: target.body.x, y: target.body.y,
+          });
+        }
+      }
+    }
+  }
+
   /** Invisibility maps: the tagger cycles visible/invisible on a repeating
    * timer, always starting visible right when they become "it". Also
    * applies the 'invis' power-orb roll, which works the same way (hidden
@@ -1182,6 +1259,7 @@ export class Room {
       if (p.body.flying) flags |= 512;
       if (p.transformed) flags |= 1024;
       if (p.shrunk) flags |= 2048;
+      if (p.holdingBox) flags |= 4096;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,
@@ -1208,6 +1286,7 @@ export class Room {
       timer: Math.max(0, Math.round(this.timer * 10) / 10),
       seekerFreeze: Math.round(this.seekerFreezeTimer * 10) / 10,
       orbs: this.orbCooldowns.map((c) => Math.round(c * 10) / 10),
+      boxes: this.boxCooldowns.map((c) => Math.round(c * 10) / 10),
       chairs: this.map.musicalChairs ? {
         stage: this.chairStage,
         timer: Math.round(this.chairTimer * 10) / 10,
