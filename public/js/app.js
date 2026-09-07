@@ -1325,6 +1325,27 @@ function wire() {
     input.value = '';
     net.send({ t: 'admin', password: adminPasswordCache });
   });
+
+  // Home screen's "Talk to Admin" -- a friendlier front door to the exact
+  // same admin login as the Settings form above (same net message, same
+  // adminResult handling/toast), just reached without leaving Home. A
+  // plain text input rather than a password field, so it reads as a
+  // message box first and an admin login second.
+  $('[data-action="toggle-admin-chat"]').addEventListener('click', () => {
+    sfx.click();
+    const form = $('[data-admin-chat-form]');
+    form.hidden = !form.hidden;
+    if (!form.hidden) $('[data-admin-chat-input]').focus();
+  });
+  $('[data-admin-chat-form]').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('[data-admin-chat-input]');
+    const message = input.value.trim();
+    input.value = '';
+    if (!message) return;
+    adminPasswordCache = message;
+    net.send({ t: 'admin', password: adminPasswordCache });
+  });
   $('[data-action="admin-grant-coins"]').addEventListener('click', () => {
     if (!isAdminSession) return;
     addCoins(1000);

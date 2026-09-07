@@ -436,9 +436,14 @@ On Render: **Dashboard &rarr; your service &rarr; Environment &rarr; Add
 Environment Variable**, key `ADMIN_PASSWORD`. If it's unset, admin login is
 disabled entirely -- nobody can log in as admin at all, including you.
 
-Log in from **Settings &rarr; Admin** with that password. It's a per-session
-grant (like everything else, not persisted) -- you re-enter it each time you
-open the game. Admin lets you:
+Log in from **Settings &rarr; Admin** with that password, or from
+**Home &rarr; Talk to Admin** -- a small button at the bottom of the home
+screen that opens a plain text box. It's the exact same login underneath
+(the same message to the server, the same result), just reachable without
+leaving Home: whatever gets typed there is checked as the admin password,
+right alongside the Settings form. It's a per-session grant (like
+everything else, not persisted) -- you re-enter it each time you open the
+game. Admin lets you:
 
 - Wear any skin or trail for the session, as a preview -- it doesn't purchase
   or permanently unlock anything, so it goes away if you lose admin.
