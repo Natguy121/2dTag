@@ -12,7 +12,12 @@ import { profile } from './storage.js';
 
 const CHAR_SCALE = 3.2;
 const CHAR_W = 28 * CHAR_SCALE;
-const RUN_TIME = 0.85; // seconds for each runner to close the gap
+// Scales every timing in this file (the run-in, the particle linger, and
+// every letter's cue below) together, so the whole sequence gets slower or
+// faster as one -- rather than the run staying quick while the letters
+// alone dragged, or vice versa.
+const SLOWDOWN = 1.5;
+const RUN_TIME = 0.85 * SLOWDOWN; // seconds for each runner to close the gap
 
 let ctx = null;
 let particles = null;
@@ -106,7 +111,7 @@ export function play(container, onFinish) {
     setTimeout(() => {
       container.hidden = true;
       onFinish();
-    }, 400);
+    }, 400 * SLOWDOWN);
   }
 
   container.addEventListener('click', finish);
@@ -127,15 +132,15 @@ export function play(container, onFinish) {
     // Once the crash has happened and its particle burst has had a moment
     // to read, the canvas has nothing left to show -- stop redrawing it
     // rather than looping forever on an empty frame.
-    if (!collided || time - collideAt < 0.6) raf = requestAnimationFrame(loop);
+    if (!collided || time - collideAt < 0.6 * SLOWDOWN) raf = requestAnimationFrame(loop);
   }
   raf = requestAnimationFrame(loop);
 
   const runMs = RUN_TIME * 1000;
-  schedule(() => letters[0].classList.add('is-in'), runMs + 100);   // "2" -- right at the crash
-  schedule(() => letters[1].classList.add('is-in'), runMs + 550);   // "D" -- out of nowhere
-  schedule(() => letters[2].classList.add('is-in'), runMs + 950);   // "T"
-  schedule(() => letters[3].classList.add('is-in'), runMs + 1120);  // "A"
-  schedule(() => letters[4].classList.add('is-in'), runMs + 1290);  // "G"
-  schedule(finish, runMs + 2200);
+  schedule(() => letters[0].classList.add('is-in'), runMs + 100 * SLOWDOWN);   // "2" -- right at the crash
+  schedule(() => letters[1].classList.add('is-in'), runMs + 550 * SLOWDOWN);   // "D" -- out of nowhere
+  schedule(() => letters[2].classList.add('is-in'), runMs + 950 * SLOWDOWN);   // "T"
+  schedule(() => letters[3].classList.add('is-in'), runMs + 1120 * SLOWDOWN);  // "A"
+  schedule(() => letters[4].classList.add('is-in'), runMs + 1290 * SLOWDOWN);  // "G"
+  schedule(finish, runMs + 2200 * SLOWDOWN);
 }

@@ -230,7 +230,7 @@ body {
   justify-content: center;
   background: var(--bg);
   cursor: pointer;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.6s ease;
 }
 .intro-overlay.is-leaving { opacity: 0; }
 
@@ -250,7 +250,7 @@ body {
 }
 
 /* "2": pops right at the moment of the crash. */
-.intro-letter-2.is-in { animation: intro-pop-2 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.intro-letter-2.is-in { animation: intro-pop-2 0.53s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 @keyframes intro-pop-2 {
   0% { opacity: 0; transform: scale(0.2) rotate(-8deg); }
   60% { opacity: 1; transform: scale(1.15) rotate(3deg); }
@@ -259,7 +259,7 @@ body {
 
 /* "D": appears from nowhere -- a bright flash shrinking down to size,
    rather than growing in, so it reads as materializing, not sliding in. */
-.intro-letter-d.is-in { animation: intro-pop-d 0.3s ease-out forwards; }
+.intro-letter-d.is-in { animation: intro-pop-d 0.45s ease-out forwards; }
 @keyframes intro-pop-d {
   0% { opacity: 0; transform: scale(2.4); filter: brightness(3); }
   50% { opacity: 1; transform: scale(0.85); filter: brightness(1.8); }
@@ -269,9 +269,9 @@ body {
 /* "T", "A", "G": jump in like clumsy people -- fall from above, overshoot
    past their landing spot, wobble, then settle. Same shape for all three,
    slightly different overshoot per letter so they don't land in lockstep. */
-.intro-letter-t.is-in { animation: intro-clumsy-jump-a 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
-.intro-letter-a.is-in { animation: intro-clumsy-jump-b 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
-.intro-letter-g.is-in { animation: intro-clumsy-jump-c 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
+.intro-letter-t.is-in { animation: intro-clumsy-jump-a 0.75s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
+.intro-letter-a.is-in { animation: intro-clumsy-jump-b 0.75s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
+.intro-letter-g.is-in { animation: intro-clumsy-jump-c 0.75s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
 
 @keyframes intro-clumsy-jump-a {
   0% { opacity: 0; transform: translateY(-70px) rotate(-18deg) scale(0.9); }
