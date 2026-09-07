@@ -20,6 +20,13 @@ const FRANKENSTEIN_SKIN = {
 // same number instead of a second hardcoded copy drifting out of sync.
 export const PUSH_ANIM_DURATION = 0.3;
 
+// Metal's slam: the wind-up pose plays for the full C.SLAM_WINDUP (the
+// actual server timer, so the animation always matches how long the
+// player is actually rooted in place) -- but the brief slam-down impact
+// pose afterward is purely cosmetic timing, exported the same way as
+// PUSH_ANIM_DURATION above.
+export const SLAM_IMPACT_ANIM_DURATION = 0.4;
+
 /**
  * The Chameleon skin: a genuinely different silhouette instead of the usual
  * rounded-rect blob -- an egg-shaped body, a curled tail, a serrated dorsal
@@ -336,6 +343,8 @@ export function drawCharacter(ctx, x, y, opts = {}) {
     flying = false,
     huge = false,
     shrink = false,
+    slamWindupT = null,
+    slamImpactT = null,
   } = opts;
 
   // Frankenstein's Lab: whoever is "it" fully transforms into the monster,
@@ -629,6 +638,59 @@ export function drawCharacter(ctx, x, y, opts = {}) {
       ctx.globalAlpha *= 0.5 + reach * 0.4;
       ctx.beginPath();
       ctx.arc(tipX, armY, bw * 0.17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Metal's slam, wind-up half: both arms rise from the sides and
+    // converge overhead as a charge builds between the hands -- a big,
+    // committed animation matching how long the player is actually rooted
+    // in place for (see server/room.js's resolveSlam()). Drawn outside the
+    // body's own clip region like Ironboy's punch above.
+    if (slamWindupT != null) {
+      const k = Math.max(0, Math.min(1, slamWindupT / C.SLAM_WINDUP));
+      const armY = by - bodyH * (0.1 + k * 0.15);
+      const spread = bw * 0.5 * (1 - k * 0.75);
+      ctx.save();
+      ctx.strokeStyle = skin.trim;
+      ctx.lineWidth = Math.max(2, bw * 0.14);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(bx, by + bodyH * 0.3);
+      ctx.lineTo(bx + bw / 2 - spread, armY);
+      ctx.moveTo(bx + bw, by + bodyH * 0.3);
+      ctx.lineTo(bx + bw / 2 + spread, armY);
+      ctx.stroke();
+      ctx.fillStyle = skin.eye;
+      ctx.globalAlpha *= 0.35 + k * 0.55;
+      ctx.beginPath();
+      ctx.arc(bx + bw / 2, armY, bw * (0.1 + k * 0.16), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Metal's slam, impact half: arms snap down to the ground and a bright
+    // flash flares at their feet, fading fast -- the actual map-wide
+    // shockwave ring is drawn separately, in world space, by game.js's
+    // drawSlamShockwaves() so it reads at the right scale regardless of
+    // this character's own on-screen size.
+    if (slamImpactT != null) {
+      const k = Math.max(0, Math.min(1, slamImpactT / SLAM_IMPACT_ANIM_DURATION));
+      ctx.save();
+      ctx.globalAlpha *= Math.max(0, 1 - k * 1.4);
+      ctx.strokeStyle = skin.trim;
+      ctx.lineWidth = Math.max(2, bw * 0.16);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(bx, by + bodyH * 0.3);
+      ctx.lineTo(bx - bw * 0.25, by + bodyH);
+      ctx.moveTo(bx + bw, by + bodyH * 0.3);
+      ctx.lineTo(bx + bw * 1.25, by + bodyH);
+      ctx.stroke();
+      ctx.fillStyle = skin.eye;
+      ctx.globalAlpha *= 0.8;
+      ctx.beginPath();
+      ctx.arc(bx + bw / 2, by + bodyH, bw * (0.9 - k * 0.6), 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }

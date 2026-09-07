@@ -240,20 +240,21 @@ that is already in progress.
 
 ## Skins, trails & coins
 
-76 characters, 21 unlocked from the start. With three deliberate exceptions
-(Web Weaver, Ironboy, and Mini Man, below), no skin is faster or bigger than
-another, and the palette is deliberately wide and vivid (no black or
-near-black skin exists) -- **Huge**, below, only ever looks bigger, it never
-actually is. Every card in the shop carries a rarity badge too -- Common,
-Uncommon, Rare, Epic, Legendary, or Mythic for the four ability skins --
-derived straight from how a skin unlocks (free, a stat grind, or a coin
-price) rather than a separate hand-set value, so it can never drift out of
-sync with the actual unlock rule. The rest unlock two ways:
+77 characters, 21 unlocked from the start. With four deliberate exceptions
+(Web Weaver, Ironboy, Mini Man, and Metal, below), no skin is faster or
+bigger than another, and the palette is deliberately wide and vivid (no
+black or near-black skin exists) -- **Huge**, below, only ever looks
+bigger, it never actually is. Every card in the shop carries a rarity badge
+too -- Common, Uncommon, Rare, Epic, Legendary, or Mythic for the five
+ability skins -- derived straight from how a skin unlocks (free, a stat
+grind, or a coin price) rather than a separate hand-set value, so it can
+never drift out of sync with the actual unlock rule. The rest unlock two
+ways:
 
 - **Play stats** (18 skins): from a quick one like 10 rounds played up to a
   grind like 80 tags, including a couple gated on total lifetime coins
   earned rather than anything done in a single round.
-- **Coin shop** (37 skins, 120-7000 coins): earned by playing rounds. Every
+- **Coin shop** (38 skins, 120-7000 coins): earned by playing rounds. Every
   player gets a payout at the end of a round -- a base amount, more for each
   tag made, more for time spent evading, and a placement bonus for finishing
   top 3 -- so even a rough round earns something. Upside Down doubles that
@@ -308,6 +309,18 @@ sync with the actual unlock rule. The rest unlock two ways:
   Web Weaver and Ironboy, this is a genuine gameplay exception, not just a
   look: the speed boost is real.
 
+  At 6000 coins is **Metal**: an original thunder-god warrior (not a
+  licensed character) in metallic silver armor with a red cape trim and a
+  crackling electric-yellow visor glow. Tap **Q** (rebindable, an
+  on-screen hammer button on touch) to slam the ground: a big wind-up
+  animation roots you in place for 0.7 seconds -- both arms rising
+  overhead as a charge builds between your hands -- then the ground slams
+  and every other player on the map, no matter how far away, is launched
+  toward whichever edge of the map is nearer to them in a golden shockwave,
+  followed by a 12-second cooldown before you can slam again. The biggest
+  gameplay exception in the game: Ironboy's push only reaches nearby
+  players, Metal's slam reaches everyone.
+
 **Trails** work the same way as a second, independent cosmetic slot: a
 colored particle trickle behind you while moving fast, equipped separately
 from your skin so the two mix and match. 27 options (including "None"), same
@@ -318,9 +331,9 @@ Progress (stats, coins, owned skins/trails) lives in `localStorage`, matching
 everything else client-side in this app -- nobody's coin balance is a real
 account, just like nobody's win count was before this.
 
-Collect all 76 of them (every stat and coin-shop skin -- not counting the
+Collect all 77 of them (every stat and coin-shop skin -- not counting the
 completionist surprise below) as a genuine player, not an admin preview, and
-a one-time celebration pops with a 77th skin, **Legend**, unlocked no other
+a one-time celebration pops with a 78th skin, **Legend**, unlocked no other
 way. It never appears in the shop grid at all until you've actually earned
 it, so finding out it exists is part of the reward.
 

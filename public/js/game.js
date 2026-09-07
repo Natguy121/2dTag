@@ -19,7 +19,7 @@ import { sfx } from './audio.js';
 import * as music from './music.js';
 import {
   drawBackground, drawMap, drawWalls, drawCharacter, drawRoundStartRainbow, drawWaterLevel, Particles, formatTime,
-  PUSH_ANIM_DURATION,
+  PUSH_ANIM_DURATION, SLAM_IMPACT_ANIM_DURATION,
 } from './render.js';
 
 const INTERP_DELAY = 0.1; // seconds of buffer for remote players
@@ -57,6 +57,8 @@ export class Game {
     this.waves = null; // { stage, timer, index, nextLevel, remaining } on map.waveSurvival, else null
     this.wallState = []; // [x, y, w, h] player-placed walls (map.wallBuilder), from the last snapshot
     this.pushAnims = new Map(); // id -> this.time when their push last fired, for the punch-out animation
+    this.slamStartAnims = new Map(); // id -> this.time when their slam wind-up began, for the arm-raise pose
+    this.slamImpactAnims = new Map(); // id -> this.time when their slam last landed, for the slam-down pose
     this.resultsShown = false;
 
     this.body = createBody();
@@ -71,6 +73,7 @@ export class Game {
     this.particles = new Particles();
     this.shotBeams = []; // {x1, y1, x2, y2, age, life, hit} -- Crossfire Yard laser flashes
     this.thrownBoxes = []; // {x1, y1, x2, y2, age, life, hit} -- Loot Hollow's thrown items
+    this.slamWaves = []; // {x, y, age, life} -- Metal's ground-slam shockwave rings
     this.boxBlackoutTimer = 0; // counts down from CANDY_FREEZE_TIME when a thrown item hits YOU
     this.shake = 0;
     this.cam = { x: 0, y: 0, scale: 1, ready: false };
@@ -454,6 +457,41 @@ export class Game {
         case 'shrinkEnd':
           if (mine) sfx.shrinkEnd();
           break;
+        case 'slamStart':
+          // Big committed wind-up -- the arm-raise pose itself is driven by
+          // this.slamStartAnims in drawPlayer(), timed against the real
+          // SLAM_WINDUP server timer so the animation always matches how
+          // long they're actually rooted in place for.
+          this.slamStartAnims.set(ev.id, this.time);
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y - 10, 10, {
+              color: '#ffe066', speed: 60, life: 0.5, size: 2.5, gravity: -40, spread: Math.PI * 2,
+            });
+          }
+          if (mine) sfx.slamCharge(); else sfx.slamChargeFar();
+          break;
+        case 'slamImpact': {
+          // The impact pose itself is driven by this.slamImpactAnims in
+          // drawPlayer(); the map-wide shockwave ring is a separate
+          // world-space entry in this.slamWaves, drawn by
+          // drawSlamShockwaves(). Every actual knockback already happened
+          // server-side -- this is purely the moment everyone sees/feels it.
+          this.slamImpactAnims.set(ev.by, this.time);
+          this.slamWaves.push({
+            x: ev.x + C.PLAYER_W / 2, y: ev.y + C.PLAYER_H, age: 0, life: 0.6,
+          });
+          if (profile.particles) {
+            this.particles.spawn(ev.x + C.PLAYER_W / 2, ev.y + C.PLAYER_H, 30, {
+              color: '#ffe066', speed: 320, life: 0.55, size: 4, gravity: 500, spread: Math.PI * 2,
+            });
+          }
+          const hitMe = ev.targets?.includes(this.youId);
+          if (profile.shake) this.shake = Math.max(this.shake, mine || hitMe ? 20 : 11);
+          sfx.slamImpact();
+          if (mine) this.showCenter('SLAM!', 1.1);
+          else if (hitMe) this.showCenter('LAUNCHED!', 1.1);
+          break;
+        }
         case 'wallPlaced':
           // No client-side prediction for this one (like the gun's shot) --
           // this event is the first time even the placer hears/sees it land.
@@ -718,6 +756,11 @@ export class Game {
       b.age += dt;
       if (b.age >= b.life) this.thrownBoxes.splice(i, 1);
     }
+    for (let i = this.slamWaves.length - 1; i >= 0; i--) {
+      const w = this.slamWaves[i];
+      w.age += dt;
+      if (w.age >= w.life) this.slamWaves.splice(i, 1);
+    }
     this.shake = Math.max(0, this.shake - dt * 40);
     this.boxBlackoutTimer = Math.max(0, this.boxBlackoutTimer - dt);
 
@@ -950,6 +993,7 @@ export class Game {
 
     this.drawShotBeams(ctx);
     this.drawThrownBoxes(ctx);
+    this.drawSlamShockwaves(ctx);
     this.particles.draw(ctx);
     ctx.restore();
 
@@ -1058,6 +1102,27 @@ export class Game {
     }
   }
 
+  /** Metal's ground slam: a fast-expanding, fading ring in world space at
+   * the point of impact -- everyone on the map already got launched
+   * server-side by the time this event arrives, so this is purely the
+   * visual "the ground just shook" cue, not something anyone reacts to. */
+  drawSlamShockwaves(ctx) {
+    for (const w of this.slamWaves) {
+      const k = Math.min(1, w.age / w.life);
+      const radius = 40 + k * 900;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - k) * 0.8;
+      ctx.strokeStyle = '#ffe066';
+      ctx.lineWidth = Math.max(1, 10 * (1 - k));
+      ctx.shadowColor = '#ffe066';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.ellipse(w.x, w.y, radius, radius * 0.25, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   drawPlayer(ctx, x, y, p, meta, isSelf = false, id = null) {
     const it = !!(p.flags & 2);
     const immune = !!(p.flags & 4);
@@ -1071,6 +1136,7 @@ export class Game {
     const huge = !!(p.flags & 1024);
     const shrunk = !!(p.flags & 2048);
     const holdingBox = !!(p.flags & 4096);
+    const slamming = !!(p.flags & 8192);
     const power = p.powerT > 0 ? C.ORB_POWERS[p.power - 1] : null;
 
     // Blackout: the tagger vanishes to everyone else while invisible -- no
@@ -1168,6 +1234,15 @@ export class Game {
     const pushFiredAt = id != null ? this.pushAnims.get(id) : undefined;
     const pushT = pushFiredAt != null ? this.time - pushFiredAt : null;
 
+    // Metal's slam: windup is gated on the live `slamming` flag (the
+    // authoritative server state) rather than elapsed time alone, so a
+    // late-arriving event can never leave a stale pose stuck on screen;
+    // the elapsed time itself just drives how far into the pose to render.
+    const slamStartFiredAt = id != null ? this.slamStartAnims.get(id) : undefined;
+    const slamWindupT = slamming && slamStartFiredAt != null ? this.time - slamStartFiredAt : null;
+    const slamImpactFiredAt = id != null ? this.slamImpactAnims.get(id) : undefined;
+    const slamImpactT = slamImpactFiredAt != null ? this.time - slamImpactFiredAt : null;
+
     if (huge) {
       // The actual size increase: scale the whole drawing up around the
       // feet so it grows upward from the ground instead of from its
@@ -1206,6 +1281,8 @@ export class Game {
       flying,
       huge,
       shrink: shrunk,
+      slamWindupT: slamWindupT != null && slamWindupT < C.SLAM_WINDUP ? slamWindupT : null,
+      slamImpactT: slamImpactT != null && slamImpactT < SLAM_IMPACT_ANIM_DURATION ? slamImpactT : null,
     });
 
     if (huge) ctx.restore();

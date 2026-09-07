@@ -79,6 +79,7 @@ function showScreen(name) {
     $('[data-shrink-btn]').hidden = !getSkin(profile.skin)?.shrinkAbility;
     $('[data-box-btn]').hidden = !game.map.mysteryBoxes;
     $('[data-throw-btn]').hidden = !game.map.mysteryBoxes;
+    $('[data-slam-btn]').hidden = !getSkin(profile.skin)?.slamAbility;
     lockLandscape();
   } else if (game) {
     game.stop();
@@ -933,6 +934,7 @@ const KEY_LABELS = {
   transform: 'Transform (Huge skin)',
   shrink: 'Shrink (Mini Man skin)',
   box: 'Open mystery box (Loot Hollow)', throwItem: 'Throw item (Loot Hollow)',
+  slam: 'Ground slam (Metal skin)',
 };
 
 function renderKeybinds() {

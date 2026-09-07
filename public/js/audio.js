@@ -194,6 +194,25 @@ export const sfx = {
       freq: 500, to: 200, dur: 0.12, type: 'triangle', gain: 0.1, delay: 0.04,
     });
   },
+  // Metal: a rising electric charge building for the whole SLAM_WINDUP
+  // wind-up, so the impact always feels earned rather than instant.
+  slamCharge: () => {
+    blip({ freq: 200, to: 900, dur: 0.6, type: 'sawtooth', gain: 0.1 });
+    noise({ dur: 0.5, gain: 0.08, freq: 500, delay: 0.15 });
+  },
+  // A quieter, shorter cue heard when someone ELSE winds up.
+  slamChargeFar: () => {
+    blip({ freq: 200, to: 600, dur: 0.4, type: 'sawtooth', gain: 0.05 });
+  },
+  // A huge ground-shaking boom -- loud enough to read as a map-wide event
+  // everyone should hear, not just a local hit.
+  slamImpact: () => {
+    blip({ freq: 90, to: 40, dur: 0.5, type: 'square', gain: 0.22 });
+    noise({ dur: 0.3, gain: 0.18, freq: 300 });
+    blip({
+      freq: 60, to: 30, dur: 0.35, type: 'sine', gain: 0.16, delay: 0.05,
+    });
+  },
   // Musical Chairs: a harsh needle-scratch the instant the music cuts out.
   chairsStop: () => {
     noise({ dur: 0.18, gain: 0.18, freq: 1800 });

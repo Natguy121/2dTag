@@ -184,6 +184,22 @@ export const SHRINK_ZOOM = 1.7;
 export const BOX_RESPAWN_TIME = 12;
 export const BOX_THROW_RANGE = 480;
 
+// Metal's exclusive slam ability (gated on the player's equipped skin -- see
+// shared/skins.js's slamAbility flag, and Room.resolveSlam() in
+// server/room.js). Tapping the slam input roots them in place for
+// SLAM_WINDUP seconds of wind-up animation, then slams the ground: every
+// other eligible player on the map (unlimited range, unlike Ironboy's
+// PUSH_RANGE) is launched horizontally at SLAM_KNOCKBACK_SPEED toward
+// whichever edge of the map is nearer to them, plus a small SLAM_UPKICK
+// pop so it reads as a shockwave lifting them off their feet. Then
+// SLAM_COOLDOWN seconds before it can trigger again. A real (and the
+// biggest) gameplay exception in the game, alongside the swing/push/fly/
+// shrink ones.
+export const SLAM_WINDUP = 0.7;
+export const SLAM_COOLDOWN = 12;
+export const SLAM_KNOCKBACK_SPEED = 1500;
+export const SLAM_UPKICK = 320;
+
 // Round flow.
 export const COUNTDOWN_TIME = 3;
 export const ROUND_TIME_DEFAULT = 150;

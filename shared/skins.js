@@ -1,18 +1,22 @@
 // Skin catalogue. The server only ever stores/echoes a skin id; all of the
 // drawing happens on the client from this table. Skins are purely cosmetic --
 // nothing here changes movement, speed, or hitbox, so owning more of them is
-// never a gameplay advantage, just a look. There are four deliberate
+// never a gameplay advantage, just a look. There are five deliberate
 // exceptions: `swingAbility` (Web Weaver only) gates stepBody's
 // opts.canSwing, giving that one skin a real web-swing move -- see
 // shared/physics.js's updateSwing(); `pushAbility` (Ironboy only) gates
 // server/room.js's resolvePush(), letting that one skin shove every other
 // player away on a cooldown; `flyAbility` (Ironboy only) gates stepBody's
 // opts.canFly, letting Ironboy hold jump to fly for a few seconds on a
-// cooldown instead of jumping normally; and `shrinkAbility` (Mini Man only)
+// cooldown instead of jumping normally; `shrinkAbility` (Mini Man only)
 // gates Room.resolveShrink(), a real speed boost while shrunk -- see
-// shared/constants.js's SHRINK_*. See the README's note on all four.
+// shared/constants.js's SHRINK_*; and `slamAbility` (Metal only) gates
+// Room.resolveSlam(), a big wind-up-then-slam animation that, on impact,
+// launches every other player on the map toward whichever edge is nearer
+// them -- see shared/constants.js's SLAM_*. See the README's note on all
+// five.
 //
-// `transformAbility` (Huge only) is a fifth flag, but NOT a cosmetic
+// `transformAbility` (Huge only) is a sixth flag, but NOT a cosmetic
 // exception -- Room.resolveTransform() only ever changes how Huge is
 // rendered (HUGE_SCALE times bigger, a fiercer look) for TRANSFORM_DURATION
 // seconds, never movement, speed or hitbox, same promise every other skin
@@ -217,6 +221,20 @@ export const SKINS = [
     shrinkAbility: true,
     unlock: { type: 'coins', price: 7000, label: 'Coin shop' } },
 
+  // Original thunder-god warrior skin (not a licensed character) -- a
+  // metallic silver-armored look with a red cape trim and a crackling
+  // electric-yellow visor glow, reusing the existing 'visor' pattern for
+  // the resting look. Its slamAbility triggers Room.resolveSlam(): tap Q to
+  // wind up for SLAM_WINDUP seconds (see the arm-raise overlay in
+  // render.js, driven by the slamWindupT/slamImpactT opts alongside
+  // Ironboy's own pushT overlay), then slam the ground -- every other
+  // player on the map is launched toward whichever edge of the map is
+  // nearer to them, a shockwave with unlimited range, unlike Ironboy's
+  // short-range push.
+  { id: 'metal',      name: 'Metal',        body: '#9aa4b8', dark: '#454e60', trim: '#c81e2d', eye: '#ffe066', pattern: 'visor',
+    slamAbility: true,
+    unlock: { type: 'coins', price: 6000, label: 'Coin shop' } },
+
   // The completionist surprise: reuses the 'rainbow' pattern's animated
   // hue-cycling body (same as Prism) with its own gold/white finish so it
   // still reads as a distinct, one-of-a-kind trophy rather than a second
@@ -275,7 +293,8 @@ export function getRarity(skin) {
   // exactly one way.
   if (skin.unlock?.type === 'completion') return 'secret';
   // The exclusive-ability skins are a cut above everything else money can buy.
-  if (skin.swingAbility || skin.pushAbility || skin.flyAbility || skin.transformAbility || skin.shrinkAbility) {
+  if (skin.swingAbility || skin.pushAbility || skin.flyAbility || skin.transformAbility || skin.shrinkAbility
+    || skin.slamAbility) {
     return 'mythic';
   }
   if (!skin.unlock) return 'common';

@@ -7,7 +7,7 @@ import { encodeInput } from '/shared/physics.js';
 const held = new Set();
 const touch = {
   left: false, right: false, jump: false, down: false, shoot: false, swing: false, build: false, push: false,
-  transform: false, shrink: false, box: false, throwItem: false,
+  transform: false, shrink: false, box: false, throwItem: false, slam: false,
 };
 let capturing = false;
 
@@ -26,6 +26,7 @@ const ALIASES = {
   shrink: ['KeyQ'],
   box: ['KeyQ'],
   throwItem: ['KeyR'],
+  slam: ['KeyQ'],
 };
 
 function isDown(action) {
@@ -50,6 +51,7 @@ export function currentBits() {
     shrink: isDown('shrink'),
     box: isDown('box'),
     throwItem: isDown('throwItem'),
+    slam: isDown('slam'),
   });
 }
 
@@ -62,7 +64,7 @@ export function setCapturing(on) {
 export function clear() {
   held.clear();
   touch.left = touch.right = touch.jump = touch.down = touch.shoot = touch.swing = touch.build = touch.push
-    = touch.transform = touch.shrink = touch.box = touch.throwItem = false;
+    = touch.transform = touch.shrink = touch.box = touch.throwItem = touch.slam = false;
 }
 
 export function init({ onEscape } = {}) {

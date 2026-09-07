@@ -981,6 +981,8 @@ body {
 .touch-box:active, .touch-box.is-down { background: rgba(255, 213, 79, 0.4); }
 .touch-throw { font-size: 26px; background: rgba(20, 60, 90, 0.4); border-color: rgba(95, 208, 255, 0.5); }
 .touch-throw:active, .touch-throw.is-down { background: rgba(95, 208, 255, 0.4); }
+.touch-slam { font-size: 26px; background: rgba(80, 60, 20, 0.4); border-color: rgba(255, 224, 102, 0.5); }
+.touch-slam:active, .touch-slam.is-down { background: rgba(255, 224, 102, 0.4); }
 
 /* ----------------------------------------------------- rotate prompt */
 

@@ -157,6 +157,10 @@ export class Room {
       holdingBox: false,
       prevBox: false,
       prevThrow: false,
+      slamming: false,
+      slamTimer: 0,
+      slamCooldown: 0,
+      prevSlam: false,
       invisCycle: 0,
       invisible: false,
       candyFreeze: 0,
@@ -342,6 +346,10 @@ export class Room {
       p.holdingBox = false;
       p.prevBox = false;
       p.prevThrow = false;
+      p.slamming = false;
+      p.slamTimer = 0;
+      p.slamCooldown = 0;
+      p.prevSlam = false;
       p.invisCycle = 0;
       p.invisible = false;
       p.candyFreeze = 0;
@@ -615,7 +623,11 @@ export class Room {
       // still simulated (gravity still applies) but can't steer anymore.
       const chairedOut = map.musicalChairs && this.chairEliminated.has(p.id);
       const wavedOut = map.waveSurvival && this.waveEliminated.has(p.id);
-      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 || chairedOut || wavedOut ? 0 : p.inputBits;
+      // Metal's slam roots them in place for the whole wind-up animation --
+      // a big committed attack, not something you can cancel by walking
+      // away from -- see resolveSlam() for the timer/impact itself.
+      const bits = frozen || (seekerFrozen && p.it) || p.candyFreeze > 0 || chairedOut || wavedOut || p.slamming
+        ? 0 : p.inputBits;
       let speedMult = p.it && this.state === 'playing' ? C.TAGGER_SPEED_MULT : 1;
       let jumpMult = 1;
       if (p.powerTimer > 0 && p.powerType === 'speed') speedMult *= C.ORB_SPEED_MULT;
@@ -702,6 +714,7 @@ export class Room {
       this.resolveShrink(map, dt);
       this.resolveBoxes(map);
       this.resolveThrows(map);
+      this.resolveSlam(map, dt);
     }
 
     // Timers.
@@ -1051,6 +1064,74 @@ export class Room {
     }
   }
 
+  /** Metal's exclusive slam ability (gated on the player's equipped skin --
+   * see shared/skins.js's slamAbility flag), works on every map exactly
+   * like the swing/push/fly/shrink abilities above. Tapping the slam input
+   * roots them in place for SLAM_WINDUP seconds (see step()'s `bits`
+   * computation) while the wind-up animation plays, then slams the ground
+   * -- see slamShockwave() for the impact itself -- then SLAM_COOLDOWN
+   * seconds before it can trigger again. An eliminated player (Musical
+   * Chairs/Wave Survival) cancels a slam already in progress rather than
+   * letting a spectator still land the impact. */
+  resolveSlam(map, dt) {
+    for (const p of this.players.values()) {
+      if (!SKIN_BY_ID[p.skin]?.slamAbility) continue;
+      const eliminated = (map.musicalChairs && this.chairEliminated.has(p.id))
+        || (map.waveSurvival && this.waveEliminated.has(p.id));
+
+      const input = decodeInput(p.inputBits);
+      const pressed = input.slam && !p.prevSlam;
+      p.prevSlam = input.slam;
+
+      if (p.slamming) {
+        p.slamTimer -= dt;
+        if (eliminated) {
+          p.slamming = false;
+          p.slamCooldown = C.SLAM_COOLDOWN;
+        } else if (p.slamTimer <= 0) {
+          p.slamming = false;
+          p.slamCooldown = C.SLAM_COOLDOWN;
+          this.slamShockwave(p, map);
+        }
+        continue;
+      }
+
+      p.slamCooldown = Math.max(0, p.slamCooldown - dt);
+      if (!pressed || p.respawn > 0 || eliminated || p.slamCooldown > 0) continue;
+
+      p.slamming = true;
+      p.slamTimer = C.SLAM_WINDUP;
+      this.pushEvent({ type: 'slamStart', id: p.id, x: p.body.x, y: p.body.y });
+    }
+  }
+
+  /** The impact moment of Metal's slam: every other eligible player on the
+   * map -- unlimited range, unlike Ironboy's PUSH_RANGE -- gets launched
+   * horizontally at SLAM_KNOCKBACK_SPEED toward whichever edge of the map
+   * (left or right) is nearer to them, plus a small upward pop so it reads
+   * as a shockwave lifting them off their feet rather than a shove. Same
+   * eligibility filters as resolvePush(): no shielded, respawning or
+   * already-eliminated targets. */
+  slamShockwave(p, map) {
+    const midX = map.width / 2;
+    const hitIds = [];
+    for (const t of this.players.values()) {
+      if (t.id === p.id || t.respawn > 0) continue;
+      if (map.musicalChairs && this.chairEliminated.has(t.id)) continue;
+      if (map.waveSurvival && this.waveEliminated.has(t.id)) continue;
+      if (t.powerTimer > 0 && t.powerType === 'shield') continue;
+
+      const dir = (t.body.x + C.PLAYER_W / 2) < midX ? -1 : 1;
+      t.body.vx = dir * C.SLAM_KNOCKBACK_SPEED;
+      t.body.vy = -C.SLAM_UPKICK;
+      t.body.swinging = false;
+      hitIds.push(t.id);
+    }
+    this.pushEvent({
+      type: 'slamImpact', by: p.id, x: p.body.x, y: p.body.y, targets: hitIds,
+    });
+  }
+
   /** Invisibility maps: the tagger cycles visible/invisible on a repeating
    * timer, always starting visible right when they become "it". Also
    * applies the 'invis' power-orb roll, which works the same way (hidden
@@ -1260,6 +1341,7 @@ export class Room {
       if (p.transformed) flags |= 1024;
       if (p.shrunk) flags |= 2048;
       if (p.holdingBox) flags |= 4096;
+      if (p.slamming) flags |= 8192;
       players.push([
         p.id,
         Math.round(p.body.x * 100) / 100,

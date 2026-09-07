@@ -20,6 +20,7 @@ export const DEFAULT_KEYS = {
   shrink: 'KeyQ',
   box: 'KeyQ',
   throwItem: 'KeyR',
+  slam: 'KeyQ',
 };
 
 const DEFAULTS = {

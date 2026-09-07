@@ -17,15 +17,16 @@ export const IN_TRANSFORM = 256;
 export const IN_SHRINK = 512;
 export const IN_BOX = 1024;
 export const IN_THROW = 2048;
-export const INPUT_MASK = 4095; // every bit above, OR'd together
+export const IN_SLAM = 4096;
+export const INPUT_MASK = 8191; // every bit above, OR'd together
 
 export function encodeInput({
-  left, right, jump, down, shoot, swing, build, push, transform, shrink, box, throwItem,
+  left, right, jump, down, shoot, swing, build, push, transform, shrink, box, throwItem, slam,
 }) {
   return (left ? IN_LEFT : 0) | (right ? IN_RIGHT : 0) | (jump ? IN_JUMP : 0)
     | (down ? IN_DOWN : 0) | (shoot ? IN_SHOOT : 0) | (swing ? IN_SWING : 0) | (build ? IN_BUILD : 0)
     | (push ? IN_PUSH : 0) | (transform ? IN_TRANSFORM : 0) | (shrink ? IN_SHRINK : 0)
-    | (box ? IN_BOX : 0) | (throwItem ? IN_THROW : 0);
+    | (box ? IN_BOX : 0) | (throwItem ? IN_THROW : 0) | (slam ? IN_SLAM : 0);
 }
 
 export function decodeInput(bits) {
@@ -42,6 +43,7 @@ export function decodeInput(bits) {
     shrink: !!(bits & IN_SHRINK),
     box: !!(bits & IN_BOX),
     throwItem: !!(bits & IN_THROW),
+    slam: !!(bits & IN_SLAM),
   };
 }
 
