@@ -365,24 +365,34 @@ A fourth door on the home screen, next to Play, Skins and Settings: the
 required. Buy a badge and it opens the instant you pay for it -- unlike
 lucky blocks (earned passively, opened whenever you like), a badge is a
 one-click gamble, and a genuine coin sink once you own everything else in
-the game. Four tiers, each pricier with better odds than the last:
+the game.
 
-| Badge | Price | Mostly gets you |
-|---|---|---|
-| **Bronze** | 300 coins | Coins, with a decent shot at an Uncommon lucky block. |
-| **Silver** | 800 coins | Better lucky blocks, plus a small chance at a skin outright. |
-| **Gold** | 1800 coins | Great lucky blocks, a real shot at a skin, and a rare chance at an ability skin. |
-| **Platinum** | 4000 coins | The high roller -- nearly half the time, an ability skin outright. |
+**120 badges** -- deliberately more badges than there are skins in the
+entire game -- across 24 materials (Bronze, Silver, Gold, Platinum,
+Diamond, Emerald, Ruby, Sapphire, Amethyst, Obsidian, Titanium, Chrome,
+Crystal, Frost, Solar, Prism, Aurora, Void, Cosmic, Celestial, Nebula,
+Phoenix, Radiant and Mythic) each split into five numbered sub-tiers
+(I through V, a medal icon escalating to a trophy to a gem as the numeral
+climbs). Price climbs smoothly and predictably from badge to badge --
+100 coins for the very first (Bronze Badge I) up to roughly 58,500 for
+the very last (Mythic Badge V) -- and so do the odds: the cheapest badges
+are mostly a coin payout with a small shot at a low-tier lucky block,
+climbing through better lucky blocks and a growing skin chance, until the
+priciest badges carry a real, growing chance at an **ability skin**
+outright.
 
 Every badge's surprise lands in one of four categories: **coins** (a
-payout on the spot), a **lucky block** (added straight to your Lucky
-Blocks tab, same as a quest reward), a **skin** (a random not-yet-owned
-skin, any rarity short of Mythic), or -- the jackpot, and the whole reason
-to chase the pricier tiers -- an **ability skin** outright (Web Weaver,
-Ironboy, Huge, Mini Man or Metal, whichever of those five you don't
-already own). Run out of skins or ability skins left to win and that roll
-just converts to a coin payout instead, the same never-a-dead-pull
-philosophy lucky blocks already use.
+payout on the spot, scaled to that badge's own price), a **lucky block**
+(added straight to your Lucky Blocks tab, same as a quest reward -- which
+exact tier depends on how far up the 120-badge ladder that one sits), a
+**skin** (a random not-yet-owned skin, any rarity short of Mythic), or --
+the jackpot, locked out entirely for the cheapest badges and only
+opening up as the ladder climbs -- an **ability skin** outright (Web
+Weaver, Ironboy, Huge, Mini Man or Metal, whichever of those five you
+don't already own). Run out of skins or ability skins left to win and
+that roll just converts to a coin payout instead (scaled to the badge's
+price, so a top-tier badge's fallback is still a serious payout), the
+same never-a-dead-pull philosophy lucky blocks already use.
 
 ## Music
 

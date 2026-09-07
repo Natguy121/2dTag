@@ -859,53 +859,93 @@ function renderLuckyBlocks() {
 // The Badges shop (main menu): unlike lucky blocks (earned passively from
 // quests, opened whenever you like), a badge is bought outright with coins
 // and revealed the instant you buy it -- a repeatable coin sink once
-// someone owns everything else. Four tiers, each pricier and with better
-// odds than the last; a pool entry's `weight` is just relative, they don't
-// need to sum to 100. 'ability' pulls from exactly the same skins
-// getRarity() calls mythic (Web Weaver/Ironboy/Huge/Mini Man/Metal) -- the
-// jackpot tier, kept separate from the plain 'skin' pool so it stays rare.
-const BADGES = [
-  {
-    id: 'bronze', name: 'Bronze Badge', price: 300, color: '#cd7f32', icon: '\u{1F949}',
-    blurb: 'Mostly coins, a decent shot at an Uncommon lucky block.',
-    pool: [
-      { type: 'coins', weight: 70, min: 40, max: 150 },
-      { type: 'block', weight: 27, tier: 'uncommon' },
-      { type: 'block', weight: 3, tier: 'rare' },
-    ],
-  },
-  {
-    id: 'silver', name: 'Silver Badge', price: 800, color: '#c0c5ce', icon: '\u{1F948}',
-    blurb: 'Better lucky blocks, and a small chance at a skin outright.',
-    pool: [
-      { type: 'coins', weight: 40, min: 100, max: 300 },
-      { type: 'block', weight: 30, tier: 'rare' },
-      { type: 'block', weight: 20, tier: 'epic' },
-      { type: 'skin', weight: 10 },
-    ],
-  },
-  {
-    id: 'gold', name: 'Gold Badge', price: 1800, color: '#ffd700', icon: '\u{1F947}',
-    blurb: 'Great lucky blocks, a real shot at a skin, and even an ability.',
-    pool: [
-      { type: 'coins', weight: 20, min: 300, max: 700 },
-      { type: 'block', weight: 25, tier: 'epic' },
-      { type: 'block', weight: 25, tier: 'legendary' },
-      { type: 'skin', weight: 25 },
-      { type: 'ability', weight: 5 },
-    ],
-  },
-  {
-    id: 'platinum', name: 'Platinum Badge', price: 4000, color: '#7dd3ff', icon: '\u{1F3C6}',
-    blurb: 'The high roller -- nearly half the time, an ability skin outright.',
-    pool: [
-      { type: 'coins', weight: 10, min: 800, max: 1500 },
-      { type: 'block', weight: 15, tier: 'legendary' },
-      { type: 'skin', weight: 30 },
-      { type: 'ability', weight: 45 },
-    ],
-  },
+// someone owns everything else. Generated procedurally across
+// BADGE_MATERIALS x BADGE_SUBTIERS so there are comfortably MORE badges
+// than there are skins in the whole game (24 materials x 5 sub-tiers = 120,
+// versus SKINS.length around 77) without hand-authoring 120 separate
+// objects. Price climbs smoothly (~5.5% per badge, 100 coins up to
+// roughly 58,000 for the very last one) and so do the odds: a pool entry's
+// `weight` is just relative, entries don't need to sum to 100. 'ability'
+// pulls from exactly the same skins getRarity() calls mythic (Web Weaver/
+// Ironboy/Huge/Mini Man/Metal) -- the jackpot type, kept separate from the
+// plain 'skin' pool so it stays rare, and locked out entirely for the
+// cheapest ~12% of badges.
+const BADGE_MATERIALS = [
+  { name: 'Bronze', color: '#cd7f32' },
+  { name: 'Silver', color: '#c0c5ce' },
+  { name: 'Gold', color: '#ffd700' },
+  { name: 'Platinum', color: '#9fd8ff' },
+  { name: 'Diamond', color: '#b9f2ff' },
+  { name: 'Emerald', color: '#50c878' },
+  { name: 'Ruby', color: '#e0115f' },
+  { name: 'Sapphire', color: '#4d7fff' },
+  { name: 'Amethyst', color: '#9966cc' },
+  { name: 'Obsidian', color: '#8877ff' },
+  { name: 'Titanium', color: '#b0b0c0' },
+  { name: 'Chrome', color: '#d9d9e3' },
+  { name: 'Crystal', color: '#d7fbff' },
+  { name: 'Frost', color: '#aeefff' },
+  { name: 'Solar', color: '#ffb347' },
+  { name: 'Prism', color: '#ff8cf0' },
+  { name: 'Aurora', color: '#7dffcf' },
+  { name: 'Void', color: '#6c5ce7' },
+  { name: 'Cosmic', color: '#7b5cff' },
+  { name: 'Celestial', color: '#ffe9a8' },
+  { name: 'Nebula', color: '#ff6ec7' },
+  { name: 'Phoenix', color: '#ff6a3d' },
+  { name: 'Radiant', color: '#fff3b0' },
+  { name: 'Mythic', color: '#ff4d6d' },
 ];
+const BADGE_SUBTIERS = ['I', 'II', 'III', 'IV', 'V'];
+// Escalates within each material too -- a low-numeral badge looks like a
+// medal, a high-numeral one looks like a trophy or a gem.
+const BADGE_ICONS = ['\u{1F949}', '\u{1F948}', '\u{1F947}', '\u{1F3C6}', '\u{1F48E}'];
+const BADGE_BLOCK_TIERS = ['uncommon', 'rare', 'epic', 'legendary'];
+
+function badgeBlurb(t) {
+  if (t < 0.25) return 'Mostly coins, with a shot at a low-tier lucky block.';
+  if (t < 0.5) return 'Better lucky blocks, and a growing chance at a skin.';
+  if (t < 0.75) return 'Great lucky blocks, a real shot at a skin, and a rare ability chance.';
+  return 'High roller odds -- a strong shot at an ability skin outright.';
+}
+
+const BADGES = [];
+{
+  const total = BADGE_MATERIALS.length * BADGE_SUBTIERS.length;
+  let lastPrice = 0;
+  for (let mi = 0; mi < BADGE_MATERIALS.length; mi++) {
+    const material = BADGE_MATERIALS[mi];
+    for (let si = 0; si < BADGE_SUBTIERS.length; si++) {
+      const index = mi * BADGE_SUBTIERS.length + si;
+      const t = index / (total - 1); // 0 (cheapest, first) .. 1 (priciest, last)
+
+      // Rounded to a coarser unit than +10 would give right next to it a
+      // strictly-higher price too -- two adjacent badges never show the
+      // same sticker price even this early in the ladder.
+      const rawPrice = 100 * 1.055 ** index;
+      const roundUnit = rawPrice < 1000 ? 10 : rawPrice < 10000 ? 50 : 100;
+      const price = Math.max(lastPrice + roundUnit, Math.round(rawPrice / roundUnit) * roundUnit);
+      lastPrice = price;
+
+      const blockTier = BADGE_BLOCK_TIERS[Math.min(BADGE_BLOCK_TIERS.length - 1, Math.floor(t * BADGE_BLOCK_TIERS.length))];
+
+      BADGES.push({
+        id: `${material.name.toLowerCase()}-${si + 1}`,
+        name: `${material.name} Badge ${BADGE_SUBTIERS[si]}`,
+        price,
+        color: material.color,
+        icon: BADGE_ICONS[si],
+        blurb: badgeBlurb(t),
+        pool: [
+          { type: 'coins', weight: Math.max(4, 70 - t * 66), min: Math.round(30 + t * 1200), max: Math.round(100 + t * 3000) },
+          { type: 'block', weight: Math.max(6, 55 - t * 20), tier: blockTier },
+          { type: 'skin', weight: 6 + t * 30 },
+          { type: 'ability', weight: Math.max(0, (t - 0.12) * 50) },
+        ],
+      });
+    }
+  }
+}
 
 function weightedPick(pool) {
   const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
@@ -945,9 +985,13 @@ function openBadge(badgeId) {
       sfx.win();
       toast(`${badge.name}: you got ${won.name}!`);
     } else {
-      addCoins(300);
+      // Scaled to the badge's own price rather than a flat number, since
+      // badges now range from 100 coins up to ~58,000 -- a flat fallback
+      // would be a rounding error on the priciest ones.
+      const consolation = Math.max(300, Math.round(badge.price * 0.15));
+      addCoins(consolation);
       sfx.click();
-      toast(`${badge.name}: already have every skin -- +300 coins instead.`);
+      toast(`${badge.name}: already have every skin -- +${consolation} coins instead.`);
     }
   } else if (entry.type === 'ability') {
     const candidates = SKINS.filter((s) => getRarity(s) === 'mythic' && !profile.ownedSkins.includes(s.id));
@@ -957,9 +1001,10 @@ function openBadge(badgeId) {
       sfx.win();
       toast(`${badge.name}: JACKPOT -- you got ${won.name}!`);
     } else {
-      addCoins(2000);
+      const consolation = Math.max(2000, Math.round(badge.price * 0.5));
+      addCoins(consolation);
       sfx.win();
-      toast(`${badge.name}: already have every ability skin -- +2000 coins instead.`);
+      toast(`${badge.name}: already have every ability skin -- +${consolation} coins instead.`);
     }
   }
   renderShop();
