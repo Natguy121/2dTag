@@ -37,6 +37,16 @@ controls still work if a keyboard's attached.
 
 ## The game
 
+Every launch opens on a brief **intro animation** before Welcome or Home:
+two characters run in from either edge and crash into each other, forming
+the "2" right at the point of impact; "D" then pops in out of nowhere;
+and "T", "A" and "G" jump in one after another like clumsy, off-balance
+movers, landing the exact same **2D TAG** wordmark the screen underneath
+already shows. It reuses the same character renderer as actual gameplay
+(the same two-skin pairing as the Home corner demo below), and a
+tap/click anywhere skips straight past it, since it plays on every load,
+not just the first.
+
 The very first time anyone opens the game (tracked per browser, not per
 account -- there isn't one), a one-time **welcome screen** asks them to pick
 a color theme before dropping them at Home, so the game isn't stuck on

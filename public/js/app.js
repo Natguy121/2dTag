@@ -17,6 +17,7 @@ import {
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
 import * as homeDemo from './homeDemo.js';
+import * as introAnim from './introAnim.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
 import { Game, POWER_COLORS } from './game.js';
 
@@ -1437,17 +1438,22 @@ setVolume(profile.volume);
 music.setVolume(profile.musicVolume);
 net.connect();
 
-if (!profile.onboarded) {
-  // First time anyone's opened this browser's copy of the game: a one-time
-  // "pick your colors" screen before Home, instead of dropping straight in
-  // with whatever the default theme happens to be.
-  showScreen('welcome');
-} else {
-  // Home is already the active screen in the markup before any showScreen()
-  // call happens, so it needs its own kick-off here too.
-  homeDemo.start($('[data-home-demo-canvas]'));
-  $('[data-home-demo]').classList.add('is-swiping');
-}
+// Plays the one-time "2D TAG" crash-and-build intro over whichever screen
+// is about to show -- Welcome or Home is already sitting underneath it,
+// untouched, so there's nothing else to gate on finishing.
+introAnim.play($('[data-intro]'), () => {
+  if (!profile.onboarded) {
+    // First time anyone's opened this browser's copy of the game: a one-time
+    // "pick your colors" screen before Home, instead of dropping straight in
+    // with whatever the default theme happens to be.
+    showScreen('welcome');
+  } else {
+    // Home is already the active screen in the markup before any showScreen()
+    // call happens, so it needs its own kick-off here too.
+    homeDemo.start($('[data-home-demo-canvas]'));
+    $('[data-home-demo]').classList.add('is-swiping');
+  }
+});
 
 // Cache the shell so it loads instantly on a repeat visit or a shaky
 // connection. Purely an optimization -- actual play still needs the live

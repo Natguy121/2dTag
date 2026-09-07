@@ -32,6 +32,20 @@ try {
 
 <div id="app">
 
+  <!-- ------------------------------------------------------------ INTRO -->
+  <!-- Plays once on launch, before Welcome/Home -- see public/js/introAnim.js.
+       Two characters run in and crash into each other, forming the "2" at
+       the point of impact; "D" pops in out of nowhere; then "T", "A" and
+       "G" jump in one after another like clumsy movers, completing the
+       exact same 2D TAG wordmark the screen underneath already shows.
+       Tap/click anywhere to skip straight to it. -->
+  <div class="intro-overlay" data-intro>
+    <canvas data-intro-canvas></canvas>
+    <h1 class="logo intro-logo" aria-hidden="true">
+      <span class="logo-2d"><span class="intro-letter intro-letter-2" data-intro-letter>2</span><span class="intro-letter intro-letter-d" data-intro-letter>D</span></span><span class="logo-tag"><span class="intro-letter intro-letter-t" data-intro-letter>T</span><span class="intro-letter intro-letter-a" data-intro-letter>A</span><span class="intro-letter intro-letter-g" data-intro-letter>G</span></span>
+    </h1>
+  </div>
+
   <!-- ---------------------------------------------------------- WELCOME -->
   <!-- Shown once, before Home, the very first time anyone opens the game
        (see app.js's `if (!profile.onboarded)` check) -- picking a color
