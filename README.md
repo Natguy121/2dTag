@@ -44,11 +44,11 @@ whatever the default happens to be before they ever find Settings. Picking
 one there is the exact same choice as the Theme picker in Settings -- just
 an earlier chance to make it -- and it can be changed anytime afterward.
 
-**Home** has three doors: **Play**, **Skins** and **Settings** -- plus a
-small looping animation in the top corner, two characters tagging each
-other back and forth, that swipes in each time you land back on the screen.
-Purely decorative (it reuses the same character renderer as actual
-gameplay), but it beats a static logo.
+**Home** has four doors: **Play**, **Skins**, **Badges** and **Settings**
+-- plus a small looping animation in the top corner, two characters
+tagging each other back and forth, that swipes in each time you land back
+on the screen. Purely decorative (it reuses the same character renderer
+as actual gameplay), but it beats a static logo.
 
 **Play** offers:
 
@@ -357,6 +357,32 @@ skin is already owned by everyone -- and Mythic stays exclusive to real
 play/purchase). Opening one hands you a random not-yet-owned skin of that
 exact rarity; once you already own every skin at a tier, that tier's block
 just converts to a coin payout instead, so it's never a dead click.
+
+## Badges
+
+A fourth door on the home screen, next to Play, Skins and Settings: the
+**Badges** shop trades coins directly for a surprise, no quest or grind
+required. Buy a badge and it opens the instant you pay for it -- unlike
+lucky blocks (earned passively, opened whenever you like), a badge is a
+one-click gamble, and a genuine coin sink once you own everything else in
+the game. Four tiers, each pricier with better odds than the last:
+
+| Badge | Price | Mostly gets you |
+|---|---|---|
+| **Bronze** | 300 coins | Coins, with a decent shot at an Uncommon lucky block. |
+| **Silver** | 800 coins | Better lucky blocks, plus a small chance at a skin outright. |
+| **Gold** | 1800 coins | Great lucky blocks, a real shot at a skin, and a rare chance at an ability skin. |
+| **Platinum** | 4000 coins | The high roller -- nearly half the time, an ability skin outright. |
+
+Every badge's surprise lands in one of four categories: **coins** (a
+payout on the spot), a **lucky block** (added straight to your Lucky
+Blocks tab, same as a quest reward), a **skin** (a random not-yet-owned
+skin, any rarity short of Mythic), or -- the jackpot, and the whole reason
+to chase the pricier tiers -- an **ability skin** outright (Web Weaver,
+Ironboy, Huge, Mini Man or Metal, whichever of those five you don't
+already own). Run out of skins or ability skins left to win and that roll
+just converts to a coin payout instead, the same never-a-dead-pull
+philosophy lucky blocks already use.
 
 ## Music
 

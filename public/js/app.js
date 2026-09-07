@@ -12,7 +12,7 @@ import * as net from './net.js';
 import * as input from './input.js';
 import {
   profile, save, resetStats, resetKeys, keyLabel, bumpStat, addCoins, buySkin, buyTrail,
-  claimQuest, spendLuckyBlock, grantSkin, currentStatValue, DEFAULT_KEYS,
+  claimQuest, spendLuckyBlock, grantSkin, currentStatValue, DEFAULT_KEYS, buyBadge, grantLuckyBlock,
 } from './storage.js';
 import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
@@ -88,6 +88,7 @@ function showScreen(name) {
 
   if (name === 'join-server') refreshServers();
   if (name === 'skins') renderShop();
+  if (name === 'badges') renderBadges();
   if (name === 'settings') renderSettings();
   if (name === 'home') {
     drawProfilePreview();
@@ -853,6 +854,156 @@ function renderLuckyBlocks() {
   $('[data-block-progress]').textContent = total
     ? `${total} lucky block${total === 1 ? '' : 's'} waiting to be opened.`
     : 'Complete quests to earn lucky blocks -- open one for a shot at a random skin of that rarity.';
+}
+
+// The Badges shop (main menu): unlike lucky blocks (earned passively from
+// quests, opened whenever you like), a badge is bought outright with coins
+// and revealed the instant you buy it -- a repeatable coin sink once
+// someone owns everything else. Four tiers, each pricier and with better
+// odds than the last; a pool entry's `weight` is just relative, they don't
+// need to sum to 100. 'ability' pulls from exactly the same skins
+// getRarity() calls mythic (Web Weaver/Ironboy/Huge/Mini Man/Metal) -- the
+// jackpot tier, kept separate from the plain 'skin' pool so it stays rare.
+const BADGES = [
+  {
+    id: 'bronze', name: 'Bronze Badge', price: 300, color: '#cd7f32', icon: '\u{1F949}',
+    blurb: 'Mostly coins, a decent shot at an Uncommon lucky block.',
+    pool: [
+      { type: 'coins', weight: 70, min: 40, max: 150 },
+      { type: 'block', weight: 27, tier: 'uncommon' },
+      { type: 'block', weight: 3, tier: 'rare' },
+    ],
+  },
+  {
+    id: 'silver', name: 'Silver Badge', price: 800, color: '#c0c5ce', icon: '\u{1F948}',
+    blurb: 'Better lucky blocks, and a small chance at a skin outright.',
+    pool: [
+      { type: 'coins', weight: 40, min: 100, max: 300 },
+      { type: 'block', weight: 30, tier: 'rare' },
+      { type: 'block', weight: 20, tier: 'epic' },
+      { type: 'skin', weight: 10 },
+    ],
+  },
+  {
+    id: 'gold', name: 'Gold Badge', price: 1800, color: '#ffd700', icon: '\u{1F947}',
+    blurb: 'Great lucky blocks, a real shot at a skin, and even an ability.',
+    pool: [
+      { type: 'coins', weight: 20, min: 300, max: 700 },
+      { type: 'block', weight: 25, tier: 'epic' },
+      { type: 'block', weight: 25, tier: 'legendary' },
+      { type: 'skin', weight: 25 },
+      { type: 'ability', weight: 5 },
+    ],
+  },
+  {
+    id: 'platinum', name: 'Platinum Badge', price: 4000, color: '#7dd3ff', icon: '\u{1F3C6}',
+    blurb: 'The high roller -- nearly half the time, an ability skin outright.',
+    pool: [
+      { type: 'coins', weight: 10, min: 800, max: 1500 },
+      { type: 'block', weight: 15, tier: 'legendary' },
+      { type: 'skin', weight: 30 },
+      { type: 'ability', weight: 45 },
+    ],
+  },
+];
+
+function weightedPick(pool) {
+  const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
+  let r = Math.random() * total;
+  for (const entry of pool) {
+    if (r < entry.weight) return entry;
+    r -= entry.weight;
+  }
+  return pool[pool.length - 1];
+}
+
+/** Buy and immediately open one badge: pays its price, rolls its reward
+ * pool, and grants whatever came up -- falling back to coins if a skin/
+ * ability roll finds nothing left unowned, the same philosophy as
+ * openLuckyBlock()'s block-tier fallback above, so a badge is never a dead
+ * pull. */
+function openBadge(badgeId) {
+  const badge = BADGES.find((b) => b.id === badgeId);
+  if (!badge || !buyBadge(badge.price)) return;
+
+  const entry = weightedPick(badge.pool);
+  if (entry.type === 'coins') {
+    const amount = entry.min + Math.floor(Math.random() * (entry.max - entry.min + 1));
+    addCoins(amount);
+    sfx.click();
+    toast(`${badge.name}: +${amount} coins!`);
+  } else if (entry.type === 'block') {
+    grantLuckyBlock(entry.tier);
+    sfx.win();
+    toast(`${badge.name}: ${RARITIES[entry.tier].label} lucky block!`);
+  } else if (entry.type === 'skin') {
+    const candidates = SKINS.filter((s) => s.id !== 'legend' && getRarity(s) !== 'mythic'
+      && !isUnlocked(s, profile.stats, profile.ownedSkins));
+    if (candidates.length) {
+      const won = candidates[Math.floor(Math.random() * candidates.length)];
+      grantSkin(won.id);
+      sfx.win();
+      toast(`${badge.name}: you got ${won.name}!`);
+    } else {
+      addCoins(300);
+      sfx.click();
+      toast(`${badge.name}: already have every skin -- +300 coins instead.`);
+    }
+  } else if (entry.type === 'ability') {
+    const candidates = SKINS.filter((s) => getRarity(s) === 'mythic' && !profile.ownedSkins.includes(s.id));
+    if (candidates.length) {
+      const won = candidates[Math.floor(Math.random() * candidates.length)];
+      grantSkin(won.id);
+      sfx.win();
+      toast(`${badge.name}: JACKPOT -- you got ${won.name}!`);
+    } else {
+      addCoins(2000);
+      sfx.win();
+      toast(`${badge.name}: already have every ability skin -- +2000 coins instead.`);
+    }
+  }
+  renderShop();
+  renderBadges();
+  drawProfilePreview();
+}
+
+function renderBadges() {
+  const grid = $('[data-badge-grid]');
+  grid.innerHTML = '';
+
+  for (const badge of BADGES) {
+    const afford = (profile.coins || 0) >= badge.price;
+
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'badge-card';
+    card.style.setProperty('--rarity-color', badge.color);
+    card.disabled = !afford;
+
+    const icon = document.createElement('div');
+    icon.className = 'badge-icon';
+    icon.textContent = badge.icon;
+
+    const name = document.createElement('div');
+    name.className = 'badge-name';
+    name.textContent = badge.name;
+
+    const blurb = document.createElement('div');
+    blurb.className = 'badge-blurb';
+    blurb.textContent = badge.blurb;
+
+    const price = document.createElement('div');
+    price.className = 'badge-price';
+    price.textContent = `${badge.price} coins`;
+
+    card.append(icon, name, blurb, price);
+    card.addEventListener('click', () => openBadge(badge.id));
+    grid.append(card);
+  }
+
+  $('[data-badge-progress]').textContent =
+    `Buy a badge for an instant surprise -- coins, a lucky block, a skin, or even an ability skin `
+    + `outright. · ${profile.coins || 0} coins`;
 }
 
 /** The completionist surprise: own every collectible skin (everything

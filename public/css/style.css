@@ -282,6 +282,14 @@ body {
 }
 .btn-violet .btn-sub { color: rgba(255, 255, 255, 0.78); }
 
+.btn-gold {
+  background: linear-gradient(180deg, #ffd76a, #c98a1f);
+  border-color: rgba(255, 215, 106, 0.55);
+  box-shadow: 0 10px 26px rgba(220, 170, 60, 0.32);
+  color: #2c1d02;
+}
+.btn-gold .btn-sub { color: rgba(44, 29, 2, 0.72); }
+
 .btn-small { padding: 8px 14px; font-size: 14px; align-self: flex-start; }
 .btn-danger { background: linear-gradient(180deg, #a33049, #7a1f33); border-color: #ff4d6d55; }
 .btn-back { align-self: flex-start; background: none; border-color: transparent; color: var(--muted); padding-left: 0; }
@@ -602,6 +610,27 @@ body {
 .block-icon { font-size: 36px; line-height: 1; }
 .block-label { font-weight: 800; font-size: 13px; color: var(--rarity-color); }
 .block-count { color: var(--muted); font-size: 12px; }
+
+/* ------------------------------------------------------------- badges */
+
+.badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+
+.badge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 14px;
+  background: var(--panel);
+  border: 2px solid color-mix(in srgb, var(--rarity-color) 45%, var(--panel-edge));
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.badge-icon { font-size: 40px; line-height: 1; }
+.badge-name { font-weight: 800; font-size: 15px; color: var(--rarity-color); }
+.badge-blurb { color: var(--muted); font-size: 12px; min-height: 32px; }
+.badge-price { font-weight: 700; font-size: 13px; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .stat { padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; }

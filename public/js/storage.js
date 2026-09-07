@@ -188,6 +188,24 @@ export function grantSkin(skinId) {
   return true;
 }
 
+/** Spend coins on a badge (see the Badges shop). Unlike buySkin/buyTrail, a
+ * badge doesn't grant anything itself -- the caller rolls its reward
+ * afterward and grants it via addCoins/grantSkin/grantLuckyBlock. Returns
+ * false if you can't afford it. */
+export function buyBadge(price) {
+  if ((profile.coins || 0) < price) return false;
+  profile.coins -= price;
+  save();
+  return true;
+}
+
+/** Hand over one lucky block of a tier outright -- a badge payout, the same
+ * effect claimQuest()'s reward has, just standalone. */
+export function grantLuckyBlock(tier) {
+  profile.luckyBlocks[tier] = (profile.luckyBlocks[tier] || 0) + 1;
+  save();
+}
+
 /** Record a round played on a map, for the "play N different maps" quest. */
 export function trackMapPlayed(mapId) {
   if (profile.mapsPlayed.includes(mapId)) return;
