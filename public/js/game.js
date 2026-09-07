@@ -71,6 +71,7 @@ export class Game {
     this.particles = new Particles();
     this.shotBeams = []; // {x1, y1, x2, y2, age, life, hit} -- Crossfire Yard laser flashes
     this.thrownBoxes = []; // {x1, y1, x2, y2, age, life, hit} -- Loot Hollow's thrown items
+    this.boxBlackoutTimer = 0; // counts down from CANDY_FREEZE_TIME when a thrown item hits YOU
     this.shake = 0;
     this.cam = { x: 0, y: 0, scale: 1, ready: false };
     this.camZoom = 1; // Mini Man's shrink zooms this in -- see updateCamera()
@@ -567,9 +568,11 @@ export class Game {
           }
           break;
         case 'boxThrow': {
-          // The thrown-item visual only -- a hit's actual freeze effect
-          // rides on its own 'freeze' event (pushed alongside this one by
-          // resolveThrows()), which already handles the banner/sfx/particles.
+          // The thrown-item visual, plus (if it's YOU who got hit) the
+          // screen blackout below -- everything else about a hit's freeze
+          // effect rides on its own 'freeze' event (pushed alongside this
+          // one by resolveThrows()), which already handles the banner/sfx/
+          // particles.
           const mineThrow = ev.by === this.youId;
           this.thrownBoxes.push({
             x1: ev.fromX, y1: ev.fromY, x2: ev.toX, y2: ev.fromY,
@@ -581,6 +584,11 @@ export class Game {
               color: ev.hitId ? '#5fd0ff' : '#ffd54f', speed: 130, life: 0.3, size: 2.5, gravity: 0,
             });
           }
+          // Getting hit blacks out most (not all) of your own screen for as
+          // long as the freeze lasts -- a real cost for whoever's caught,
+          // visible only to them, same "mine-only" treatment as everything
+          // else in this file that only matters to the affected player.
+          if (ev.hitId === this.youId) this.boxBlackoutTimer = C.CANDY_FREEZE_TIME;
           break;
         }
         case 'go':
@@ -641,6 +649,7 @@ export class Game {
     if (to !== 'results') this.resultsShown = false;
     if (to === 'countdown') {
       this.lastCountdownSecond = null;
+      this.boxBlackoutTimer = 0;
       this.hooks.onResults?.(null);
     }
     if (to === 'playing') {
@@ -710,6 +719,7 @@ export class Game {
       if (b.age >= b.life) this.thrownBoxes.splice(i, 1);
     }
     this.shake = Math.max(0, this.shake - dt * 40);
+    this.boxBlackoutTimer = Math.max(0, this.boxBlackoutTimer - dt);
 
     if (this.centerMessage && this.time > this.centerUntil) {
       this.centerMessage = null;
@@ -946,6 +956,36 @@ export class Game {
     // Radar's compass arrow is a fixed-size screen-space overlay, drawn
     // after the world transform is popped so camera zoom doesn't scale it.
     this.drawRadar(ctx);
+    this.drawBoxBlackout(ctx);
+  }
+
+  /** Loot Hollow: getting hit by a thrown mystery item blacks out most of
+   * your own screen for as long as the freeze lasts -- a small clear
+   * "porthole" stays open around wherever YOU are on screen (not just the
+   * raw viewport center, which drifts away from you near the edges of the
+   * map) so it's a real handicap, not a total blindfold. Screen-space,
+   * drawn last, fixed size regardless of camera zoom -- same treatment as
+   * the radar overlay just above. */
+  drawBoxBlackout(ctx) {
+    if (this.boxBlackoutTimer <= 0) return;
+    const total = C.CANDY_FREEZE_TIME;
+    const elapsed = total - this.boxBlackoutTimer;
+    const alpha = Math.min(1, elapsed / 0.3) * Math.min(1, this.boxBlackoutTimer / 0.5);
+    if (alpha <= 0) return;
+
+    const pos = this.selfRenderPos();
+    const cx = this.viewW / 2 + (pos.x + C.PLAYER_W / 2 - this.cam.x) * this.cam.scale;
+    const cy = this.viewH / 2 + (pos.y + C.PLAYER_H / 2 - this.cam.y) * this.cam.scale;
+    const innerR = Math.min(this.viewW, this.viewH) * 0.12;
+    const outerR = Math.max(this.viewW, this.viewH) * 0.55;
+    const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, `rgba(0,0,0,${0.92 * alpha})`);
+
+    ctx.save();
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, this.viewW, this.viewH);
+    ctx.restore();
   }
 
   drawRadar(ctx) {

@@ -219,9 +219,12 @@ Twelve maps bend the base rules further, each in a different direction:
   facing direction -- a straight shot just like Crossfire Yard's gun, just
   shorter range and open to anyone holding an item, not only the tagger.
   A hit freezes the target in place for 3 seconds, the exact same mechanic
-  Candy Land and Surge Ruins' Frost Touch power use. Each box goes dark for
-  12 seconds after being opened before it can be found again, and you can
-  only ever hold one item at a time -- find another box to reload.
+  Candy Land and Surge Ruins' Frost Touch power use -- plus, only for
+  whoever got hit, most of their own screen fades to black for those same
+  3 seconds, a small clear patch left open right around their character so
+  it's a real handicap rather than a total blindfold. Each box goes dark
+  for 12 seconds after being opened before it can be found again, and you
+  can only ever hold one item at a time -- find another box to reload.
 
 ## Bots
 
