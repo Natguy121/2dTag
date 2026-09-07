@@ -234,7 +234,20 @@ body {
 .version { text-align: center; color: #6d6090; font-size: 12px; margin: 4px 0 0; }
 
 .home-admin-chat { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 14px; }
-.home-admin-chat .admin-form { width: 100%; max-width: 320px; margin: 0; }
+
+.admin-chat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: var(--radius);
+}
+.admin-chat-box textarea.text-input { resize: vertical; min-height: 60px; font: inherit; }
+.admin-chat-box .btn { align-self: flex-end; }
 
 /* ------------------------------------------------------------- buttons */
 

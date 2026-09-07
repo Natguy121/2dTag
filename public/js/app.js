@@ -36,6 +36,11 @@ let toastTimer = null;
 // network drop can silently re-authenticate without asking you to retype it.
 let isAdminSession = false;
 let adminPasswordCache = '';
+// True for exactly one in-flight adminResult -- the one triggered by the
+// home screen's "Talk to Admin" message box, so a wrong guess there reads
+// as a plain "message sent" rather than tipping off a random player that
+// they just failed a password check.
+let adminChatPending = false;
 
 // --------------------------------------------------------------- screens
 
@@ -154,11 +159,17 @@ net.on('renamed', (msg) => {
 net.on('adminResult', (msg) => {
   isAdminSession = msg.ok;
   if (!msg.ok) adminPasswordCache = '';
+  // A genuine admin still gets the real "you're in" confirmation either
+  // way -- only a WRONG guess from the chat box gets the cover message,
+  // so it reads as an ordinary contact form rather than a password field.
   const message = msg.ok
     ? 'Admin access granted.'
-    : msg.reason === 'unset'
-      ? "This server has no admin password set -- the owner needs to add ADMIN_PASSWORD in Render's Environment tab."
-      : 'Wrong admin password.';
+    : adminChatPending
+      ? 'Message sent to the admin.'
+      : msg.reason === 'unset'
+        ? "This server has no admin password set -- the owner needs to add ADMIN_PASSWORD in Render's Environment tab."
+        : 'Wrong admin password.';
+  adminChatPending = false;
   toast(message, msg.ok ? 2600 : 4200);
   if (currentScreen === 'settings') renderSettings();
   if (currentScreen === 'skins') renderShop();
@@ -1328,9 +1339,12 @@ function wire() {
 
   // Home screen's "Talk to Admin" -- a friendlier front door to the exact
   // same admin login as the Settings form above (same net message, same
-  // adminResult handling/toast), just reached without leaving Home. A
-  // plain text input rather than a password field, so it reads as a
-  // message box first and an admin login second.
+  // server-side check), just reached without leaving Home and dressed up
+  // as an actual message box: a multi-line textarea, a "Send Message"
+  // button, and (see the adminResult handler above) a generic "Message
+  // sent" reply on a wrong guess instead of the Settings form's blunter
+  // "Wrong admin password" -- so it reads as an ordinary contact form to
+  // anyone who isn't the real admin.
   $('[data-action="toggle-admin-chat"]').addEventListener('click', () => {
     sfx.click();
     const form = $('[data-admin-chat-form]');
@@ -1343,6 +1357,7 @@ function wire() {
     const message = input.value.trim();
     input.value = '';
     if (!message) return;
+    adminChatPending = true;
     adminPasswordCache = message;
     net.send({ t: 'admin', password: adminPasswordCache });
   });

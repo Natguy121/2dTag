@@ -438,11 +438,17 @@ disabled entirely -- nobody can log in as admin at all, including you.
 
 Log in from **Settings &rarr; Admin** with that password, or from
 **Home &rarr; Talk to Admin** -- a small button at the bottom of the home
-screen that opens a plain text box. It's the exact same login underneath
-(the same message to the server, the same result), just reachable without
-leaving Home: whatever gets typed there is checked as the admin password,
-right alongside the Settings form. It's a per-session grant (like
-everything else, not persisted) -- you re-enter it each time you open the
+screen that opens what looks like an ordinary "send a message to the
+admin" box (a labeled textarea, a Send Message button). It's the exact
+same login underneath -- whatever gets typed and sent is checked as the
+admin password, the same message to the server and the same result as
+the Settings form -- just dressed up as a contact form and reachable
+without leaving Home. A correct password still gets the real "Admin
+access granted" confirmation; anything else just gets a generic "Message
+sent to the admin" reply instead of the Settings form's blunter "Wrong
+admin password", so it reads as a normal contact form to everyone but the
+one person who actually knows the password. It's a per-session grant
+(like everything else, not persisted) -- you re-enter it each time you open the
 game. Admin lets you:
 
 - Wear any skin or trail for the session, as a preview -- it doesn't purchase

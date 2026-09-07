@@ -89,9 +89,10 @@ try {
       <p class="version">19 maps &middot; up to 10 players &middot; bots included</p>
       <div class="home-admin-chat">
         <button type="button" class="btn btn-small" data-action="toggle-admin-chat">Talk to Admin</button>
-        <form class="admin-form" data-admin-chat-form hidden>
-          <input class="text-input" type="text" data-admin-chat-input placeholder="Type a message..." autocomplete="off" maxlength="200">
-          <button class="btn btn-small btn-primary" type="submit">Send</button>
+        <form class="admin-chat-box" data-admin-chat-form hidden>
+          <label class="field-label" for="admin-chat-textarea">Send a message to the admin</label>
+          <textarea id="admin-chat-textarea" class="text-input" data-admin-chat-input rows="3" placeholder="Type your message here..." maxlength="200"></textarea>
+          <button class="btn btn-small btn-primary" type="submit">Send Message</button>
         </form>
       </div>
     </div>
