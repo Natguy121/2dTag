@@ -1364,9 +1364,9 @@ function wire() {
   });
   $('[data-action="admin-grant-coins"]').addEventListener('click', () => {
     if (!isAdminSession) return;
-    addCoins(1000);
+    addCoins(100000);
     renderSettings();
-    toast('+1000 coins');
+    toast('+100000 coins');
   });
   $('[data-setting-volume]').addEventListener('input', (e) => {
     profile.volume = Number(e.target.value) / 100;
