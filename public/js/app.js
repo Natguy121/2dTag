@@ -1083,12 +1083,12 @@ let currentMinigameDifficulty = 'medium';
 
 // Flavor leaderboards for games where a single best time makes sense to
 // rank against fixed rivals -- Reaction Test's raw ms is the clean case.
-// Thomas Bounasif's time is well under human reaction limits on purpose,
-// so the #1 spot is permanently his; your own best (fastest across every
+// Thomas Bounasif's time is a deliberately unbeatable joke score, so the
+// #1 spot is permanently his; your own best (fastest across every
 // difficulty you've played) is inserted alongside these on the fly.
 const LEADERBOARDS = {
   reaction: [
-    { name: 'Thomas Bounasif', ms: 82 },
+    { name: 'Thomas Bounasif', ms: 2 },
     { name: 'Ava', ms: 141 },
     { name: 'Kai', ms: 158 },
     { name: 'Zoe', ms: 172 },
