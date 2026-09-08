@@ -107,6 +107,7 @@ function showScreen(name) {
   if (name === 'badges') renderBadges();
   if (name === 'minigames') renderMinigames();
   if (name === 'minigame-difficulty') renderMinigameDifficulty();
+  if (name === 'minigame-leaderboard') renderLeaderboard(currentMinigameId);
   if (name === 'settings') renderSettings();
   if (name === 'home') {
     drawProfilePreview();
@@ -1080,6 +1081,23 @@ function renderBadges() {
 let currentMinigameId = null;
 let currentMinigameDifficulty = 'medium';
 
+// Flavor leaderboards for games where a single best time makes sense to
+// rank against fixed rivals -- Reaction Test's raw ms is the clean case.
+// Thomas Bounasif's time is well under human reaction limits on purpose,
+// so the #1 spot is permanently his; your own best (fastest across every
+// difficulty you've played) is inserted alongside these on the fly.
+const LEADERBOARDS = {
+  reaction: [
+    { name: 'Thomas Bounasif', ms: 82 },
+    { name: 'Ava', ms: 141 },
+    { name: 'Kai', ms: 158 },
+    { name: 'Zoe', ms: 172 },
+    { name: 'Malik', ms: 189 },
+    { name: 'Priya', ms: 205 },
+    { name: 'Leo', ms: 224 },
+  ],
+};
+
 function renderMinigames() {
   const grid = $('[data-minigame-grid]');
   grid.innerHTML = '';
@@ -1142,11 +1160,49 @@ function renderMinigameDifficulty() {
     btn.addEventListener('click', () => { sfx.click(); openMinigame(game.id, d); });
     grid.append(btn);
   }
+
+  $('[data-action="minigame-leaderboard"]').hidden = !LEADERBOARDS[game.id];
 }
 
 function openMinigameDifficulty(id) {
   currentMinigameId = id;
   showScreen('minigame-difficulty');
+}
+
+/** Ranks the fixed leaderboard entries for one game against the player's
+ * own best (fastest/highest across every difficulty they've tried), then
+ * renders the sorted list with "You" highlighted in its real spot. */
+function renderLeaderboard(id) {
+  const game = mgCore.GAME_BY_ID[id];
+  const entries = LEADERBOARDS[id];
+  if (!game || !entries) { showScreen('minigame-difficulty'); return; }
+
+  $('[data-leaderboard-title]').textContent = `${game.name} Leaderboard`;
+  $('[data-leaderboard-blurb]').textContent = `Ranked by ${game.scoreLabel} -- ${game.higherIsBetter ? 'highest' : 'lowest'} wins.`;
+
+  const rows = entries.map((e) => ({ name: e.name, value: e.ms, isYou: false }));
+  const yourBest = mgCore.getBestOverall(game.id, game.higherIsBetter);
+  if (yourBest) rows.push({ name: 'You', value: yourBest.value, isYou: true });
+  rows.sort((a, b) => (game.higherIsBetter ? b.value - a.value : a.value - b.value));
+
+  const list = $('[data-leaderboard-list]');
+  list.innerHTML = '';
+  rows.forEach((row, idx) => {
+    const rank = idx + 1;
+    const item = document.createElement('div');
+    item.className = 'leaderboard-row' + (row.isYou ? ' is-you' : '') + (rank === 1 ? ' is-first' : '');
+    const rankEl = document.createElement('div');
+    rankEl.className = 'leaderboard-rank';
+    rankEl.textContent = rank === 1 ? '\u{1F3C6}' : `#${rank}`;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'leaderboard-name';
+    nameEl.textContent = row.name;
+    const valueEl = document.createElement('div');
+    valueEl.className = 'leaderboard-value';
+    valueEl.textContent = `${row.value} ${game.scoreLabel}`;
+    item.append(rankEl, nameEl, valueEl);
+    list.append(item);
+  });
 }
 
 /** Mount and start one mini-game on the play screen -- shows the right
@@ -1505,6 +1561,14 @@ function wire() {
   $('[data-action="minigame-diff"]').addEventListener('click', () => {
     sfx.click();
     if (currentMinigameId) openMinigameDifficulty(currentMinigameId);
+  });
+  $('[data-action="minigame-leaderboard"]').addEventListener('click', () => {
+    sfx.click();
+    if (currentMinigameId) showScreen('minigame-leaderboard');
+  });
+  $('[data-action="minigame-leaderboard-back"]').addEventListener('click', () => {
+    sfx.click();
+    showScreen('minigame-difficulty');
   });
 
   $('[data-action="admin-grant-coins"]').addEventListener('click', () => {
