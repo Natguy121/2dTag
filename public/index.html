@@ -301,10 +301,20 @@ try {
     <div class="menu menu-wide">
       <button class="btn btn-back" data-go="home">&larr; Back</button>
       <h2 class="screen-title">Offline Mini Games</h2>
-      <p class="hint">Fifteen quick, single-player games -- no server or
-        connection needed, just for fun. Your best score for each is
-        remembered on this device.</p>
+      <p class="hint">45 quick, single-player games -- no server or
+        connection needed, just for fun. Pick a difficulty for each one;
+        your best score per difficulty is remembered on this device.</p>
       <div class="minigame-grid" data-minigame-grid></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------- MINI GAME DIFFICULTY -->
+  <section class="screen" data-screen="minigame-difficulty">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-go="minigames">&larr; Back to Mini Games</button>
+      <h2 class="screen-title" data-minigame-diff-title>Choose Difficulty</h2>
+      <p class="hint" data-minigame-diff-blurb></p>
+      <div class="minigame-diff-grid" data-minigame-diff-grid></div>
     </div>
   </section>
 
@@ -324,6 +334,7 @@ try {
             <div class="minigame-end-best" data-minigame-end-best></div>
             <nav class="menu-buttons">
               <button class="btn btn-primary" data-action="minigame-again">Play Again</button>
+              <button class="btn btn-small" data-action="minigame-diff">Change Difficulty</button>
               <button class="btn btn-small" data-action="minigame-quit">Back to Mini Games</button>
             </nav>
           </div>

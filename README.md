@@ -407,22 +407,45 @@ same never-a-dead-pull philosophy lucky blocks already use.
 ## Offline Mini Games
 
 A fifth door on the home screen: **Offline Mini Games** opens a hub of
-**15 single-player games** that need no server, no room, and no other
+**45 single-player games** that need no server, no room, and no other
 players -- pure browser JS, playable even with the multiplayer connection
 down. They award **no coins** (a deliberate choice -- the shop and badge
 economy is tuned around real matches, and a farmable offline loop would
-undercut it); the only payoff is a personal best, remembered per game on
-this device and shown right on its card in the hub.
+undercut it); the only payoff is a personal best, remembered separately
+per game *and* per difficulty on this device.
 
-Seven are canvas action/logic games -- **Whack-a-Mole**, **Snake**,
+Every game runs at five difficulty tiers -- **Very Easy, Easy, Medium,
+Hard** and **Super Hard** -- picked from a dedicated screen before each
+run. Difficulty isn't cosmetic: it retunes each game's own numbers (mole
+speed, board size, timer length, CPU strength, and so on), so Tic-Tac-Toe
+and Connect Four's CPU literally plays a perfect, unbeatable minimax
+search on Hard/Super Hard, while Whack-a-Mole's moles pop faster and
+duck sooner, 2048's board shrinks from 5x5 down to 3x3, and so on for
+every other game. Picking a card opens that difficulty screen first,
+each button showing its own best score; the hub card itself shows your
+single best run across every difficulty you've tried, with which one it
+was.
+
+The original fifteen are the canvas games **Whack-a-Mole**, **Snake**,
 **Flappy Blob**, **2048**, **Brick Breaker**, **Dodge the Blocks** and
-**Coin Catcher** -- and eight are quick DOM-based games -- **Reaction
-Test**, **Memory Match**, **Simon Says**, **Rock Paper Scissors**,
-**Number Guess**, **Tic-Tac-Toe**, **Color Match** (a Stroop test) and
-**Math Blitz**. Every game shares the same tiny contract (mount, play,
-report a score once, tear down cleanly), so picking one from the grid,
-finishing it, hitting Play Again or backing out to the hub all behave
-identically regardless of which game is running.
+**Coin Catcher**, plus the DOM games **Reaction Test**, **Memory
+Match**, **Simon Says**, **Rock Paper Scissors**, **Number Guess**,
+**Tic-Tac-Toe**, **Color Match** (a Stroop test) and **Math Blitz**.
+Thirty more followed: sixteen more canvas games -- **Asteroid Dodge**,
+**Fruit Slice**, **Pong Solo**, **Space Invaders**, **Endless Runner**,
+**Maze Escape**, **Bubble Shooter**, **Tower Stack**, **Balloon Pop**,
+**Laser Dodge**, **Slalom Ski**, **Basketball Shots**, **Piano Tiles**,
+**Target Practice**, **Lane Dodge** and **Air Hockey** -- and fourteen
+more DOM games -- **Connect Four**, **Minesweeper**, **Lights Out**,
+**Slide Puzzle**, **Sudoku Mini**, **Mastermind**, **Word Scramble**,
+**Typing Test**, **Sequence Recall**, **Higher or Lower**, **Color
+Flood**, **Odd One Out**, **Pattern Predictor** and **Speed Tap**.
+
+Every game shares the same tiny contract (mount, play at a given
+difficulty, report a score once, tear down cleanly), so picking one from
+the grid, finishing it, hitting Play Again, jumping to a different
+difficulty, or backing out to the hub all behave identically regardless
+of which of the 45 is running.
 
 ## Music
 

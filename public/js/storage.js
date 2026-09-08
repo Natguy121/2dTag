@@ -52,6 +52,17 @@ const DEFAULTS = {
   miniScores: {}, // id -> best score, for the offline Mini Games hub -- see minigames.js
 };
 
+/** Mini-game bests used to be one number per game; now each game tracks a
+ * best per difficulty tier. Any old flat number becomes that game's
+ * Medium-tier best, since Medium kept each game's original tuning. */
+function migrateMiniScores(raw) {
+  const out = {};
+  for (const [id, value] of Object.entries(raw || {})) {
+    out[id] = typeof value === 'number' ? { medium: value } : value;
+  }
+  return out;
+}
+
 function randomName() {
   const words = ['Swift', 'Bouncy', 'Sneaky', 'Turbo', 'Wild', 'Lucky', 'Rapid', 'Sly'];
   const n = words[Math.floor(Math.random() * words.length)];
@@ -80,7 +91,7 @@ export const profile = {
   quests: Array.isArray(stored.quests) ? stored.quests : [],
   luckyBlocks: { ...DEFAULTS.luckyBlocks, ...(stored.luckyBlocks || {}) },
   mapsPlayed: Array.isArray(stored.mapsPlayed) ? stored.mapsPlayed : [],
-  miniScores: { ...DEFAULTS.miniScores, ...(stored.miniScores || {}) },
+  miniScores: migrateMiniScores(stored.miniScores),
 };
 
 if (!profile.name) profile.name = randomName();

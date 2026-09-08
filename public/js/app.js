@@ -18,9 +18,13 @@ import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
 import * as homeDemo from './homeDemo.js';
 import * as introAnim from './introAnim.js';
-import * as minigames from './minigames.js';
+import * as mgCore from './minigames-core.js';
+import { GAMES as MINIGAMES_1 } from './minigames.js';
+import { GAMES as MINIGAMES_2 } from './minigames2.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
 import { Game, POWER_COLORS } from './game.js';
+
+mgCore.registerGames([...MINIGAMES_1, ...MINIGAMES_2]);
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -96,12 +100,13 @@ function showScreen(name) {
   // runs when navigating to anything but the play screen itself (Escape,
   // Home, a direct link elsewhere), so a game's listeners/timers never
   // keep running in the background after you've left it.
-  if (name !== 'minigame-play') minigames.stopGame();
+  if (name !== 'minigame-play') mgCore.stopGame();
 
   if (name === 'join-server') refreshServers();
   if (name === 'skins') renderShop();
   if (name === 'badges') renderBadges();
   if (name === 'minigames') renderMinigames();
+  if (name === 'minigame-difficulty') renderMinigameDifficulty();
   if (name === 'settings') renderSettings();
   if (name === 'home') {
     drawProfilePreview();
@@ -1073,12 +1078,13 @@ function renderBadges() {
 // --------------------------------------------------------- mini games
 
 let currentMinigameId = null;
+let currentMinigameDifficulty = 'medium';
 
 function renderMinigames() {
   const grid = $('[data-minigame-grid]');
   grid.innerHTML = '';
 
-  for (const g of minigames.GAMES) {
+  for (const g of mgCore.GAMES) {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'minigame-card';
@@ -1096,29 +1102,64 @@ function renderMinigames() {
     blurb.textContent = g.blurb;
 
     card.append(icon, name, blurb);
-    const best = minigames.getBest(g.id);
-    if (best != null) {
+    const best = mgCore.getBestOverall(g.id, g.higherIsBetter);
+    if (best) {
       const bestEl = document.createElement('div');
       bestEl.className = 'minigame-best';
-      bestEl.textContent = `Best: ${best} ${g.scoreLabel}`;
+      bestEl.textContent = `Best: ${best.value} ${g.scoreLabel} (${mgCore.DIFFICULTY_META[best.difficulty].label})`;
       card.append(bestEl);
     }
 
-    card.addEventListener('click', () => openMinigame(g.id));
+    card.addEventListener('click', () => openMinigameDifficulty(g.id));
     grid.append(card);
   }
 }
 
+/** Shows the five-difficulty picker for one game, each button labeled
+ * with that difficulty's own best score (if any). */
+function renderMinigameDifficulty() {
+  const game = mgCore.GAME_BY_ID[currentMinigameId];
+  if (!game) { showScreen('minigames'); return; }
+
+  $('[data-minigame-diff-title]').textContent = game.name;
+  $('[data-minigame-diff-blurb]').textContent = game.blurb;
+
+  const grid = $('[data-minigame-diff-grid]');
+  grid.innerHTML = '';
+  for (const d of mgCore.DIFFICULTIES) {
+    const meta = mgCore.DIFFICULTY_META[d];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-xl ${meta.btnClass}`;
+    const title = document.createElement('span');
+    title.className = 'btn-title';
+    title.textContent = meta.label;
+    const sub = document.createElement('span');
+    sub.className = 'btn-sub';
+    const best = mgCore.getBest(game.id, d);
+    sub.textContent = best != null ? `Best: ${best} ${game.scoreLabel}` : 'No best yet';
+    btn.append(title, sub);
+    btn.addEventListener('click', () => { sfx.click(); openMinigame(game.id, d); });
+    grid.append(btn);
+  }
+}
+
+function openMinigameDifficulty(id) {
+  currentMinigameId = id;
+  showScreen('minigame-difficulty');
+}
+
 /** Mount and start one mini-game on the play screen -- shows the right
  * element for its type (canvas vs. plain DOM), resets the end overlay,
- * and hands off to minigames.startGame() for the actual game logic. */
-function openMinigame(id) {
-  const game = minigames.GAME_BY_ID[id];
+ * and hands off to mgCore.startGame() for the actual game logic. */
+function openMinigame(id, difficulty) {
+  const game = mgCore.GAME_BY_ID[id];
   if (!game) return;
   currentMinigameId = id;
+  currentMinigameDifficulty = difficulty;
   showScreen('minigame-play');
 
-  $('[data-minigame-title]').textContent = game.name;
+  $('[data-minigame-title]').textContent = `${game.name} -- ${mgCore.DIFFICULTY_META[difficulty].label}`;
   $('[data-minigame-end]').hidden = true;
   const canvas = $('[data-minigame-canvas]');
   const container = $('[data-minigame-dom]');
@@ -1127,26 +1168,26 @@ function openMinigame(id) {
 
   let ctx = null;
   if (game.type === 'canvas') {
-    canvas.width = minigames.CANVAS_W;
-    canvas.height = minigames.CANVAS_H;
+    canvas.width = mgCore.CANVAS_W;
+    canvas.height = mgCore.CANVAS_H;
     ctx = canvas.getContext('2d');
   } else {
     container.innerHTML = '';
   }
 
-  minigames.startGame(id, { canvas, ctx, container }, {
+  mgCore.startGame(id, { canvas, ctx, container }, {
     setHud: (text) => { $('[data-minigame-hud]').textContent = text; },
     onEnd: (score) => showMinigameEnd(game, score),
-  });
+  }, difficulty);
 }
 
 function showMinigameEnd(game, score) {
-  const isBest = minigames.reportScore(game.id, score, game.higherIsBetter);
+  const isBest = mgCore.reportScore(game.id, currentMinigameDifficulty, score, game.higherIsBetter);
   $('[data-minigame-end-title]').textContent = 'Game Over!';
   $('[data-minigame-end-score]').textContent = `${score} ${game.scoreLabel}`;
   $('[data-minigame-end-best]').textContent = isBest
     ? 'New best!'
-    : `Best: ${minigames.getBest(game.id)} ${game.scoreLabel}`;
+    : `Best: ${mgCore.getBest(game.id, currentMinigameDifficulty)} ${game.scoreLabel}`;
   $('[data-minigame-end]').hidden = false;
   sfx.win();
 }
@@ -1459,7 +1500,11 @@ function wire() {
   }
   $('[data-action="minigame-again"]').addEventListener('click', () => {
     sfx.click();
-    if (currentMinigameId) openMinigame(currentMinigameId);
+    if (currentMinigameId) openMinigame(currentMinigameId, currentMinigameDifficulty);
+  });
+  $('[data-action="minigame-diff"]').addEventListener('click', () => {
+    sfx.click();
+    if (currentMinigameId) openMinigameDifficulty(currentMinigameId);
   });
 
   $('[data-action="admin-grant-coins"]').addEventListener('click', () => {

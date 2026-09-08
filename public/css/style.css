@@ -810,6 +810,7 @@ body {
   cursor: pointer;
 }
 .mg-reaction-box.is-go { background: #4ff08a; color: #04231b; }
+.mg-reaction-box.is-decoy { background: #ffd166; color: #2c1d02; }
 
 /* Memory Match */
 .mg-memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 320px; }
@@ -832,6 +833,9 @@ body {
 .mg-simon-blue { background: #4d7fff; color: #4d7fff; }
 .mg-simon-green { background: #4ff08a; color: #4ff08a; }
 .mg-simon-yellow { background: #ffd166; color: #ffd166; }
+.mg-simon-purple { background: #a06bff; color: #a06bff; }
+.mg-simon-orange { background: #ff8c3a; color: #ff8c3a; }
+.mg-simon-grid.is-six { grid-template-columns: repeat(3, 1fr); width: 330px; }
 
 /* Rock Paper Scissors */
 .mg-rps-status { font-size: 16px; text-align: center; }
@@ -867,7 +871,75 @@ body {
 @media (max-width: 520px) {
   .mg-reaction-box { width: 160px; height: 160px; }
   .mg-simon-grid, .mg-ttt-grid { width: 180px; height: 180px; }
+  .mg-simon-grid.is-six { width: 240px; height: 160px; }
 }
+
+/* Difficulty picker (shown before every mini-game) */
+.minigame-diff-grid { display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 0 auto; width: 100%; }
+
+/* Connect Four */
+.mg-c4-cols { display: flex; gap: 4px; max-width: 350px; width: 100%; margin: 0 auto 6px; }
+.mg-c4-colbtn { flex: 1; padding: 6px 0; }
+.mg-c4-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 350px; width: 100%; margin: 0 auto; background: #0a1626; padding: 6px; border-radius: 10px; }
+.mg-c4-cell { aspect-ratio: 1; border-radius: 50%; background: #0d1a2b; }
+
+/* Minesweeper */
+.mg-mines-grid { display: grid; gap: 2px; max-width: 320px; width: 100%; margin: 0 auto; }
+.mg-mines-cell { aspect-ratio: 1; background: #2a3a56; border: 1px solid #1c2f45; font-size: 12px; font-weight: 800; color: #eef4ff; cursor: pointer; }
+.mg-mines-cell.is-open { background: #0d1a2b; cursor: default; }
+
+/* Lights Out */
+.mg-lights-grid { display: grid; gap: 4px; max-width: 280px; width: 100%; margin: 0 auto; }
+.mg-lights-cell { aspect-ratio: 1; background: #1c2340; border: 2px solid #2a3a56; border-radius: 6px; cursor: pointer; }
+.mg-lights-cell.is-on { background: #ffd166; border-color: #ffb347; box-shadow: 0 0 14px rgba(255, 209, 102, 0.5); }
+
+/* Slide Puzzle */
+.mg-slide-grid { display: grid; gap: 4px; max-width: 260px; width: 100%; margin: 0 auto; }
+.mg-slide-cell { aspect-ratio: 1; background: var(--panel); border: 2px solid var(--panel-edge); border-radius: 8px; font-weight: 800; font-size: 18px; cursor: pointer; color: inherit; }
+.mg-slide-cell.is-blank { background: transparent; border-color: transparent; cursor: default; }
+
+/* Sudoku Mini */
+.mg-sudoku-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; max-width: 260px; width: 100%; margin: 0 auto; }
+.mg-sudoku-cell { aspect-ratio: 1; text-align: center; font-size: 16px; font-weight: 700; border: 1px solid var(--panel-edge); border-radius: 4px; background: var(--panel); color: inherit; padding: 0; }
+.mg-sudoku-cell.is-fixed { background: #1c2340; color: var(--gold); }
+
+/* Mastermind */
+.mg-mm-guess-row { display: flex; gap: 8px; justify-content: center; }
+.mg-mm-slot { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--panel-edge); cursor: pointer; }
+.mg-mm-history { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; width: 100%; max-width: 340px; }
+.mg-mm-row { display: flex; gap: 6px; align-items: center; justify-content: center; background: var(--panel); padding: 6px 10px; border-radius: 8px; }
+.mg-mm-dot { width: 20px; height: 20px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255, 255, 255, 0.25); }
+.mg-mm-pegs { margin-left: 8px; font-size: 13px; color: var(--muted); }
+
+/* Word Scramble */
+.mg-scramble-word { font-size: 34px; font-weight: 900; letter-spacing: 4px; }
+
+/* Typing Test */
+.mg-typing-target { font-size: 18px; line-height: 1.5; text-align: center; max-width: 400px; color: var(--muted); }
+.mg-typing-input { width: 100%; max-width: 400px; }
+
+/* Sequence Recall */
+.mg-seq-grid { display: grid; gap: 8px; width: 240px; max-width: 100%; margin: 0 auto; }
+.mg-seq-tile { aspect-ratio: 1; background: #1c2340; border: 2px solid var(--panel-edge); border-radius: 10px; font-weight: 800; font-size: 18px; color: #eef4ff; cursor: pointer; }
+.mg-seq-tile.is-lit { background: #4cc9f0; box-shadow: 0 0 20px rgba(76, 201, 240, 0.5); }
+
+/* Higher or Lower */
+.mg-highlow-status { font-size: 16px; text-align: center; }
+.mg-highlow-cards { display: flex; justify-content: center; }
+.mg-highlow-card { font-size: 40px; font-weight: 900; padding: 14px 22px; background: var(--panel); border-radius: 12px; border: 2px solid var(--panel-edge); }
+
+/* Color Flood */
+.mg-flood-grid { display: grid; gap: 1px; max-width: 320px; width: 100%; margin: 0 auto; background: #0a1626; }
+.mg-flood-cell { aspect-ratio: 1; }
+
+/* Odd One Out */
+.mg-oddoneout-grid { display: grid; gap: 8px; max-width: 300px; width: 100%; margin: 0 auto; }
+.mg-oddoneout-tile { aspect-ratio: 1; font-size: 28px; background: var(--panel); border: 2px solid var(--panel-edge); border-radius: 10px; cursor: pointer; color: #eef4ff; }
+
+/* Speed Tap */
+.mg-speedtap-grid { display: grid; gap: 8px; max-width: 300px; width: 100%; margin: 0 auto; }
+.mg-speedtap-tile { aspect-ratio: 1; background: var(--panel); border: 2px solid var(--panel-edge); border-radius: 10px; cursor: pointer; }
+.mg-speedtap-tile.is-lit { background: #4ff08a; box-shadow: 0 0 20px rgba(79, 240, 138, 0.5); }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .stat { padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; }

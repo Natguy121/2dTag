@@ -1,51 +1,30 @@
-// Fifteen quick, fully offline single-player mini-games -- no server, no
-// multiplayer state, nothing here ever touches net.js. Reachable from
-// Home -> Offline Mini Games. Each game reports a single numeric score
-// when it ends; a per-game best score is remembered in the profile
-// (see storage.js's miniScores) purely for bragging rights -- none of
-// this touches coins or the real economy.
+// The original fifteen offline mini-games -- see minigames-core.js for the
+// shared canvas size, math helpers, difficulty system and mount/teardown
+// harness every game (here and in minigames2.js) is built on.
 //
-// Two shapes of game, both exposing the same init(mount, hooks) ->
-// { destroy() } contract:
+// Two shapes of game, both exposing init(mount, hooks, difficulty) ->
+// { destroy() }:
 //   'canvas' games get mount.ctx (a 2D context already sized to
 //     CANVAS_W x CANVAS_H) and draw every frame themselves.
 //   'dom' games get mount.container (an empty element) and build
 //     whatever plain buttons/text they need inside it.
+// `difficulty` is one of DIFFICULTIES ('veryeasy'..'superhard'); each game
+// uses diffIdx(difficulty) to index its own 5-entry tuning arrays.
 // hooks.onEnd(score) is called exactly once, whenever the game is over
 // (win, lose, or timer up) -- the caller (app.js) handles the score
 // screen and best-score bookkeeping, not the games themselves.
 // hooks.setHud(text) updates the one shared status line above the game.
 
-import { profile, save } from './storage.js';
-
-export const CANVAS_W = 480;
-export const CANVAS_H = 320;
-
-export function getBest(id) {
-  return profile.miniScores?.[id];
-}
-
-/** Records a new best if `value` beats the stored one (or there isn't one
- * yet). Returns true when it's a new best, so the caller can say so. */
-export function reportScore(id, value, higherIsBetter) {
-  profile.miniScores = profile.miniScores || {};
-  const prev = profile.miniScores[id];
-  const isBest = prev == null || (higherIsBetter ? value > prev : value < prev);
-  if (isBest) {
-    profile.miniScores[id] = value;
-    save();
-  }
-  return isBest;
-}
-
-function rand(min, max) { return min + Math.random() * (max - min); }
-function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+import { CANVAS_W, CANVAS_H, rand, randInt, clamp, pick, diffIdx } from './minigames-core.js';
 
 // ------------------------------------------------------------- 1. Reaction
 
-function initReaction(mount, hooks) {
+function initReaction(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const WAIT_MIN = [1500, 1200, 1000, 800, 600][i];
+  const WAIT_MAX = [3500, 3200, 3000, 2500, 2200][i];
+  const DECOYS = [0, 0, 0, 1, 2][i];
+
   const { container } = mount;
   container.innerHTML = '';
   const box = document.createElement('button');
@@ -54,9 +33,34 @@ function initReaction(mount, hooks) {
   box.textContent = 'Wait for green...';
   container.append(box);
 
-  let phase = 'waiting'; // waiting -> armed -> done
+  let phase = 'waiting'; // waiting -> decoy -> waiting -> armed -> done
   let armedAt = 0;
   let timer = null;
+  let decoysLeft = DECOYS;
+
+  function scheduleNext() {
+    const delay = rand(WAIT_MIN, WAIT_MAX);
+    if (decoysLeft > 0 && Math.random() < 0.6) {
+      timer = setTimeout(decoy, delay);
+    } else {
+      timer = setTimeout(arm, delay);
+    }
+  }
+
+  function decoy() {
+    decoysLeft--;
+    phase = 'decoy';
+    box.classList.add('is-decoy');
+    box.textContent = 'Not yet...';
+    setTimeout(() => {
+      if (phase === 'decoy') {
+        box.classList.remove('is-decoy');
+        box.textContent = 'Wait for green...';
+        phase = 'waiting';
+        scheduleNext();
+      }
+    }, rand(250, 400));
+  }
 
   function arm() {
     phase = 'armed';
@@ -65,14 +69,16 @@ function initReaction(mount, hooks) {
     box.textContent = 'CLICK NOW!';
   }
 
-  timer = setTimeout(arm, rand(1000, 3000));
-  hooks.setHud('Click the box the instant it turns green.');
+  scheduleNext();
+  hooks.setHud('Click the box the instant it turns green -- ignore any false flash.');
 
   box.addEventListener('click', () => {
-    if (phase === 'waiting') {
+    if (phase === 'waiting' || phase === 'decoy') {
+      box.classList.remove('is-decoy');
       box.textContent = 'Too soon! Wait for green...';
       clearTimeout(timer);
-      timer = setTimeout(arm, rand(1000, 3000));
+      phase = 'waiting';
+      scheduleNext();
       return;
     }
     if (phase === 'armed') {
@@ -91,7 +97,14 @@ function initReaction(mount, hooks) {
 
 // ---------------------------------------------------------- 2. Whack-a-Mole
 
-function initWhack(mount, hooks) {
+function initWhack(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const UP_MIN = [900, 750, 600, 450, 320][i];
+  const UP_MAX = [1400, 1150, 1000, 750, 550][i];
+  const SPAWN_MIN = [500, 450, 400, 300, 220][i];
+  const SPAWN_MAX = [1000, 900, 900, 650, 450][i];
+  const TIME = [25, 22, 20, 18, 15][i];
+
   const { ctx } = mount;
   const cols = 3;
   const rows = 3;
@@ -105,10 +118,10 @@ function initWhack(mount, hooks) {
   }
 
   let score = 0;
-  let timeLeft = 20;
+  let timeLeft = TIME;
   let raf = 0;
   let lastT = performance.now();
-  let nextPop = performance.now() + rand(400, 900);
+  let nextPop = performance.now() + rand(SPAWN_MIN, SPAWN_MAX);
   let ended = false;
 
   function draw() {
@@ -149,9 +162,9 @@ function initWhack(mount, hooks) {
         if (candidates.length) {
           const h = pick(candidates);
           h.up = true;
-          h.upUntil = now + rand(600, 1000);
+          h.upUntil = now + rand(UP_MIN, UP_MAX);
         }
-        nextPop = now + rand(400, 900);
+        nextPop = now + rand(SPAWN_MIN, SPAWN_MAX);
       }
       for (const h of holes) {
         if (h.up && now >= h.upUntil) h.up = false;
@@ -180,7 +193,7 @@ function initWhack(mount, hooks) {
     }
   }
   mount.canvas.addEventListener('click', onClick);
-  hooks.setHud('Click the moles before they duck -- 20 seconds.');
+  hooks.setHud(`Click the moles before they duck -- ${TIME} seconds.`);
 
   return {
     destroy() {
@@ -192,18 +205,25 @@ function initWhack(mount, hooks) {
 
 // ----------------------------------------------------------- 3. Memory Match
 
-function initMemory(mount, hooks) {
+function initMemory(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const PAIRS = [3, 6, 8, 10, 12][i];
+  const COLS = [3, 4, 4, 5, 6][i];
+
   const { container } = mount;
   container.innerHTML = '';
   const grid = document.createElement('div');
   grid.className = 'mg-memory-grid';
+  grid.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
   container.append(grid);
 
-  const symbols = ['\u{1F438}', '\u{1F995}', '\u{1F419}', '\u{1F42C}', '\u{1F98A}', '\u{1F43C}', '\u{1F994}', '\u{1F42D}'];
+  const allSymbols = ['\u{1F438}', '\u{1F995}', '\u{1F419}', '\u{1F42C}', '\u{1F98A}', '\u{1F43C}',
+    '\u{1F994}', '\u{1F42D}', '\u{1F98B}', '\u{1F41D}', '\u{1F41F}', '\u{1F426}'];
+  const symbols = allSymbols.slice(0, PAIRS);
   const deck = [...symbols, ...symbols];
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = randInt(0, i);
-    [deck[i], deck[j]] = [deck[j], deck[i]];
+  for (let k = deck.length - 1; k > 0; k--) {
+    const j = randInt(0, k);
+    [deck[k], deck[j]] = [deck[j], deck[k]];
   }
 
   let moves = 0;
@@ -212,31 +232,31 @@ function initMemory(mount, hooks) {
   let first = null;
   const cards = [];
 
-  deck.forEach((symbol, i) => {
+  deck.forEach((symbol, idx) => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'mg-memory-card';
     card.textContent = '?';
-    card.addEventListener('click', () => flip(i));
+    card.addEventListener('click', () => flip(idx));
     grid.append(card);
     cards.push({ el: card, symbol, open: false, done: false });
   });
 
-  function flip(i) {
-    const c = cards[i];
+  function flip(idx) {
+    const c = cards[idx];
     if (locked || c.open || c.done) return;
     c.open = true;
     c.el.textContent = c.symbol;
     c.el.classList.add('is-open');
 
     if (first == null) {
-      first = i;
+      first = idx;
       return;
     }
     moves++;
     const a = cards[first];
-    const b = cards[i];
-    if (a.symbol === b.symbol && first !== i) {
+    const b = cards[idx];
+    if (a.symbol === b.symbol && first !== idx) {
       a.done = true;
       b.done = true;
       a.el.classList.add('is-matched');
@@ -259,21 +279,24 @@ function initMemory(mount, hooks) {
     }
   }
 
-  hooks.setHud('Find every matching pair -- fewer moves is better.');
+  hooks.setHud(`Find every matching pair (${symbols.length}) -- fewer moves is better.`);
   return { destroy() {} };
 }
 
 // ------------------------------------------------------------- 4. Simon Says
 
-function initSimon(mount, hooks) {
+function initSimon(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const PAD_COLORS = i >= 3 ? ['red', 'blue', 'green', 'yellow', 'purple', 'orange'] : ['red', 'blue', 'green', 'yellow'];
+  const STEP_MS = [650, 550, 500, 400, 300][i];
+
   const { container } = mount;
   container.innerHTML = '';
   const wrap = document.createElement('div');
-  wrap.className = 'mg-simon-grid';
+  wrap.className = PAD_COLORS.length === 6 ? 'mg-simon-grid is-six' : 'mg-simon-grid';
   container.append(wrap);
 
-  const colors = ['red', 'blue', 'green', 'yellow'];
-  const pads = colors.map((color) => {
+  const pads = PAD_COLORS.map((color) => {
     const pad = document.createElement('button');
     pad.type = 'button';
     pad.className = `mg-simon-pad mg-simon-${color}`;
@@ -288,30 +311,30 @@ function initSimon(mount, hooks) {
   let timers = [];
   const schedule = (fn, ms) => timers.push(setTimeout(fn, ms));
 
-  function flash(i, ms = 350) {
-    pads[i].classList.add('is-lit');
-    setTimeout(() => pads[i].classList.remove('is-lit'), ms - 60);
+  function flash(idx, ms = STEP_MS * 0.7) {
+    pads[idx].classList.add('is-lit');
+    setTimeout(() => pads[idx].classList.remove('is-lit'), ms - 60);
   }
 
   function playSequence() {
     accepting = false;
     playerIndex = 0;
-    sequence.forEach((idx, step) => schedule(() => flash(idx), 500 * step + 400));
-    schedule(() => { accepting = true; }, 500 * sequence.length + 500);
+    sequence.forEach((idx, step) => schedule(() => flash(idx), STEP_MS * step + STEP_MS));
+    schedule(() => { accepting = true; }, STEP_MS * sequence.length + STEP_MS + 100);
   }
 
   function nextRound() {
     round++;
-    sequence.push(randInt(0, 3));
+    sequence.push(randInt(0, pads.length - 1));
     hooks.setHud(`Round ${round} -- watch, then repeat.`);
     playSequence();
   }
 
-  pads.forEach((pad, i) => {
+  pads.forEach((pad, idx) => {
     pad.addEventListener('click', () => {
       if (!accepting) return;
-      flash(i, 250);
-      if (sequence[playerIndex] !== i) {
+      flash(idx, 250);
+      if (sequence[playerIndex] !== idx) {
         accepting = false;
         hooks.onEnd(round - 1);
         return;
@@ -333,7 +356,10 @@ function initSimon(mount, hooks) {
 
 // ------------------------------------------------------------------ 5. Snake
 
-function initSnake(mount, hooks) {
+function initSnake(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const TICK_MS = [170, 145, 120, 95, 75][i];
+
   const { ctx } = mount;
   const cell = 20;
   const cols = CANVAS_W / cell;
@@ -359,8 +385,8 @@ function initSnake(mount, hooks) {
     ctx.fillStyle = '#ffd166';
     ctx.fillRect(food.x * cell + 2, food.y * cell + 2, cell - 4, cell - 4);
     ctx.fillStyle = '#4ff08a';
-    snake.forEach((s, i) => {
-      ctx.globalAlpha = i === 0 ? 1 : 0.85;
+    snake.forEach((s, idx) => {
+      ctx.globalAlpha = idx === 0 ? 1 : 0.85;
       ctx.fillRect(s.x * cell + 1, s.y * cell + 1, cell - 2, cell - 2);
     });
     ctx.globalAlpha = 1;
@@ -406,7 +432,7 @@ function initSnake(mount, hooks) {
 
   draw();
   hooks.setHud('Arrow keys / WASD to steer. Eat the gold square, avoid the walls and yourself.');
-  const interval = setInterval(tick, 120);
+  const interval = setInterval(tick, TICK_MS);
 
   return {
     destroy() {
@@ -418,14 +444,16 @@ function initSnake(mount, hooks) {
 
 // -------------------------------------------------------------- 6. Flappy
 
-function initFlappy(mount, hooks) {
+function initFlappy(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const GAP = [175, 150, 130, 110, 95][i];
+  const SPEED = [130, 145, 160, 185, 210][i];
+
   const { ctx, canvas } = mount;
   const bird = { x: 80, y: CANVAS_H / 2, vy: 0 };
   const GRAVITY = 900;
   const FLAP = -300;
-  const GAP = 130;
   const PIPE_W = 50;
-  const SPEED = 160;
   let pipes = [{ x: CANVAS_W + 40, gapY: rand(80, CANVAS_H - 80) }];
   let score = 0;
   let ended = false;
@@ -504,7 +532,10 @@ function initFlappy(mount, hooks) {
 
 // -------------------------------------------------- 7. Rock Paper Scissors
 
-function initRPS(mount, hooks) {
+function initRPS(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const SMART_CHANCE = [0, 0, 0, 0.6, 0.9][i];
+
   const { container } = mount;
   container.innerHTML = '';
   const options = [
@@ -512,6 +543,8 @@ function initRPS(mount, hooks) {
     { id: 'paper', icon: '\u{1F590}️', beats: 'rock' },
     { id: 'scissors', icon: '✌️', beats: 'paper' },
   ];
+  const COUNTERS = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+  const playerCounts = { rock: 0, paper: 0, scissors: 0 };
 
   const status = document.createElement('div');
   status.className = 'mg-rps-status';
@@ -532,6 +565,14 @@ function initRPS(mount, hooks) {
   }
   updateScore();
 
+  function cpuPick() {
+    if (Math.random() < SMART_CHANCE) {
+      const favorite = Object.entries(playerCounts).sort((a, b) => b[1] - a[1])[0];
+      if (favorite[1] > 0) return options.find((o) => o.id === COUNTERS[favorite[0]]);
+    }
+    return pick(options);
+  }
+
   options.forEach((opt) => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -539,7 +580,8 @@ function initRPS(mount, hooks) {
     btn.textContent = opt.icon;
     btn.addEventListener('click', () => {
       if (ended) return;
-      const cpu = pick(options);
+      playerCounts[opt.id]++;
+      const cpu = cpuPick();
       round++;
       let result;
       if (cpu.id === opt.id) result = 'Draw!';
@@ -561,22 +603,25 @@ function initRPS(mount, hooks) {
 
 // -------------------------------------------------------- 8. Number Guess
 
-function initGuess(mount, hooks) {
+function initGuess(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const MAX = [30, 60, 100, 200, 500][i];
+
   const { container } = mount;
   container.innerHTML = '';
-  const secret = randInt(1, 100);
+  const secret = randInt(1, MAX);
   let guesses = 0;
   let ended = false;
 
   const status = document.createElement('div');
   status.className = 'mg-guess-status';
-  status.textContent = 'Guess a number between 1 and 100.';
+  status.textContent = `Guess a number between 1 and ${MAX}.`;
   const row = document.createElement('div');
   row.className = 'mg-guess-row';
   const input = document.createElement('input');
   input.type = 'number';
   input.min = '1';
-  input.max = '100';
+  input.max = String(MAX);
   input.className = 'text-input mg-guess-input';
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -588,7 +633,7 @@ function initGuess(mount, hooks) {
   function submit() {
     if (ended) return;
     const value = Number(input.value);
-    if (!Number.isFinite(value) || value < 1 || value > 100) return;
+    if (!Number.isFinite(value) || value < 1 || value > MAX) return;
     guesses++;
     if (value === secret) {
       status.textContent = `Correct! It was ${secret}, in ${guesses} guess${guesses === 1 ? '' : 'es'}.`;
@@ -609,7 +654,10 @@ function initGuess(mount, hooks) {
 
 // -------------------------------------------------------- 9. Tic-Tac-Toe
 
-function initTicTacToe(mount, hooks) {
+function initTicTacToe(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const STRATEGY = ['random', 'mostly-random', 'heuristic', 'perfect', 'perfect'][i];
+
   const { container } = mount;
   container.innerHTML = '';
   const grid = document.createElement('div');
@@ -620,11 +668,11 @@ function initTicTacToe(mount, hooks) {
   container.append(status);
 
   const board = Array(9).fill(null);
-  const cells = board.map((_, i) => {
+  const cells = board.map((_, idx) => {
     const cell = document.createElement('button');
     cell.type = 'button';
     cell.className = 'mg-ttt-cell';
-    cell.addEventListener('click', () => playerMove(i));
+    cell.addEventListener('click', () => playerMove(idx));
     grid.append(cell);
     return cell;
   });
@@ -644,7 +692,7 @@ function initTicTacToe(mount, hooks) {
   }
 
   function render() {
-    board.forEach((v, i) => { cells[i].textContent = v || ''; cells[i].disabled = !!v || ended; });
+    board.forEach((v, idx) => { cells[idx].textContent = v || ''; cells[idx].disabled = !!v || ended; });
   }
 
   function finish(result) {
@@ -655,24 +703,61 @@ function initTicTacToe(mount, hooks) {
     else { status.textContent = 'The CPU wins.'; hooks.onEnd(0); }
   }
 
-  function cpuMove() {
-    const empty = board.map((v, i) => (v ? -1 : i)).filter((i) => i >= 0);
-    // Win if possible, else block, else take center/corner/random.
-    for (const i of empty) {
-      const copy = [...board]; copy[i] = 'O';
-      if (winner(copy) === 'O') { board[i] = 'O'; return; }
+  function heuristicMove(empty) {
+    for (const idx of empty) {
+      const copy = [...board]; copy[idx] = 'O';
+      if (winner(copy) === 'O') return idx;
     }
-    for (const i of empty) {
-      const copy = [...board]; copy[i] = 'X';
-      if (winner(copy) === 'X') { board[i] = 'O'; return; }
+    for (const idx of empty) {
+      const copy = [...board]; copy[idx] = 'X';
+      if (winner(copy) === 'X') return idx;
     }
-    const preferred = [4, 0, 2, 6, 8].filter((i) => empty.includes(i));
-    board[preferred.length ? preferred[0] : pick(empty)] = 'O';
+    const preferred = [4, 0, 2, 6, 8].filter((idx) => empty.includes(idx));
+    return preferred.length ? preferred[0] : pick(empty);
   }
 
-  function playerMove(i) {
-    if (ended || board[i]) return;
-    board[i] = 'X';
+  // Minimax with a depth-aware score so it prefers the fastest win and the
+  // slowest loss -- plain win/lose/draw scoring plays correctly but can
+  // stall on an already-won position instead of finishing it off.
+  function minimax(b, turn, depth) {
+    const w = winner(b);
+    if (w === 'O') return 10 - depth;
+    if (w === 'X') return depth - 10;
+    if (w === 'draw') return 0;
+    const empty = b.map((v, idx) => (v ? -1 : idx)).filter((idx) => idx >= 0);
+    let best = turn === 'O' ? -Infinity : Infinity;
+    for (const idx of empty) {
+      const copy = [...b]; copy[idx] = turn;
+      const score = minimax(copy, turn === 'O' ? 'X' : 'O', depth + 1);
+      best = turn === 'O' ? Math.max(best, score) : Math.min(best, score);
+    }
+    return best;
+  }
+
+  function perfectMove(empty) {
+    let bestIdx = empty[0];
+    let bestScore = -Infinity;
+    for (const idx of empty) {
+      const copy = [...board]; copy[idx] = 'O';
+      const score = minimax(copy, 'X', 1);
+      if (score > bestScore) { bestScore = score; bestIdx = idx; }
+    }
+    return bestIdx;
+  }
+
+  function cpuMove() {
+    const empty = board.map((v, idx) => (v ? -1 : idx)).filter((idx) => idx >= 0);
+    let idx;
+    if (STRATEGY === 'random') idx = pick(empty);
+    else if (STRATEGY === 'mostly-random') idx = Math.random() < 0.5 ? heuristicMove(empty) : pick(empty);
+    else if (STRATEGY === 'heuristic') idx = heuristicMove(empty);
+    else idx = perfectMove(empty);
+    board[idx] = 'O';
+  }
+
+  function playerMove(idx) {
+    if (ended || board[idx]) return;
+    board[idx] = 'X';
     const w = winner(board);
     if (w) { finish(w); return; }
     cpuMove();
@@ -688,17 +773,23 @@ function initTicTacToe(mount, hooks) {
 
 // -------------------------------------------------------------------- 10. 2048
 
-function init2048(mount, hooks) {
+function init2048(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const size = [5, 4, 4, 4, 3][i];
+  const FOUR_CHANCE = [0.06, 0.08, 0.10, 0.25, 0.35][i];
+
   const { ctx } = mount;
-  const size = 4;
-  const cell = 63;
   const gap = 6;
+  // Fixed (not centered) top margin, clear of the score line drawn above
+  // the board; cell size is derived from the smaller available dimension
+  // so any grid size (3..5) fits without overlapping that text.
+  const oy = 36;
+  const availW = CANVAS_W - 20;
+  const availH = CANVAS_H - oy - 10;
+  const cell = Math.floor((Math.min(availW, availH) - (size + 1) * gap) / size);
   const boardPx = size * cell + (size + 1) * gap;
   const ox = (CANVAS_W - boardPx) / 2;
-  // Fixed (not centered) top margin, clear of the score line drawn above
-  // the board -- boardPx is tall enough that centering it vertically would
-  // push its top edge up under that text.
-  const oy = 36;
+
   let grid = Array.from({ length: size }, () => Array(size).fill(0));
   let score = 0;
   let ended = false;
@@ -712,7 +803,7 @@ function init2048(mount, hooks) {
     const cells = emptyCells();
     if (!cells.length) return;
     const [r, c] = pick(cells);
-    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+    grid[r][c] = Math.random() < (1 - FOUR_CHANCE) ? 2 : 4;
   }
   spawnTile();
   spawnTile();
@@ -720,14 +811,14 @@ function init2048(mount, hooks) {
   function slideRow(row) {
     const vals = row.filter((v) => v);
     const merged = [];
-    for (let i = 0; i < vals.length; i++) {
-      if (i < vals.length - 1 && vals[i] === vals[i + 1]) {
-        const v = vals[i] * 2;
+    for (let k = 0; k < vals.length; k++) {
+      if (k < vals.length - 1 && vals[k] === vals[k + 1]) {
+        const v = vals[k] * 2;
         merged.push(v);
         score += v;
-        i++;
+        k++;
       } else {
-        merged.push(vals[i]);
+        merged.push(vals[k]);
       }
     }
     while (merged.length < size) merged.push(0);
@@ -797,7 +888,7 @@ function init2048(mount, hooks) {
         ctx.fillRect(x, y, cell, cell);
         if (v) {
           ctx.fillStyle = v <= 4 ? '#0b1220' : '#fff';
-          ctx.font = 'bold 26px system-ui, sans-serif';
+          ctx.font = `bold ${Math.max(14, Math.floor(cell * 0.4))}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(v), x + cell / 2, y + cell / 2 + 2);
@@ -821,17 +912,23 @@ function init2048(mount, hooks) {
   window.addEventListener('keydown', onKey);
 
   draw();
-  hooks.setHud('Arrow keys / WASD to slide. Merge matching tiles to reach 2048.');
+  hooks.setHud(`Arrow keys / WASD to slide. Merge matching tiles on this ${size}x${size} board.`);
 
   return { destroy() { window.removeEventListener('keydown', onKey); } };
 }
 
 // -------------------------------------------------------------- 11. Breakout
 
-function initBreakout(mount, hooks) {
+function initBreakout(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const PADDLE_W = [110, 95, 80, 65, 50][i];
+  const BALL_VX = [130, 145, 160, 190, 230][i];
+  const BALL_VY = [-180, -200, -220, -260, -300][i];
+  const LIVES_START = [5, 4, 3, 2, 1][i];
+
   const { ctx, canvas } = mount;
-  const paddle = { w: 80, h: 12, x: CANVAS_W / 2 - 40, y: CANVAS_H - 26 };
-  const ball = { x: CANVAS_W / 2, y: CANVAS_H - 40, vx: 160, vy: -220, r: 7 };
+  const paddle = { w: PADDLE_W, h: 12, x: CANVAS_W / 2 - PADDLE_W / 2, y: CANVAS_H - 26 };
+  const ball = { x: CANVAS_W / 2, y: CANVAS_H - 40, vx: BALL_VX, vy: BALL_VY, r: 7 };
   const cols = 8;
   const rowsN = 4;
   const brickW = CANVAS_W / cols;
@@ -843,7 +940,7 @@ function initBreakout(mount, hooks) {
     }
   }
   let destroyed = 0;
-  let lives = 3;
+  let lives = LIVES_START;
   let ended = false;
   let raf = 0;
   let lastT = performance.now();
@@ -887,7 +984,7 @@ function initBreakout(mount, hooks) {
         && ball.x > paddle.x && ball.x < paddle.x + paddle.w && ball.vy > 0) {
         ball.vy *= -1;
         const hitPos = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
-        ball.vx = hitPos * 220;
+        ball.vx = hitPos * Math.abs(BALL_VX) * 1.4;
       }
       for (const b of bricks) {
         if (!b.alive) continue;
@@ -904,7 +1001,7 @@ function initBreakout(mount, hooks) {
           ended = true;
           hooks.onEnd(destroyed);
         } else {
-          ball.x = CANVAS_W / 2; ball.y = CANVAS_H - 40; ball.vx = 160; ball.vy = -220;
+          ball.x = CANVAS_W / 2; ball.y = CANVAS_H - 40; ball.vx = BALL_VX; ball.vy = BALL_VY;
         }
       }
       if (destroyed === bricks.length) {
@@ -933,7 +1030,7 @@ function initBreakout(mount, hooks) {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   canvas.addEventListener('pointermove', onPointerMove);
-  hooks.setHud('Arrow keys or mouse to move the paddle. Clear every brick.');
+  hooks.setHud(`Arrow keys or mouse to move the paddle. Clear every brick -- ${LIVES_START} lives.`);
 
   return {
     destroy() {
@@ -947,7 +1044,14 @@ function initBreakout(mount, hooks) {
 
 // ---------------------------------------------------------- 12. Dodge Blocks
 
-function initDodge(mount, hooks) {
+function initDodge(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const BASE_SPEED = [90, 105, 120, 150, 190][i];
+  const SPEED_RAMP = [5, 6, 8, 10, 13][i];
+  const BASE_SPAWN = [900, 800, 700, 550, 400][i];
+  const SPAWN_RAMP = [10, 12, 15, 18, 22][i];
+  const MIN_SPAWN = [300, 260, 220, 180, 140][i];
+
   const { ctx, canvas } = mount;
   const player = { w: 30, h: 30, x: CANVAS_W / 2 - 15, y: CANVAS_H - 40 };
   let blocks = [];
@@ -980,11 +1084,11 @@ function initDodge(mount, hooks) {
       if (keys.right) player.x += 260 * dt;
       player.x = clamp(player.x, 0, CANVAS_W - player.w);
 
-      const speed = 120 + survived * 8;
+      const speed = BASE_SPEED + survived * SPEED_RAMP;
       if (now >= nextSpawn) {
         const w = rand(24, 60);
         blocks.push({ x: rand(0, CANVAS_W - w), y: -30, w, h: 22 });
-        nextSpawn = now + Math.max(220, 700 - survived * 15);
+        nextSpawn = now + Math.max(MIN_SPAWN, BASE_SPAWN - survived * SPAWN_RAMP);
       }
       for (const b of blocks) b.y += speed * dt;
       blocks = blocks.filter((b) => b.y < CANVAS_H + 40);
@@ -1031,14 +1135,19 @@ function initDodge(mount, hooks) {
 
 // ------------------------------------------------------------ 13. Color Match
 
-function initColorMatch(mount, hooks) {
-  const { container } = mount;
-  container.innerHTML = '';
-  const COLORS = [
+function initColorMatch(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const ALL_COLORS = [
     { name: 'RED', hex: '#ff4d6d' }, { name: 'BLUE', hex: '#4d7fff' },
     { name: 'GREEN', hex: '#4ff08a' }, { name: 'YELLOW', hex: '#ffd166' },
+    { name: 'PURPLE', hex: '#a06bff' }, { name: 'ORANGE', hex: '#ff8c3a' },
   ];
+  const COUNT = [3, 4, 4, 5, 6][i];
+  const COLORS = ALL_COLORS.slice(0, COUNT);
+  const TIME = [40, 35, 30, 25, 20][i];
 
+  const { container } = mount;
+  container.innerHTML = '';
   const word = document.createElement('div');
   word.className = 'mg-colorword';
   const row = document.createElement('div');
@@ -1046,7 +1155,7 @@ function initColorMatch(mount, hooks) {
   container.append(word, row);
 
   let score = 0;
-  let timeLeft = 30;
+  let timeLeft = TIME;
   let ended = false;
   let current = null;
   let interval = null;
@@ -1091,7 +1200,13 @@ function initColorMatch(mount, hooks) {
 
 // ------------------------------------------------------------- 14. Math Blitz
 
-function initMathBlitz(mount, hooks) {
+function initMathBlitz(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const OP_MIN = [1, 2, 2, 5, 10][i];
+  const OP_MAX = [5, 9, 12, 20, 30][i];
+  const OPS = [['+', '-'], ['+', '-', '×'], ['+', '-', '×'], ['+', '-', '×', '÷'], ['+', '-', '×', '÷']][i];
+  const TIME = [40, 35, 30, 25, 20][i];
+
   const { container } = mount;
   container.innerHTML = '';
   const problem = document.createElement('div');
@@ -1109,17 +1224,27 @@ function initMathBlitz(mount, hooks) {
   container.append(problem, row);
 
   let score = 0;
-  let timeLeft = 30;
+  let timeLeft = TIME;
   let ended = false;
   let answer = 0;
 
   function nextProblem() {
-    const ops = ['+', '-', '×'];
-    const op = pick(ops);
-    let a = randInt(2, 12);
-    let b = randInt(2, 12);
+    const op = pick(OPS);
+    let a = randInt(OP_MIN, OP_MAX);
+    let b = randInt(OP_MIN, OP_MAX);
     if (op === '-' && b > a) [a, b] = [b, a];
-    answer = op === '+' ? a + b : op === '-' ? a - b : a * b;
+    if (op === '÷') {
+      // Build a clean integer division problem: pick the answer and
+      // divisor first, then derive the dividend so it always comes out
+      // even -- a random a/b pair would mostly not divide evenly.
+      const divisor = randInt(2, Math.max(2, Math.floor(OP_MAX / 2)));
+      const quotient = randInt(2, OP_MAX);
+      a = divisor * quotient;
+      b = divisor;
+      answer = quotient;
+    } else {
+      answer = op === '+' ? a + b : op === '-' ? a - b : a * b;
+    }
     problem.textContent = `${a} ${op} ${b} = ?`;
     input.value = '';
     input.focus();
@@ -1152,7 +1277,14 @@ function initMathBlitz(mount, hooks) {
 
 // -------------------------------------------------------------- 15. Catcher
 
-function initCatcher(mount, hooks) {
+function initCatcher(mount, hooks, difficulty) {
+  const i = diffIdx(difficulty);
+  const BOMB_CHANCE = [0.12, 0.17, 0.22, 0.30, 0.38][i];
+  const BASE_SPEED = [100, 115, 130, 150, 175][i];
+  const SPEED_RAMP = [4, 5, 6, 8, 10][i];
+  const SPAWN_RAMP = [8, 10, 12, 15, 20][i];
+  const SPAWN_MIN = [350, 320, 280, 240, 200][i];
+
   const { ctx, canvas } = mount;
   const basket = { w: 60, h: 16, x: CANVAS_W / 2 - 30, y: CANVAS_H - 30 };
   let items = [];
@@ -1196,10 +1328,10 @@ function initCatcher(mount, hooks) {
       if (keys.right) basket.x += 280 * dt;
       basket.x = clamp(basket.x, 0, CANVAS_W - basket.w);
 
-      const speed = 130 + elapsed * 6;
+      const speed = BASE_SPEED + elapsed * SPEED_RAMP;
       if (now >= nextSpawn) {
-        items.push({ x: rand(20, CANVAS_W - 20), y: -10, r: 12, bomb: Math.random() < 0.22 });
-        nextSpawn = now + Math.max(280, 800 - elapsed * 12);
+        items.push({ x: rand(20, CANVAS_W - 20), y: -10, r: 12, bomb: Math.random() < BOMB_CHANCE });
+        nextSpawn = now + Math.max(SPAWN_MIN, 800 - elapsed * SPAWN_RAMP);
       }
       for (const it of items) it.y += speed * dt;
 
@@ -1252,40 +1384,18 @@ function initCatcher(mount, hooks) {
 
 export const GAMES = [
   { id: 'reaction', name: 'Reaction Test', icon: '⚡', type: 'dom', blurb: 'Click the instant it turns green.', scoreLabel: 'ms', higherIsBetter: false, init: initReaction },
-  { id: 'whack', name: 'Whack-a-Mole', icon: '\u{1F528}', type: 'canvas', blurb: 'Smack moles before they duck -- 20s.', scoreLabel: 'hits', higherIsBetter: true, init: initWhack },
+  { id: 'whack', name: 'Whack-a-Mole', icon: '\u{1F528}', type: 'canvas', blurb: 'Smack moles before they duck.', scoreLabel: 'hits', higherIsBetter: true, init: initWhack },
   { id: 'memory', name: 'Memory Match', icon: '\u{1F9E0}', type: 'dom', blurb: 'Find every matching pair.', scoreLabel: 'moves', higherIsBetter: false, init: initMemory },
   { id: 'simon', name: 'Simon Says', icon: '\u{1F3B5}', type: 'dom', blurb: 'Watch, then repeat the growing pattern.', scoreLabel: 'rounds', higherIsBetter: true, init: initSimon },
   { id: 'snake', name: 'Snake', icon: '\u{1F40D}', type: 'canvas', blurb: "Eat, grow, don't hit yourself.", scoreLabel: 'length', higherIsBetter: true, init: initSnake },
   { id: 'flappy', name: 'Flappy Blob', icon: '\u{1F424}', type: 'canvas', blurb: 'Tap to flap through the gaps.', scoreLabel: 'pipes', higherIsBetter: true, init: initFlappy },
   { id: 'rps', name: 'Rock Paper Scissors', icon: '✊', type: 'dom', blurb: 'Best of 5 against the computer.', scoreLabel: 'wins', higherIsBetter: true, init: initRPS },
-  { id: 'guess', name: 'Number Guess', icon: '\u{1F522}', type: 'dom', blurb: 'Find the secret number, 1-100.', scoreLabel: 'guesses', higherIsBetter: false, init: initGuess },
+  { id: 'guess', name: 'Number Guess', icon: '\u{1F522}', type: 'dom', blurb: 'Find the secret number.', scoreLabel: 'guesses', higherIsBetter: false, init: initGuess },
   { id: 'tictactoe', name: 'Tic-Tac-Toe', icon: '⭕', type: 'dom', blurb: 'Beat the computer -- if you can.', scoreLabel: 'result', higherIsBetter: true, init: initTicTacToe },
   { id: '2048', name: '2048', icon: '\u{1F536}', type: 'canvas', blurb: 'Slide and merge to reach 2048.', scoreLabel: 'points', higherIsBetter: true, init: init2048 },
-  { id: 'breakout', name: 'Brick Breaker', icon: '\u{1F9F1}', type: 'canvas', blurb: 'Clear every brick, 3 lives.', scoreLabel: 'bricks', higherIsBetter: true, init: initBreakout },
+  { id: 'breakout', name: 'Brick Breaker', icon: '\u{1F9F1}', type: 'canvas', blurb: 'Clear every brick.', scoreLabel: 'bricks', higherIsBetter: true, init: initBreakout },
   { id: 'dodge', name: 'Dodge the Blocks', icon: '\u{1F6A7}', type: 'canvas', blurb: 'Survive the falling blocks.', scoreLabel: 'seconds', higherIsBetter: true, init: initDodge },
-  { id: 'colormatch', name: 'Color Match', icon: '\u{1F3A8}', type: 'dom', blurb: 'Tap the ink color, not the word -- 30s.', scoreLabel: 'correct', higherIsBetter: true, init: initColorMatch },
-  { id: 'mathblitz', name: 'Math Blitz', icon: '➕', type: 'dom', blurb: 'Solve as many as you can -- 30s.', scoreLabel: 'correct', higherIsBetter: true, init: initMathBlitz },
+  { id: 'colormatch', name: 'Color Match', icon: '\u{1F3A8}', type: 'dom', blurb: 'Tap the ink color, not the word.', scoreLabel: 'correct', higherIsBetter: true, init: initColorMatch },
+  { id: 'mathblitz', name: 'Math Blitz', icon: '➕', type: 'dom', blurb: 'Solve as many as you can.', scoreLabel: 'correct', higherIsBetter: true, init: initMathBlitz },
   { id: 'catcher', name: 'Coin Catcher', icon: '\u{1FA99}', type: 'canvas', blurb: 'Catch coins, dodge bombs.', scoreLabel: 'coins', higherIsBetter: true, init: initCatcher },
 ];
-export const GAME_BY_ID = Object.fromEntries(GAMES.map((g) => [g.id, g]));
-
-let activeHandle = null;
-
-/** Mount and start one game. `mount` is { canvas, ctx, container } -- the
- * caller (app.js) owns showing/hiding the right element for the game's
- * `type` before calling this. Stops whatever was running first, so it's
- * safe to call again without an explicit stopGame() in between. */
-export function startGame(id, mount, hooks) {
-  stopGame();
-  const game = GAME_BY_ID[id];
-  if (!game) return null;
-  activeHandle = game.init(mount, hooks);
-  return game;
-}
-
-/** Tears down the currently-running game's listeners/timers, if any. Safe
- * to call even when nothing is running. */
-export function stopGame() {
-  if (activeHandle?.destroy) activeHandle.destroy();
-  activeHandle = null;
-}
