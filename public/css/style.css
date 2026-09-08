@@ -383,6 +383,14 @@ body {
 }
 .btn-gold .btn-sub { color: rgba(44, 29, 2, 0.72); }
 
+.btn-cyan {
+  background: linear-gradient(180deg, #5fe0ff, #1a9ccc);
+  border-color: rgba(95, 224, 255, 0.55);
+  box-shadow: 0 10px 26px rgba(50, 180, 220, 0.32);
+  color: #04232c;
+}
+.btn-cyan .btn-sub { color: rgba(4, 35, 44, 0.72); }
+
 .btn-small { padding: 8px 14px; font-size: 14px; align-self: flex-start; }
 .btn-danger { background: linear-gradient(180deg, #a33049, #7a1f33); border-color: #ff4d6d55; }
 .btn-back { align-self: flex-start; background: none; border-color: transparent; color: var(--muted); padding-left: 0; }
@@ -724,6 +732,142 @@ body {
 .badge-name { font-weight: 800; font-size: 15px; color: var(--rarity-color); }
 .badge-blurb { color: var(--muted); font-size: 12px; min-height: 32px; }
 .badge-price { font-weight: 700; font-size: 13px; }
+
+/* ------------------------------------------------------------ mini games */
+
+.minigame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+
+.minigame-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 14px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  border-radius: var(--radius);
+  text-align: center;
+}
+.minigame-card:hover { border-color: var(--accent-2); }
+
+.minigame-icon { font-size: 36px; line-height: 1; }
+.minigame-name { font-weight: 800; font-size: 15px; }
+.minigame-blurb { color: var(--muted); font-size: 12px; min-height: 32px; }
+.minigame-best { color: var(--gold); font-size: 12px; font-weight: 700; }
+
+.minigame-play-menu { display: flex; flex-direction: column; gap: 10px; }
+
+.minigame-stage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  aspect-ratio: 480 / 320;
+  background: #0b1220;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--panel-edge);
+}
+
+.minigame-stage canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+.minigame-dom {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.minigame-end-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 11, 26, 0.86);
+  z-index: 2;
+}
+.minigame-end-card { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.minigame-end-title { font-size: 26px; font-weight: 900; }
+.minigame-end-score { font-size: 18px; color: var(--accent-tint); }
+.minigame-end-best { color: var(--gold); font-size: 14px; font-weight: 700; }
+
+/* Reaction Test */
+.mg-reaction-box {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: none;
+  background: #a33049;
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  cursor: pointer;
+}
+.mg-reaction-box.is-go { background: #4ff08a; color: #04231b; }
+
+/* Memory Match */
+.mg-memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 320px; }
+.mg-memory-card {
+  aspect-ratio: 1;
+  font-size: 22px;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mg-memory-card.is-open { border-color: var(--accent-2); }
+.mg-memory-card.is-matched { opacity: 0.45; border-color: #4ff08a; }
+
+/* Simon Says */
+.mg-simon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 220px; height: 220px; }
+.mg-simon-pad { border-radius: 14px; border: none; opacity: 0.55; cursor: pointer; }
+.mg-simon-pad.is-lit { opacity: 1; box-shadow: 0 0 24px currentColor; }
+.mg-simon-red { background: #ff4d6d; color: #ff4d6d; }
+.mg-simon-blue { background: #4d7fff; color: #4d7fff; }
+.mg-simon-green { background: #4ff08a; color: #4ff08a; }
+.mg-simon-yellow { background: #ffd166; color: #ffd166; }
+
+/* Rock Paper Scissors */
+.mg-rps-status { font-size: 16px; text-align: center; }
+.mg-rps-score { font-weight: 800; color: var(--accent-tint); }
+.mg-rps-row { display: flex; gap: 12px; }
+.mg-rps-btn { font-size: 34px; padding: 12px 18px; }
+
+/* Number Guess / Math Blitz shared row */
+.mg-guess-status { font-size: 16px; text-align: center; }
+.mg-guess-row { display: flex; gap: 8px; }
+.mg-guess-input { width: 120px; text-align: center; }
+
+/* Tic-Tac-Toe */
+.mg-ttt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 220px; height: 220px; }
+.mg-ttt-cell {
+  font-size: 32px;
+  font-weight: 900;
+  background: var(--panel);
+  border: 2px solid var(--panel-edge);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.mg-ttt-status { font-size: 16px; font-weight: 700; }
+
+/* Color Match (Stroop) */
+.mg-colorword { font-size: 40px; font-weight: 900; }
+.mg-color-row { display: flex; gap: 10px; }
+.mg-color-btn { width: 64px; height: 44px; border: none; border-radius: 10px; cursor: pointer; }
+
+/* Math Blitz */
+.mg-math-problem { font-size: 32px; font-weight: 900; }
+
+@media (max-width: 520px) {
+  .mg-reaction-box { width: 160px; height: 160px; }
+  .mg-simon-grid, .mg-ttt-grid { width: 180px; height: 180px; }
+}
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .stat { padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; }

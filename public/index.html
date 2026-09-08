@@ -89,6 +89,7 @@ try {
         <button class="btn btn-primary btn-xl" data-go="play">Play</button>
         <button class="btn btn-teal btn-xl" data-go="skins">Skins</button>
         <button class="btn btn-gold btn-xl" data-go="badges">Badges</button>
+        <button class="btn btn-cyan btn-xl" data-go="minigames">Offline Mini Games</button>
         <button class="btn btn-violet btn-xl" data-go="settings">Settings</button>
       </nav>
       <div class="home-profile">
@@ -292,6 +293,42 @@ try {
       <h2 class="screen-title">Badges</h2>
       <p class="hint" data-badge-progress></p>
       <div class="badge-grid" data-badge-grid></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- MINI GAMES -->
+  <section class="screen" data-screen="minigames">
+    <div class="menu menu-wide">
+      <button class="btn btn-back" data-go="home">&larr; Back</button>
+      <h2 class="screen-title">Offline Mini Games</h2>
+      <p class="hint">Fifteen quick, single-player games -- no server or
+        connection needed, just for fun. Your best score for each is
+        remembered on this device.</p>
+      <div class="minigame-grid" data-minigame-grid></div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------- MINI GAME PLAY -->
+  <section class="screen" data-screen="minigame-play">
+    <div class="menu menu-wide minigame-play-menu">
+      <button class="btn btn-back" data-action="minigame-quit">&larr; Back to Mini Games</button>
+      <h2 class="screen-title" data-minigame-title>Mini Game</h2>
+      <p class="hint" data-minigame-hud></p>
+      <div class="minigame-stage">
+        <canvas data-minigame-canvas hidden></canvas>
+        <div class="minigame-dom" data-minigame-dom hidden></div>
+        <div class="minigame-end-overlay" data-minigame-end hidden>
+          <div class="minigame-end-card">
+            <div class="minigame-end-title" data-minigame-end-title>Game Over</div>
+            <div class="minigame-end-score" data-minigame-end-score></div>
+            <div class="minigame-end-best" data-minigame-end-best></div>
+            <nav class="menu-buttons">
+              <button class="btn btn-primary" data-action="minigame-again">Play Again</button>
+              <button class="btn btn-small" data-action="minigame-quit">Back to Mini Games</button>
+            </nav>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

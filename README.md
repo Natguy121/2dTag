@@ -404,6 +404,26 @@ that roll just converts to a coin payout instead (scaled to the badge's
 price, so a top-tier badge's fallback is still a serious payout), the
 same never-a-dead-pull philosophy lucky blocks already use.
 
+## Offline Mini Games
+
+A fifth door on the home screen: **Offline Mini Games** opens a hub of
+**15 single-player games** that need no server, no room, and no other
+players -- pure browser JS, playable even with the multiplayer connection
+down. They award **no coins** (a deliberate choice -- the shop and badge
+economy is tuned around real matches, and a farmable offline loop would
+undercut it); the only payoff is a personal best, remembered per game on
+this device and shown right on its card in the hub.
+
+Seven are canvas action/logic games -- **Whack-a-Mole**, **Snake**,
+**Flappy Blob**, **2048**, **Brick Breaker**, **Dodge the Blocks** and
+**Coin Catcher** -- and eight are quick DOM-based games -- **Reaction
+Test**, **Memory Match**, **Simon Says**, **Rock Paper Scissors**,
+**Number Guess**, **Tic-Tac-Toe**, **Color Match** (a Stroop test) and
+**Math Blitz**. Every game shares the same tiny contract (mount, play,
+report a score once, tear down cleanly), so picking one from the grid,
+finishing it, hitting Play Again or backing out to the hub all behave
+identically regardless of which game is running.
+
 ## Music
 
 20 background tracks, all synthesised live with WebAudio -- same as every

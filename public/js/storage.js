@@ -49,6 +49,7 @@ const DEFAULTS = {
   mapsPlayed: [],
   theme: 'classic', // 'classic' (blue & orange), 'blossom' (pink & purple), 'pink' or 'blue'
   onboarded: false, // has seen the one-time "pick your colors" welcome screen
+  miniScores: {}, // id -> best score, for the offline Mini Games hub -- see minigames.js
 };
 
 function randomName() {
@@ -79,6 +80,7 @@ export const profile = {
   quests: Array.isArray(stored.quests) ? stored.quests : [],
   luckyBlocks: { ...DEFAULTS.luckyBlocks, ...(stored.luckyBlocks || {}) },
   mapsPlayed: Array.isArray(stored.mapsPlayed) ? stored.mapsPlayed : [],
+  miniScores: { ...DEFAULTS.miniScores, ...(stored.miniScores || {}) },
 };
 
 if (!profile.name) profile.name = randomName();

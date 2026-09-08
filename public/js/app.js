@@ -18,6 +18,7 @@ import { sfx, unlock as unlockAudio, setVolume } from './audio.js';
 import * as music from './music.js';
 import * as homeDemo from './homeDemo.js';
 import * as introAnim from './introAnim.js';
+import * as minigames from './minigames.js';
 import { drawMapPreview, drawSkinPreview, formatTime } from './render.js';
 import { Game, POWER_COLORS } from './game.js';
 
@@ -91,10 +92,16 @@ function showScreen(name) {
     game.stop();
     unlockOrientation();
   }
+  // Idempotent -- a safe no-op if no mini-game is running, and it always
+  // runs when navigating to anything but the play screen itself (Escape,
+  // Home, a direct link elsewhere), so a game's listeners/timers never
+  // keep running in the background after you've left it.
+  if (name !== 'minigame-play') minigames.stopGame();
 
   if (name === 'join-server') refreshServers();
   if (name === 'skins') renderShop();
   if (name === 'badges') renderBadges();
+  if (name === 'minigames') renderMinigames();
   if (name === 'settings') renderSettings();
   if (name === 'home') {
     drawProfilePreview();
@@ -1063,6 +1070,87 @@ function renderBadges() {
     + `outright. · ${profile.coins || 0} coins`;
 }
 
+// --------------------------------------------------------- mini games
+
+let currentMinigameId = null;
+
+function renderMinigames() {
+  const grid = $('[data-minigame-grid]');
+  grid.innerHTML = '';
+
+  for (const g of minigames.GAMES) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'minigame-card';
+
+    const icon = document.createElement('div');
+    icon.className = 'minigame-icon';
+    icon.textContent = g.icon;
+
+    const name = document.createElement('div');
+    name.className = 'minigame-name';
+    name.textContent = g.name;
+
+    const blurb = document.createElement('div');
+    blurb.className = 'minigame-blurb';
+    blurb.textContent = g.blurb;
+
+    card.append(icon, name, blurb);
+    const best = minigames.getBest(g.id);
+    if (best != null) {
+      const bestEl = document.createElement('div');
+      bestEl.className = 'minigame-best';
+      bestEl.textContent = `Best: ${best} ${g.scoreLabel}`;
+      card.append(bestEl);
+    }
+
+    card.addEventListener('click', () => openMinigame(g.id));
+    grid.append(card);
+  }
+}
+
+/** Mount and start one mini-game on the play screen -- shows the right
+ * element for its type (canvas vs. plain DOM), resets the end overlay,
+ * and hands off to minigames.startGame() for the actual game logic. */
+function openMinigame(id) {
+  const game = minigames.GAME_BY_ID[id];
+  if (!game) return;
+  currentMinigameId = id;
+  showScreen('minigame-play');
+
+  $('[data-minigame-title]').textContent = game.name;
+  $('[data-minigame-end]').hidden = true;
+  const canvas = $('[data-minigame-canvas]');
+  const container = $('[data-minigame-dom]');
+  canvas.hidden = game.type !== 'canvas';
+  container.hidden = game.type !== 'dom';
+
+  let ctx = null;
+  if (game.type === 'canvas') {
+    canvas.width = minigames.CANVAS_W;
+    canvas.height = minigames.CANVAS_H;
+    ctx = canvas.getContext('2d');
+  } else {
+    container.innerHTML = '';
+  }
+
+  minigames.startGame(id, { canvas, ctx, container }, {
+    setHud: (text) => { $('[data-minigame-hud]').textContent = text; },
+    onEnd: (score) => showMinigameEnd(game, score),
+  });
+}
+
+function showMinigameEnd(game, score) {
+  const isBest = minigames.reportScore(game.id, score, game.higherIsBetter);
+  $('[data-minigame-end-title]').textContent = 'Game Over!';
+  $('[data-minigame-end-score]').textContent = `${score} ${game.scoreLabel}`;
+  $('[data-minigame-end-best]').textContent = isBest
+    ? 'New best!'
+    : `Best: ${minigames.getBest(game.id)} ${game.scoreLabel}`;
+  $('[data-minigame-end]').hidden = false;
+  sfx.win();
+}
+
 /** The completionist surprise: own every collectible skin (everything
  * except 'legend' itself) as a genuine player -- never as an admin preview
  * -- and 'legend' is granted on the spot with a one-time celebration. Runs
@@ -1362,6 +1450,18 @@ function wire() {
     adminPasswordCache = message;
     net.send({ t: 'admin', password: adminPasswordCache });
   });
+
+  for (const btn of $$('[data-action="minigame-quit"]')) {
+    btn.addEventListener('click', () => {
+      sfx.click();
+      showScreen('minigames');
+    });
+  }
+  $('[data-action="minigame-again"]').addEventListener('click', () => {
+    sfx.click();
+    if (currentMinigameId) openMinigame(currentMinigameId);
+  });
+
   $('[data-action="admin-grant-coins"]').addEventListener('click', () => {
     if (!isAdminSession) return;
     addCoins(100000);
