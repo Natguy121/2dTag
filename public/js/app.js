@@ -818,26 +818,104 @@ const BLOCK_FALLBACK_COINS = {
   uncommon: 40, rare: 90, epic: 180, legendary: 350,
 };
 
+/** Spawns a quick burst of colored particle dots from the center of
+ * `stage` for the lucky block "pop" moment -- the caller clears them
+ * explicitly once the reveal phase starts (see openLuckyBlock), since
+ * that always happens before each particle's own animation finishes. */
+function spawnLuckyBlockBurst(stage, color) {
+  const count = 14;
+  for (let i = 0; i < count; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'luckyblock-particle';
+    const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.4 - 0.2);
+    const dist = 60 + Math.random() * 40;
+    particle.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    particle.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+    particle.style.setProperty('--particle-color', color);
+    stage.append(particle);
+  }
+}
+
+let luckyBlockAnimating = false;
+
 /** Open one lucky block: a random not-yet-owned skin of its rarity, or a
- * coin payout if there's nothing left to win at that tier. */
+ * coin payout if there's nothing left to win at that tier. The reward is
+ * granted immediately (inventory/coins update right away, same as
+ * before), but the result is revealed through a shake -> pop -> reveal
+ * animation in a full-screen overlay instead of an instant toast. */
 function openLuckyBlock(tier) {
+  if (luckyBlockAnimating) return;
   if (!spendLuckyBlock(tier)) return;
   const candidates = SKINS.filter((s) => s.id !== 'legend' && getRarity(s) === tier
     && !isUnlocked(s, profile.stats, profile.ownedSkins));
 
+  let result;
   if (candidates.length) {
     const won = candidates[Math.floor(Math.random() * candidates.length)];
     grantSkin(won.id);
-    sfx.win();
-    toast(`${RARITIES[tier].label} lucky block: you got ${won.name}!`);
+    result = { type: 'skin', skin: won };
   } else {
     const consolation = BLOCK_FALLBACK_COINS[tier] || 40;
     addCoins(consolation);
-    sfx.click();
-    toast(`Already have every ${RARITIES[tier].label} skin -- +${consolation} coins instead.`);
+    result = { type: 'coins', amount: consolation };
   }
   renderShop();
   drawProfilePreview();
+
+  luckyBlockAnimating = true;
+  const overlay = $('[data-luckyblock-overlay]');
+  const card = $('[data-luckyblock-card]');
+  const stage = $('[data-luckyblock-stage]');
+  const box = $('[data-luckyblock-box]');
+  const reveal = $('[data-luckyblock-reveal]');
+  const rarityColor = RARITIES[tier].color;
+
+  card.style.setProperty('--rarity-color', rarityColor);
+  // Defensive: a burst's particles normally get cleared explicitly below,
+  // before their CSS animation would finish naturally -- this only
+  // matters if that somehow didn't run on a previous open.
+  stage.querySelectorAll('.luckyblock-particle').forEach((p) => p.remove());
+  stage.hidden = false;
+  box.className = 'luckyblock-box';
+  reveal.hidden = true;
+  overlay.hidden = false;
+
+  sfx.click();
+  requestAnimationFrame(() => box.classList.add('is-shaking'));
+
+  setTimeout(() => {
+    box.classList.remove('is-shaking');
+    box.classList.add('is-popping');
+    spawnLuckyBlockBurst(stage, rarityColor);
+    sfx.boxOpen();
+
+    setTimeout(() => {
+      // The stage hides well before each particle's own 0.7s animation
+      // finishes, and display:none cancels a running CSS animation
+      // without ever firing 'animationend' -- so clear them explicitly
+      // instead of waiting on an event that won't come.
+      stage.querySelectorAll('.luckyblock-particle').forEach((p) => p.remove());
+      stage.hidden = true;
+      reveal.hidden = false;
+      $('[data-luckyblock-reveal-label]').textContent = `${RARITIES[tier].label} Lucky Block`;
+      const previewCanvas = $('[data-luckyblock-reveal-preview]');
+      const coinEl = $('[data-luckyblock-reveal-coin]');
+      if (result.type === 'skin') {
+        previewCanvas.hidden = false;
+        coinEl.hidden = true;
+        requestAnimationFrame(() => drawSkinPreview(previewCanvas, result.skin.id));
+        $('[data-luckyblock-reveal-text]').textContent = `You got ${result.skin.name}!`;
+        sfx.win();
+      } else {
+        previewCanvas.hidden = true;
+        coinEl.hidden = false;
+        $('[data-luckyblock-reveal-text]').textContent =
+          `Already have every ${RARITIES[tier].label} skin -- +${result.amount} coins instead.`;
+        sfx.click();
+      }
+      luckyBlockAnimating = false;
+    }, 350);
+  }, 800);
 }
 
 function renderLuckyBlocks() {
@@ -1620,6 +1698,10 @@ function wire() {
     $('[data-completion-overlay]').hidden = true;
     renderShop();
     drawProfilePreview();
+  });
+  $('[data-action="luckyblock-ok"]').addEventListener('click', () => {
+    sfx.click();
+    $('[data-luckyblock-overlay]').hidden = true;
   });
 
   // Unlock audio (sfx + background music) on the first interaction anywhere

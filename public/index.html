@@ -516,6 +516,22 @@ try {
       <button type="button" class="btn btn-primary" data-action="completion-ok">Nice!</button>
     </div>
   </div>
+
+  <!-- Lucky block opening animation: shake, pop, reveal -->
+  <div class="overlay luckyblock-overlay" data-luckyblock-overlay hidden>
+    <div class="luckyblock-card" data-luckyblock-card>
+      <div class="luckyblock-stage" data-luckyblock-stage>
+        <div class="luckyblock-box" data-luckyblock-box>&#127873;</div>
+      </div>
+      <div class="luckyblock-reveal" data-luckyblock-reveal hidden>
+        <div class="luckyblock-reveal-label" data-luckyblock-reveal-label></div>
+        <canvas class="luckyblock-reveal-preview" width="124" height="148" data-luckyblock-reveal-preview hidden></canvas>
+        <div class="luckyblock-reveal-coin" data-luckyblock-reveal-coin hidden>&#129689;</div>
+        <div class="luckyblock-reveal-text" data-luckyblock-reveal-text></div>
+        <button type="button" class="btn btn-primary" data-action="luckyblock-ok">Nice!</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="/js/app.js"></script>
